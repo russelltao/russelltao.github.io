@@ -1,0 +1,19 @@
+{# RecentPosts #}
+{%- if theme.recent_posts %}
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      {%- if theme.recent_posts.icon %}
+      <i class="{{ theme.recent_posts.icon }} fa-fw"></i>
+      {%- endif %}
+      {{ theme.recent_posts.title }}
+    </div>
+    <ul class="links-of-recent-posts-list">
+      {%- set posts = site.posts.sort('date', 'desc').toArray() %}
+      {%- for post in posts.slice('0', theme.recent_posts.max_count) %}
+        <li class="links-of-recent-posts-item">
+          {{ next_url(post.path, post.title, {title: post.path}) }}
+        </li>
+      {%- endfor %}
+    </ul>
+  </div>
+{%- endif %}
