@@ -209,7 +209,7 @@ location /a {
 
 而TEngine模块的指令介绍则会放在tengine.taobao.org网站上：
 
-[![](/2020/12/tengine说明文档.png)](http://www.taohui.pub/2020/12/23/%e4%bb%8e%e9%80%9a%e7%94%a8%e8%a7%84%e5%88%99%e4%b8%ad%e5%ad%a6%e4%b9%a0nginx%e6%a8%a1%e5%9d%97%e7%9a%84%e5%ae%9a%e5%88%b6%e6%8c%87%e4%bb%a4/tengine%e8%af%b4%e6%98%8e%e6%96%87%e6%a1%a3/)
+[![](/2020/12/tengine说明文档.png)](/2020/12/tengine说明文档.png)
 
 从这两张截图中可以看到，第三方模块在解释指令的用法时，同样遵循着上文介绍过的方式。
 
