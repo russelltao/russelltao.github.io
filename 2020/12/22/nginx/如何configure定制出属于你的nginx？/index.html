@@ -35,8 +35,8 @@
 <meta property="article:published_time" content="2020-12-22T02:02:19.000Z">
 <meta property="article:modified_time" content="2021-01-28T07:33:44.972Z">
 <meta property="article:author" content="陶辉">
-<meta property="article:tag" content="configure">
 <meta property="article:tag" content="nginx">
+<meta property="article:tag" content="configure">
 <meta property="article:tag" content="module">
 <meta property="article:tag" content="模块化">
 <meta name="twitter:card" content="summary">
@@ -265,7 +265,21 @@
               </span>
               <span class="post-meta-item-text">阅读次数：</span>
               <span id="busuanzi_value_page_pv"></span>
-            </span><br>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
             <span class="post-meta-item" title="本文字数">
               <span class="post-meta-item-icon">
                 <i class="far fa-file-word"></i>
@@ -404,8 +418,8 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/configure/" rel="tag"># configure</a>
               <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/configure/" rel="tag"># configure</a>
               <a href="/tags/module/" rel="tag"># module</a>
               <a href="/tags/%E6%A8%A1%E5%9D%97%E5%8C%96/" rel="tag"># 模块化</a>
           </div>
@@ -440,6 +454,7 @@
 
           </div>
           
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -589,13 +604,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">275k</span>
+    <span title="站点总字数">274k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:10</span>
+    <span title="站点阅读时长">4:09</span>
 </div>
 
         
@@ -783,6 +798,35 @@
   
 
   
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'FEvcgdNolpfBmDBG7LHVwtuI-gzGzoHsz',
+      appKey     : 'RYaf54oXtzubonJgTjmauu90',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
 
 </body>
 </html>

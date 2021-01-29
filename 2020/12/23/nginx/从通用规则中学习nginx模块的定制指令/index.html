@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://www.taohui.tech/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
 <meta property="og:image" content="https://www.taohui.tech/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
 <meta property="article:published_time" content="2020-12-23T07:14:21.000Z">
-<meta property="article:modified_time" content="2021-01-28T07:30:08.875Z">
+<meta property="article:modified_time" content="2021-01-29T01:04:08.275Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="nginx">
 <meta property="article:tag" content="时间单位">
@@ -236,7 +236,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 15:30:08" itemprop="dateModified" datetime="2021-01-28T15:30:08+08:00">2021-01-28</time>
+                <time title="修改时间：2021-01-29 09:04:08" itemprop="dateModified" datetime="2021-01-29T09:04:08+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -266,13 +266,27 @@
               </span>
               <span class="post-meta-item-text">阅读次数：</span>
               <span id="busuanzi_value_page_pv"></span>
-            </span><br>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
             <span class="post-meta-item" title="本文字数">
               <span class="post-meta-item-icon">
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.5k</span>
+              <span>6.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -300,9 +314,9 @@
 <p>本文将会系统地介绍nginx.conf配置文件的用法，并以搭建静态资源服务时用到的root、alias指令为例，看看如何阅读Nginx模块的指令介绍。同时，本文也是Nginx开源社区基础培训系列课程第一季，即6月11日晚第2次视频直播的部分文字总结。</p>
 <h2 id="快速掌握Nginx配置文件的语法格式"><a href="#快速掌握Nginx配置文件的语法格式" class="headerlink" title="快速掌握Nginx配置文件的语法格式"></a>快速掌握Nginx配置文件的语法格式</h2><p>Nginx是由少量框架代码、大量模块构成的，其中，Nginx框架会按照特定的语法，将配置指令读取出来，再交由模块处理。<strong>因此，Nginx框架定义了通用的语法规则，而Nginx模块则定义了每条指令的语法规则，</strong>作为初学者，如果将学习目标定为掌握所有的配置指令，方向就完全错了，而且这是不可能完成的任务。</p>
 <p>比如，ngx_http_lua_module模块定义了content_by_lua_block指令，只要它符合框架定义的{}块语法规则，哪怕大括号内是一大串Lua语言代码，框架也会把它交由ngx_http_lua_module模块处理。因此，下面这行指令就是合法的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">content_by_lua_block &#123;ngx.say(&quot;Hello World &quot;)&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">content_by_lua_block &#123;ngx.say(&quot;Hello World &quot;)&#125;</span><br></pre></td></tr></table></figure>
 <p>再比如，ngx_http_limit_req_module模块定义了limit_req_zone指令，只要它符合指令行语法（以分号;结尾），框架就会将指令后的选项将由模块处理。所以，即使下面这行指令出现了r/s（每秒处理请求数）这样新定义的单位，仍然是合法的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">limit_req_zone $binary_remote_addr zone&#x3D;one:10m rate&#x3D;1r&#x2F;s;</span><br></pre></td></tr></table></figure>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">limit_req_zone</span> $binary_remote_addr zone=one:<span class="number">10m</span> rate=1r/s;</span><br></pre></td></tr></table></figure>
 <p>所以，在我看来，只要弄清楚了以下2点，就能快速掌握Nginx配置文件，：</p>
 <h3 id="1-配置基本格式"><a href="#1-配置基本格式" class="headerlink" title="1. 配置基本格式"></a>1. 配置基本格式</h3><p><strong>Nginx框架定义了每条指令的基本格式，这是所有模块必须遵守的规则</strong>，这包括以下5条语法：</p>
 <ul>
@@ -379,24 +393,24 @@
 <p>除以上规则外，如果编译了pcre开发库后，你还可以在nginx.conf中使用正则表达式，它们通常以~符号打头。</p>
 <h2 id="如何使用Nginx配置文件？"><a href="#如何使用Nginx配置文件？" class="headerlink" title="如何使用Nginx配置文件？"></a>如何使用Nginx配置文件？</h2><p>掌握了语法规则后，nginx.conf配置文件究竟是放在哪里的呢？</p>
 <p>编译Nginx时，configure脚本的–prefix选项可以设置Nginx的运行路径，比如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;configure –prefix&#x3D;&#x2F;home&#x2F;nginx</span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./configure –prefix=/home/nginx</span><br></pre></td></tr></table></figure>
 <p>此时，安装后的Nginx将会放在/home/nginx目录，而配置文件就会在/home/nginx/conf目录下。</p>
 <p>如果你没有显式的指–prefix选项，默认路径就是/usr/local/nginx。由于OpenResty修改了configure文件，因此它的默认路径是/usr/local/openresty/nginx。在默认路径确定后，nginx.conf配置文件就会放在conf子目录中。当然，通过–conf-path选项，你可以分离它们。</p>
 <p>另外在运行Nginx时，你还可以通过nginx -c PATH/nginx.conf选项，指定任意路径作为Nginx的配置文件。</p>
 <p>由于配置语法比较复杂，因此Nginx为<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/zh-hans/Vim">vim编辑器</a>准备了语法高亮功能。在Nginx源代码中，你可以看到contrib目录，其中vim子目录提高了语法高亮功能：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[contrib]# tree vim</span><br><span class="line">vim</span><br><span class="line">-- ftdetect</span><br><span class="line"> &#96;-- nginx.vim</span><br><span class="line">-- ftplugin</span><br><span class="line"> &#96;-- nginx.vim</span><br><span class="line">-- indent</span><br><span class="line"> &#96;-- nginx.vim</span><br><span class="line">&#96;-- syntax</span><br><span class="line">&#96;-- nginx.vim</span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[contrib]<span class="comment"># tree vim</span></span><br><span class="line">vim</span><br><span class="line">-- ftdetect</span><br><span class="line"> `-- nginx.vim</span><br><span class="line">-- ftplugin</span><br><span class="line"> `-- nginx.vim</span><br><span class="line">-- indent</span><br><span class="line"> `-- nginx.vim</span><br><span class="line">`-- syntax</span><br><span class="line">`-- nginx.vim</span><br></pre></td></tr></table></figure>
 <p>当你将contrib/vim/* 复制到<del>/.vim/目录时（</del>表示你当前用户的默认路径，如果.vim目录不存在时，请先用mkdir创建），再打开nginx.conf你就会发现指令已经高亮显示了：</p>
 <p><a href="/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png"><img src="/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png"></a></p>
 <p>出于可读性考虑，你或许会将include文件放在其他路径下，此时再用vim打开这些子配置文件，可能没有语法高亮效果。这是因为contrib/vim/ftdetect/nginx.vim文件定义了仅对4类配置文件使用语法高亮规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;对所有.nginx后缀的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile *.nginx set ft&#x3D;nginx</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;对&#x2F;etc&#x2F;nginx&#x2F;目录下的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile *&#x2F;etc&#x2F;nginx&#x2F;* set ft&#x3D;nginx</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;对&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;目录下的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile *&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;* set ft&#x3D;nginx</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;对任意路径下，名为nginx.conf的文件语法高亮</span><br><span class="line">au BufRead,BufNewFile nginx.conf set ft&#x3D;nginx</span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">//对所有.nginx后缀的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile *.nginx <span class="built_in">set</span> ft=nginx</span><br><span class="line"></span><br><span class="line">//对/etc/nginx/目录下的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile */etc/nginx/* <span class="built_in">set</span> ft=nginx</span><br><span class="line"></span><br><span class="line">//对/usr/<span class="built_in">local</span>/nginx/conf/目录下的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile */usr/<span class="built_in">local</span>/nginx/conf/* <span class="built_in">set</span> ft=nginx</span><br><span class="line"></span><br><span class="line">//对任意路径下，名为nginx.conf的文件语法高亮</span><br><span class="line">au BufRead,BufNewFile nginx.conf <span class="built_in">set</span> ft=nginx</span><br></pre></td></tr></table></figure>
 <p>因此，你可以将这类文件的后缀名改为.nginx，或者将它们移入/etc/nginx/、/usr/local/nginx/conf/目录即可。当然，你也可以向ftdetect/nginx.vim添加新的识别目录。</p>
 <p>即使拥有语法高亮功能，对于生产环境中长达数百、上千行的nginx.conf，仍然难以避免出现配置错误。这时可以通过nginx -t或者nginx -T命令，检查配置语法是否正确。出现错误时，<strong>Nginx会在屏幕上给出错误级别、原因描述以及到底是哪一行配置出现了错误</strong>。例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># nginx -t</span><br><span class="line">nginx: [emerg] directive &quot;location&quot; has no opening &quot;&#123;&quot; in &#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;notflowlocation.conf:1281</span><br><span class="line">nginx: configuration file &#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;nginx.conf test failed</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># nginx -t</span></span><br><span class="line">nginx: [emerg] directive <span class="string">&quot;location&quot;</span> has no opening <span class="string">&quot;&#123;&quot;</span> <span class="keyword">in</span> /usr/<span class="built_in">local</span>/nginx/conf/notflowlocation.conf:1281</span><br><span class="line">nginx: configuration file /usr/<span class="built_in">local</span>/nginx/conf/nginx.conf <span class="built_in">test</span> failed</span><br></pre></td></tr></table></figure>
 <p>从上面的错误信息中，我们知道Nginx解析配置文件失败，错误发生在include的子配置文件/usr/local/nginx/conf/notflowlocation.conf的第1281行，从描述上推断是location块的配置出现了错误，可能是缺失了大括号，或者未转义的字符导致无法识别出大括号。</p>
 <p>当你修改完配置文件后，可以通过nginx -s reload命令重新载入指令。这一过程不会影响正在服务的TCP连接，在描述Nginx进程架构的文章中，我会详细解释其原因。</p>
 <h2 id="搭建静态资源服务，root与alias有何不同？"><a href="#搭建静态资源服务，root与alias有何不同？" class="headerlink" title="搭建静态资源服务，root与alias有何不同？"></a>搭建静态资源服务，root与alias有何不同？</h2><p>接下来我们以root和alias指令为例，看看如何掌握配置指令的使用方法。</p>
 <p><strong>配置指令的说明，被放置在它所属Nginx模块的帮助文档中</strong>。因此，如果你对某个指令不熟悉，要先找到所属模块的说明文档。对于官方模块，你可以进入nginx.org站点查找。搭建静态资源服务的root/alias指令是由ngx_http_core_module模块实现的，因此，我们可以进入<a target="_blank" rel="noopener" href="http://nginx.org/en/docs/http/ngx_http_core_module.html">http://nginx.org/en/docs/http/ngx_http_core_module.html</a>页面寻找指令介绍，比如root指令的介绍如下所示：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:root path;</span><br><span class="line">Default: root html;</span><br><span class="line">Context:http, server, location, if in location</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:root path;</span><br><span class="line">Default: root html;</span><br><span class="line">Context:http, server, location, if in location</span><br></pre></td></tr></table></figure>
 <p>这里Syntax、Default、Context 3个关键信息，是所有Nginx配置指令共有的，下面解释下其含义：</p>
 <ul>
 <li>  Syntax：表示指令语法，包括可以跟几个选项，每个选项的单位、分隔符等。root path指令，可以将URL映射为磁盘访问路径path+URI，比如URL为/img/a.jpg时，磁盘访问路径就是html/img/a.jpg。</li>
@@ -407,11 +421,11 @@
 <li>  Context：表示指令允许出现在哪些配置块中。比如root可以出现在server{}中，而alias则只能出现在location{}中。为什么root指令的Context，允许其出现在http{ }、server{ }、location { }、if { }等多个配置块中呢?</li>
 </ul>
 <p>这是因为，Nginx允许多个配置块互相嵌套时，相同指令可以向上继承选项值。例如下面两个配置文件是完全等价的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">server&#123;</span><br><span class="line">  root html;</span><br><span class="line">    location &#x2F; &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server&#123;</span><br><span class="line">  root html;</span><br><span class="line">  location &#x2F; &#123;</span><br><span class="line">    root html;</span><br><span class="line">  &#125;</span><br><span class="line">｝</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">server&#123;</span><br><span class="line">  <span class="attribute">root</span> html;</span><br><span class="line">    <span class="attribute">location</span> / &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server&#123;</span><br><span class="line">  <span class="attribute">root</span> html;</span><br><span class="line">  <span class="attribute">location</span> / &#123;</span><br><span class="line">    <span class="attribute">root</span> html;</span><br><span class="line">  &#125;</span><br><span class="line">｝</span><br></pre></td></tr></table></figure>
 <p>这种向上承继机制，可以简化Nginx配置文件。因此，使用root指令后，不用为每个location块重复写入root指令。相反，alias指令仅能放置在location块中，这与它的使用方式有关：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:alias path;</span><br><span class="line">Default:—</span><br><span class="line">Context:location</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:alias path;</span><br><span class="line">Default:—</span><br><span class="line">Context:location</span><br></pre></td></tr></table></figure>
 <p>alias的映射关系与其所属的location中匹配的URI前缀有关，比如当HTTP请求的URI为/a/b/c.html时，在如下配置中，实际访问的磁盘路径为/d/b/c.html：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">location &#x2F;a &#123;</span><br><span class="line">  alias &#x2F;d;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">location</span> /a &#123;</span><br><span class="line">  <span class="attribute">alias</span> /d;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>因此，<strong>当URI中含有磁盘路径以外的前缀时，适合使用alias指令。反之，若完整的URI都是磁盘路径的一部分时，则不妨使用root指令</strong>。学习其他指令时，如果你不清楚它属于哪一个模块，还可以<strong>查看以字母表排序的指令索引</strong><a target="_blank" rel="noopener" href="http://nginx.org/en/docs/dirindex.html">http://nginx.org/en/docs/dirindex.html</a>页面，点击后会进入所属模块的指令介绍页面。</p>
 <p>如果是第三方模块，通常在README文件中会有相应的指令介绍。比如OpenResty模块的指令会放在GitHub项目首页的README文件中：</p>
 <p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/12/23/%e4%bb%8e%e9%80%9a%e7%94%a8%e8%a7%84%e5%88%99%e4%b8%ad%e5%ad%a6%e4%b9%a0nginx%e6%a8%a1%e5%9d%97%e7%9a%84%e5%ae%9a%e5%88%b6%e6%8c%87%e4%bb%a4/%e7%ac%ac%e4%b8%89%e6%96%b9%e6%a8%a1%e5%9d%97%e8%af%b4%e6%98%8e%e6%96%87%e6%a1%a3/"><img src="/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"></a></p>
@@ -497,6 +511,7 @@
 
           </div>
           
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -646,13 +661,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">275k</span>
+    <span title="站点总字数">274k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:10</span>
+    <span title="站点阅读时长">4:09</span>
 </div>
 
         
@@ -840,6 +855,35 @@
   
 
   
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'FEvcgdNolpfBmDBG7LHVwtuI-gzGzoHsz',
+      appKey     : 'RYaf54oXtzubonJgTjmauu90',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
 
 </body>
 </html>
