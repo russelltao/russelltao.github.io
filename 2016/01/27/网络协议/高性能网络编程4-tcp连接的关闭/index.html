@@ -34,9 +34,8 @@
 <meta property="og:image" content="file:///C:/Users/maomaoxiong/AppData/Local/youdao/ynote/images/02596B447A7C4511A85B857326F18861/close%26shutdown%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8.jpg">
 <meta property="og:image" content="https://www.taohui.tech/2017/01/close%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1.jpg">
 <meta property="og:image" content="https://www.taohui.tech/2017/01/shutdown%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1-1.jpg">
-<meta property="og:image" content="file:///C:/Users/maomaoxiong/AppData/Local/youdao/ynote/images/68CC7ACF2EF44AB29773A011801BAE9E/tcp_shutdown_flow.jpg">
 <meta property="article:published_time" content="2016-01-27T01:34:47.000Z">
-<meta property="article:modified_time" content="2021-01-28T07:32:09.171Z">
+<meta property="article:modified_time" content="2021-01-29T03:24:25.762Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="tcp">
 <meta property="article:tag" content="so_linger">
@@ -236,7 +235,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 15:32:09" itemprop="dateModified" datetime="2021-01-28T15:32:09+08:00">2021-01-28</time>
+                <time title="修改时间：2021-01-29 11:24:25" itemprop="dateModified" datetime="2021-01-29T11:24:25+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -298,19 +297,19 @@
 <p>下面分三部分进行：首先说说多线程多进程关闭连接的区别；再用一幅流程图谈谈close；最后用一幅流程图说说shutdown。</p>
 <p>先不提其原理和实现，从多进程、多线程下 close和shutdown方法调用时的区别说起。</p>
 <p>看看close与shutdown这两个系统调用对应的内核函数：（参见unistd.h文件）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#define __NR_close                               3  </span><br><span class="line">__SYSCALL(__NR_close, sys_close)  </span><br><span class="line">#define __NR_shutdown                           48  </span><br><span class="line">__SYSCALL(__NR_shutdown, sys_shutdown)  </span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __NR_close                               3  </span></span><br><span class="line">__SYSCALL(__NR_close, sys_close)  </span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __NR_shutdown                           48  </span></span><br><span class="line">__SYSCALL(__NR_shutdown, sys_shutdown)  </span><br></pre></td></tr></table></figure>
 <p>但sys_close和sys_shutdown这两个系统调用最终是由tcp_close和tcp_shutdown方法来实现的，调用过程如下图所示：</p>
 <p><img src="http://img.blog.csdn.net/20131026122203109?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center"></p>
 <p><img src="file:///C:/Users/maomaoxiong/AppData/Local/youdao/ynote/images/02596B447A7C4511A85B857326F18861/close%26shutdown%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8.jpg"></p>
 <p>sys_shutdown与多线程和多进程都没有任何关系，而sys_close则不然，上图中可以看到，层层封装调用中有一个方法叫fput，它有一个引用计数，记录这个socket被引用了多少次。在说明多线程或者多进程调用close的区别前，先在代码上简单看下close是怎么调用的，对内核代码没兴趣的同学可以仅看fput方法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">void fastcall fput(struct file *file)  </span><br><span class="line">&#123;  </span><br><span class="line">    if (atomic_dec_and_test(&amp;file-&gt;f_count))&#x2F;&#x2F;检查引用计数，直到为0才会真正去关闭socket  </span><br><span class="line">        __fput(file);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> fastcall <span class="title">fput</span><span class="params">(struct file *file)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (atomic_dec_and_test(&amp;file-&gt;f_count))<span class="comment">//检查引用计数，直到为0才会真正去关闭socket  </span></span><br><span class="line">        __fput(file);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
 <p>当这个socket的引用计数f_count不为0时，是不会触发到真正关闭TCP连接的tcp_close方法的。</p>
 <p>那么，这个引用计数的意义何在呢？为了说明它，先要说道下进程与线程的区别。</p>
 <p>大家知道，所谓线程其实就是“轻量级”的进程。创建进程只能是一个进程（父进程）创建另一个进程（子进程），子进程会复制父进程的资源，这里的”复制“针对不同的资源其意义是不同的，例如对内存、文件、TCP连接等。创建进程是由clone系统调用实现的，而创建线程时同样也是clone实现的，只不过clone的参数不同，其行为也很不同。这个话题是很大的，这里我们仅讨论下TCP连接。</p>
 <p>在clone系统调用中，会调用方法copy_files来拷贝文件描述符（包括socket）。创建线程时，传入的flag参数中包含标志位CLONE_FILES，此时，线程将会共享父进程中的文件描述符。而创建进程时没有这个标志位，这时，会把进程打开的所有文件描述符的引用计数加1，即把file数据结构的f_count成员加1，如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">static int copy_files(unsigned long clone_flags, struct task_struct * tsk)  </span><br><span class="line">&#123;  </span><br><span class="line">    if (clone_flags &amp; CLONE_FILES) &#123;  </span><br><span class="line">        goto out;&#x2F;&#x2F;创建线程  </span><br><span class="line">    &#125;  </span><br><span class="line">    newf &#x3D; dup_fd(oldf, &amp;error);  </span><br><span class="line">out:  </span><br><span class="line">    return error;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">copy_files</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> clone_flags, struct task_struct * tsk)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (clone_flags &amp; CLONE_FILES) &#123;  </span><br><span class="line">        <span class="keyword">goto</span> out;<span class="comment">//创建线程  </span></span><br><span class="line">    &#125;  </span><br><span class="line">    newf = dup_fd(oldf, &amp;error);  </span><br><span class="line">out:  </span><br><span class="line">    <span class="keyword">return</span> error;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
 <p>再看看dup_fd方法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">static struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)  </span><br><span class="line">&#123;  </span><br><span class="line">    for (i &#x3D; open_files; i !&#x3D; 0; i--) &#123;  </span><br><span class="line">        struct file *f &#x3D; *old_fds++;  </span><br><span class="line">        if (f) &#123;  </span><br><span class="line">            get_file(f);&#x2F;&#x2F;创建进程  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> struct files_struct *<span class="title">dup_fd</span><span class="params">(struct files_struct *oldf, <span class="keyword">int</span> *errorp)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">for</span> (i = open_files; i != <span class="number">0</span>; i--) &#123;  </span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">file</span> *<span class="title">f</span> =</span> *old_fds++;  </span><br><span class="line">        <span class="keyword">if</span> (f) &#123;  </span><br><span class="line">            get_file(f);<span class="comment">//创建进程  </span></span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
 <p>get_file宏就会加引用计数。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#define get_file(x) atomic_inc(&amp;(x)-&gt;f_count)  </span><br></pre></td></tr></table></figure>
 <p>所以，子进程会将父进程中已经建立的socket加上引用计数。当进程中close一个socket时，只会减少引用计数，仅当引用计数为0时才会触发tcp_close。</p>
@@ -344,7 +343,6 @@
 <p>最后做个总结。调用close时，可能导致发送RST复位关闭连接，例如有未读消息、打开so_linger但l_linger却为0、关闭监听句柄时半打开的连接。更多时会导致发FIN来四次握手关闭连接，但打开so_linger可能导致close阻塞住等待着对方的ACK表明收到了消息。</p>
 <p>最后来看看较为简单的shutdown。</p>
 <p><img src="/2017/01/shutdown%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1-1.jpg"></p>
-<p><img src="file:///C:/Users/maomaoxiong/AppData/Local/youdao/ynote/images/68CC7ACF2EF44AB29773A011801BAE9E/tcp_shutdown_flow.jpg"></p>
 <p>解释下上图：</p>
 <p>1）shutdown可携带一个参数，取值有3个，分别意味着：只关闭读、只关闭写、同时关闭读写。</p>
 <p>对于监听句柄，如果参数为关闭写，显然没有任何意义。但关闭读从某方面来说是有意义的，例如不再接受新的连接。看看最右边蓝色分支，针对监听句柄，若参数为关闭写，则不做任何事；若为关闭读，则把端口上的半打开连接使用RST关闭，与close如出一辙。</p>
@@ -574,13 +572,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">274k</span>
+    <span title="站点总字数">272k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:09</span>
+    <span title="站点阅读时长">4:07</span>
 </div>
 
         

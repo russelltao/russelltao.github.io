@@ -35,7 +35,7 @@
 <meta property="og:image" content="https://www.taohui.tech/2013/01/bridge%E6%A8%A1%E5%BC%8F.png">
 <meta property="og:image" content="https://www.taohui.tech/2013/01/bridge2.png">
 <meta property="article:published_time" content="2013-01-27T08:28:19.000Z">
-<meta property="article:modified_time" content="2021-01-28T09:10:48.222Z">
+<meta property="article:modified_time" content="2021-01-29T03:10:58.471Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="nginx">
 <meta property="article:tag" content="adapter模式">
@@ -237,7 +237,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 17:10:48" itemprop="dateModified" datetime="2021-01-28T17:10:48+08:00">2021-01-28</time>
+                <time title="修改时间：2021-01-29 11:10:58" itemprop="dateModified" datetime="2021-01-29T11:10:58+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -298,7 +298,7 @@
 <h1 id="strategy模式："><a href="#strategy模式：" class="headerlink" title="strategy模式："></a>strategy模式：</h1><p>该模式用于客户代码在“无知”状态下，可以使用种种不同的实现。下面我们以nginx对网络IO操作的封装部分来看看C语言的实现吧。 </p>
 <p>设计模式就是通过封装变化来解耦，所以，我们先要找出网络IO操作的变化点来。nginx是跨平台的，它会支持<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/linux" title="Linux知识库">Linux</a>、freebsd、solaris等<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/operatingsystem" title="操作系统知识库">操作系统</a>，而每个操作系统的网络IO操作是不同的，这就是变化点了。 </p>
 <p>所以，nginx首先定义了ngx_os_io_t来封装这些变化。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">typedef struct &#123;  </span><br><span class="line">    ngx_recv_pt        recv;  </span><br><span class="line">    ngx_recv_chain_pt  recv_chain;  </span><br><span class="line">    ngx_recv_pt        udp_recv;  </span><br><span class="line">    ngx_send_pt        send;  </span><br><span class="line">    ngx_send_chain_pt  send_chain;  </span><br><span class="line">    ngx_uint_t         flags;  </span><br><span class="line">&#125; ngx_os_io_t;  </span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span>  </span><br><span class="line">    ngx_recv_pt        recv;  </span><br><span class="line">    ngx_recv_chain_pt  recv_chain;  </span><br><span class="line">    ngx_recv_pt        udp_recv;  </span><br><span class="line">    ngx_send_pt        send;  </span><br><span class="line">    ngx_send_chain_pt  send_chain;  </span><br><span class="line">    <span class="keyword">ngx_uint_t</span>         flags;  </span><br><span class="line">&#125; <span class="keyword">ngx_os_io_t</span>;  </span><br></pre></td></tr></table></figure>
 <p>这里有五个函数指针（*_pt都是函数指针）和一个变量，用于收发网络数据，我把它理解为OO中的abstract class（每个ngx_os_io_t定义的变量都会重新实现这五个函数）。 </p>
 <p>拥有函数指针的struct，我通常认为它们是OO中的abstract class，实现它们的文件（一堆函数）要对应到OO上，我则喜欢把它们当做子类来看。对于void*这样的成员，要根据意图来看了，通常我会转换成聚合加继承的关系。 <img src="/2017/01/0_1328087269KWms-1-1.png"> ngx_io会在相应的ngx_os_specific_init方法中，来策略性的选择到底使用哪个实现。客户代码只需要简单的调用ngx_io中的方法即可。 </p>
 <h1 id="adapter模式："><a href="#adapter模式：" class="headerlink" title="adapter模式："></a>adapter模式：</h1><p>这个模式用以适配接口，通常都是我们已经定义好一种接口了，有一个新的实现却有着不同的接口，接下来adapter就开始发力了。下面我们仍然以nginx对网络IO操作的封装部分来看。 </p>
@@ -535,13 +535,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">274k</span>
+    <span title="站点总字数">272k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:09</span>
+    <span title="站点阅读时长">4:07</span>
 </div>
 
         

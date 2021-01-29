@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://www.taohui.tech/2017/01/tcpmemory-1-1.jpg">
 <meta property="og:image" content="file:///C:/Users/hui.taoh/AppData/Local/YNote/Data/iamtaohui%40126.com/b85c6327387d42eea2f188924cd51024/clipboard.png">
 <meta property="article:published_time" content="2016-01-27T07:45:16.000Z">
-<meta property="article:modified_time" content="2021-01-28T07:32:09.850Z">
+<meta property="article:modified_time" content="2021-01-29T03:25:24.901Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="tcp">
 <meta property="article:tag" content="BDP">
@@ -235,7 +235,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 15:32:09" itemprop="dateModified" datetime="2021-01-28T15:32:09+08:00">2021-01-28</time>
+                <time title="修改时间：2021-01-29 11:25:24" itemprop="dateModified" datetime="2021-01-29T11:25:24+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -267,7 +267,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>7k</span>
+              <span>6.9k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -311,7 +311,7 @@
 <p>可以看到初始的接收窗口是5792，当然也远小于最大接收缓存（稍后介绍的tcp_rmem[1]）。</p>
 <p>这当然是有原因的，TCP协议需要考虑复杂的网络环境，所以使用了慢启动、拥塞窗口（参见<a target="_blank" rel="noopener" href="http://blog.csdn.net/russell_tao/article/details/9370109">高性能网络编程2—-TCP消息的发送</a>），建立连接时的初始窗口并不会按照接收缓存的最大值来初始化。这是因为，过大的初始窗口从宏观角度，对整个网络可能造成过载引发恶性循环，也就是考虑到链路上各环节的诸多路由器、交换机可能扛不住压力不断的丢包（特别是广域网），而微观的TCP连接的双方却只按照自己的读缓存上限作为接收窗口，这样双方的发送窗口（对方的接收窗口）越大就对网络产生越坏的影响。慢启动就是使初始窗口尽量的小，随着接收到对方的有效报文，确认了网络的有效传输能力后，才开始增大接收窗口。</p>
 <p>不同的linux内核有着不同的初始窗口，我们以广为使用的linux2.6.18内核为例，在以太网里，MSS大小为1460，此时初始窗口大小为4倍的MSS，简单列下代码（*rcv_wnd即初始接收窗口）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">int init_cwnd &#x3D; 4;  </span><br><span class="line">if (mss &gt; 1460*3)  </span><br><span class="line"> init_cwnd &#x3D; 2;  </span><br><span class="line">else if (mss &gt; 1460)  </span><br><span class="line"> init_cwnd &#x3D; 3;  </span><br><span class="line">if (*rcv_wnd &gt; init_cwnd*mss)  </span><br><span class="line"> *rcv_wnd &#x3D; init_cwnd*mss;  </span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> init_cwnd = <span class="number">4</span>;  </span><br><span class="line"><span class="keyword">if</span> (mss &gt; <span class="number">1460</span>*<span class="number">3</span>)  </span><br><span class="line"> init_cwnd = <span class="number">2</span>;  </span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> (mss &gt; <span class="number">1460</span>)  </span><br><span class="line"> init_cwnd = <span class="number">3</span>;  </span><br><span class="line"><span class="keyword">if</span> (*rcv_wnd &gt; init_cwnd*mss)  </span><br><span class="line"> *rcv_wnd = init_cwnd*mss;  </span><br></pre></td></tr></table></figure>
 <p>大家可能要问，为何上面的抓包上显示窗口其实是5792，并不是1460*4为5840呢？这是因为1460想表达的意义是：将1500字节的MTU去除了20字节的IP头、20字节的TCP头以后，一个最大报文能够承载的有效数据长度。但有些网络中，会在TCP的可选头部里，使用12字节作为时间戳使用，这样，有效数据就是MSS再减去12，初始窗口就是（1460-12）*4=5792，这与窗口想表达的含义是一致的，即：我能够处理的有效数据长度。</p>
 <p>在linux3以后的版本中，初始窗口调整到了10个MSS大小，这主要来自于GOOGLE的建议。原因是这样的，接收窗口虽然常以指数方式来快速增加窗口大小（拥塞阀值以下是指数增长的，阀值以上进入拥塞避免阶段则为线性增长，而且，拥塞阀值自身在收到128以上数据报文时也有机会快速增加），若是传输视频这样的大数据，那么随着窗口增加到（接近）最大读缓存后，就会“开足马力”传输数据，但若是通常都是几十KB的网页，那么过小的初始窗口还没有增加到合适的窗口时，连接就结束了。这样相比较大的初始窗口，就使得用户需要更多的时间（RTT）才能传输完数据，体验不好。</p>
 <p>那么这时大家可能有疑问，当窗口从初始窗口一路扩张到最大接收窗口时，最大接收窗口就是最大读缓存吗？</p>
@@ -573,13 +573,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">274k</span>
+    <span title="站点总字数">272k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:09</span>
+    <span title="站点阅读时长">4:07</span>
 </div>
 
         
