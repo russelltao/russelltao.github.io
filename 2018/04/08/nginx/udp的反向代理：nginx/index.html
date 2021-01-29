@@ -42,7 +42,7 @@
 <meta property="og:image" content="https://www.taohui.tech/2018/04/nginx%E5%81%9Audp%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E6%97%B6%E7%9A%84DSR%E6%96%B9%E6%A1%88%EF%BC%88upstream%E6%97%A0%E5%85%AC%E7%BD%91%EF%BC%89-1.png">
 <meta property="og:image" content="https://www.taohui.tech/2018/04/nginx%E5%81%9Audp%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E6%97%B6%E7%9A%84DSR%E6%96%B9%E6%A1%88%EF%BC%88upstream%E6%9C%89%E5%85%AC%E7%BD%91%EF%BC%89-1.png">
 <meta property="article:published_time" content="2018-04-08T12:04:56.000Z">
-<meta property="article:modified_time" content="2021-01-28T09:04:11.990Z">
+<meta property="article:modified_time" content="2021-01-29T02:07:28.844Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="nginx">
 <meta property="article:tag" content="proxy">
@@ -244,7 +244,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 17:04:11" itemprop="dateModified" datetime="2021-01-28T17:04:11+08:00">2021-01-28</time>
+                <time title="修改时间：2021-01-29 10:07:28" itemprop="dateModified" datetime="2021-01-29T10:07:28+08:00">2021-01-29</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -274,27 +274,13 @@
               </span>
               <span class="post-meta-item-text">阅读次数：</span>
               <span id="busuanzi_value_page_pv"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/04/08/nginx/udp%E7%9A%84%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%EF%BC%9Anginx/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/04/08/nginx/udp%E7%9A%84%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%EF%BC%9Anginx/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
+            </span><br>
             <span class="post-meta-item" title="本文字数">
               <span class="post-meta-item-icon">
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>7.1k</span>
+              <span>7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -332,9 +318,9 @@
 <p>有其他办法么？有！如果客户端使用的源端口，同样用于接收服务器发送的响应，那么以上的问题就不存在了。像TCP协议就是如此，其connect方的随机源端口将一直用于连接上的数据传送，直到连接关闭。 这个方案对客户端有以下要求：不要使用sendto这样的方法，几乎任何语言对UDP协议都提供有这样的方法封装。应当先用connect方法获取到socket，再调用send方法把请求发出去。这样做的原因是既可以在内核中保存有5元组（源ip、源port、目的ip、目的端口、UDP协议），以使得该源端口仅接收目的ip和端口发来的UDP报文，又可以反复使用send方法时比sendto每次都上传递目的ip和目的port两个参数。 </p>
 <p>对服务器端有以下要求：不要使用recvfrom这样的方法，因为该方法无法获取到客户端的发送源ip和源port，这样就无法向客户端发送响应了。应当使用recvmsg方法（有些编程语言例如python2就没有该方法，但python3有）去接收请求，把获取到的对端ip和port保存下来，而发送响应时可以仍然使用sendto方法。   接下来我们谈谈nginx如何做udp协议的反向代理。 </p>
 <p>Nginx的stream系列模块核心就是在传输层上做反向代理，虽然TCP协议的应用场景更多，但UDP协议在Nginx的角度看来也与TCP协议大同小异，比如：nginx向upstream转发请求时仍然是通过connect方法得到的fd句柄，接收upstream的响应时也是通过fd调用recv方法获取消息；nginx接收客户端的消息时则是通过上文提到过的recvmsg方法，同时把获取到的客户端源ip和源port保存下来。我们先看下recvmsg方法的定义：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">recvmsg</span><span class="params">(<span class="keyword">int</span> sockfd, struct msghdr *msg, <span class="keyword">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>相对于recvfrom方法，多了一个msghdr结构体，如下所示：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">struct msghdr &#123;    </span><br><span class="line">    void         *msg_name;       &#x2F;* optional address *&#x2F;    </span><br><span class="line">    socklen_t     msg_namelen;    &#x2F;* size of address *&#x2F;    </span><br><span class="line">    struct iovec *msg_iov;        &#x2F;* scatter&#x2F;gather array *&#x2F;    </span><br><span class="line">    size_t        msg_iovlen;     &#x2F;* # elements in msg_iov *&#x2F;    </span><br><span class="line">    void         *msg_control;    &#x2F;* ancillary data, see below *&#x2F;    </span><br><span class="line">    size_t        msg_controllen; &#x2F;* ancillary data buffer len *&#x2F;    </span><br><span class="line">    int           msg_flags;      &#x2F;* flags on received message *&#x2F;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">msghdr</span> &#123;</span>    </span><br><span class="line">    <span class="keyword">void</span>         *msg_name;       <span class="comment">/* optional address */</span>    </span><br><span class="line">    <span class="keyword">socklen_t</span>     msg_namelen;    <span class="comment">/* size of address */</span>    </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> *<span class="title">msg_iov</span>;</span>        <span class="comment">/* scatter/gather array */</span>    </span><br><span class="line">    <span class="keyword">size_t</span>        msg_iovlen;     <span class="comment">/* # elements in msg_iov */</span>    </span><br><span class="line">    <span class="keyword">void</span>         *msg_control;    <span class="comment">/* ancillary data, see below */</span>    </span><br><span class="line">    <span class="keyword">size_t</span>        msg_controllen; <span class="comment">/* ancillary data buffer len */</span>    </span><br><span class="line">    <span class="keyword">int</span>           msg_flags;      <span class="comment">/* flags on received message */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>其中msg_name就是对端的源IP和源端口（指向sockaddr结构体）。以上是C库的定义，其他高级语言类似方法会更简单，例如python里的同名方法是这么定义的：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(data, ancdata, msg_flags, address) &#x3D; socket.recvmsg(bufsize[, ancbufsize[, flags]])</span><br></pre></td></tr></table></figure>
 <p>其中返回元组的第4个元素就是对端的ip和port。</p>
@@ -439,7 +425,6 @@
 
           </div>
           
-    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -783,35 +768,6 @@
   
 
   
-
-
-<script>
-NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
-  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
-    var GUEST = ['nick', 'mail', 'link'];
-    var guest = 'nick,mail,link';
-    guest = guest.split(',').filter(item => {
-      return GUEST.includes(item);
-    });
-    new Valine({
-      el         : '#valine-comments',
-      verify     : false,
-      notify     : false,
-      appId      : 'FEvcgdNolpfBmDBG7LHVwtuI-gzGzoHsz',
-      appKey     : 'RYaf54oXtzubonJgTjmauu90',
-      placeholder: "Just go go",
-      avatar     : 'mm',
-      meta       : guest,
-      pageSize   : '10' || 10,
-      visitor    : false,
-      lang       : '' || 'zh-cn',
-      path       : location.pathname,
-      recordIP   : false,
-      serverURLs : ''
-    });
-  }, window.Valine);
-});
-</script>
 
 </body>
 </html>

@@ -261,21 +261,7 @@
               </span>
               <span class="post-meta-item-text">阅读次数：</span>
               <span id="busuanzi_value_page_pv"></span>
-            </span>
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Valine：</span>
-    
-    <a title="valine" href="/2018/07/11/%E3%80%8A%E9%A3%8E%E8%B5%B7%E9%99%87%E8%A5%BF%E3%80%8B%EF%BC%9A%E6%9D%B0%E5%87%BA%E7%9A%84%E4%B8%89%E5%9B%BD%E8%B0%8D%E6%88%98%E5%B0%8F%E8%AF%B4/#valine-comments" itemprop="discussionUrl">
-      <span class="post-comments-count valine-comment-count" data-xid="/2018/07/11/%E3%80%8A%E9%A3%8E%E8%B5%B7%E9%99%87%E8%A5%BF%E3%80%8B%EF%BC%9A%E6%9D%B0%E5%87%BA%E7%9A%84%E4%B8%89%E5%9B%BD%E8%B0%8D%E6%88%98%E5%B0%8F%E8%AF%B4/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
+            </span><br>
             <span class="post-meta-item" title="本文字数">
               <span class="post-meta-item-icon">
                 <i class="far fa-file-word"></i>
@@ -373,7 +359,6 @@
 
           </div>
           
-    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -716,35 +701,6 @@
   
 
   
-
-
-<script>
-NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
-  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
-    var GUEST = ['nick', 'mail', 'link'];
-    var guest = 'nick,mail,link';
-    guest = guest.split(',').filter(item => {
-      return GUEST.includes(item);
-    });
-    new Valine({
-      el         : '#valine-comments',
-      verify     : false,
-      notify     : false,
-      appId      : 'FEvcgdNolpfBmDBG7LHVwtuI-gzGzoHsz',
-      appKey     : 'RYaf54oXtzubonJgTjmauu90',
-      placeholder: "Just go go",
-      avatar     : 'mm',
-      meta       : guest,
-      pageSize   : '10' || 10,
-      visitor    : false,
-      lang       : '' || 'zh-cn',
-      path       : location.pathname,
-      recordIP   : false,
-      serverURLs : ''
-    });
-  }, window.Valine);
-});
-</script>
 
 </body>
 </html>
