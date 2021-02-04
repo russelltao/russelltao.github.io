@@ -157,7 +157,7 @@
 </ol>
 ]]></content>
       <categories>
-        <category>uncategorized</category>
+        <category>技术人生</category>
       </categories>
       <tags>
         <tag>三国演义</tag>
@@ -463,7 +463,6 @@
 ]]></content>
       <categories>
         <category>区块链</category>
-        <category>算法</category>
       </categories>
       <tags>
         <tag>fabric</tag>
@@ -495,7 +494,6 @@
 ]]></content>
       <categories>
         <category>区块链</category>
-        <category>算法</category>
       </categories>
       <tags>
         <tag>区块链</tag>
@@ -3259,8 +3257,8 @@
   <entry>
     <title>深入剖析HTTP3协议</title>
     <url>/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/</url>
-    <content><![CDATA[<p>自2017年起HTTP3协议已发布了29个Draft，推出在即，Chrome、Nginx等软件都在跟进实现最新的草案。本文将介绍HTTP3协议规范、应用场景及实现原理。</p>
-<p>2015年HTTP2协议正式推出后，已经有接近一半的互联网站点在使用它：<br> <img src="/images/http/http2%E7%AB%99%E7%82%B9%E4%BD%BF%E7%94%A8%E7%8E%87_20200824.png"><br> <a id="more"></a><br>（图片来自<a href="https://w3techs.com/technologies/details/ce-http2%EF%BC%89">https://w3techs.com/technologies/details/ce-http2）</a><br>HTTP2协议虽然大幅提升了HTTP/1.1的性能，然而，基于TCP实现的HTTP2遗留下3个问题：</p>
+    <content><![CDATA[<p>自2017年起HTTP3协议已发布了34个Draft，推出在即，Chrome、Nginx等软件都在跟进实现最新的草案。本文将介绍HTTP3协议规范、应用场景及实现原理。</p>
+<p>2015年HTTP2协议正式推出后，已经有接近一半的互联网站点在使用它：<br> <img src="/images/http/http2%E7%AB%99%E7%82%B9%E4%BD%BF%E7%94%A8%E7%8E%87_20200824.png"><br>（图片来自<a href="https://w3techs.com/technologies/details/ce-http2%EF%BC%89">https://w3techs.com/technologies/details/ce-http2）</a><br>HTTP2协议虽然大幅提升了HTTP/1.1的性能，然而，基于TCP实现的HTTP2遗留下3个问题：<br> <a id="more"></a></p>
 <ul>
 <li>有序字节流引出的 <strong>队头阻塞</strong><a href="https://en.wikipedia.org/wiki/Head-of-line_blocking">（Head-of-line blocking）</a>，使得HTTP2的多路复用能力大打折扣；</li>
 <li><strong>TCP与TLS叠加了握手时延</strong>，建链时长还有1倍的下降空间；</li>
