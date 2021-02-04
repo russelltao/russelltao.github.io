@@ -23,26 +23,20 @@
     var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="前端与后端的思维专注点很不相同，前端聚焦在如何把内容以可视化的方式展现给用户，后端聚焦在如何利用IT基础设施实现业务逻辑。所以前端参与后端开发时（全栈工程师必备！）首先需要理解后端会做哪些事，其次才是如何才能做好这些事。 所谓“利用IT基础设施实现业务逻辑”，意味着以下几个概念：">
+  <meta name="description" content="周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？">
 <meta property="og:type" content="article">
-<meta property="og:title" content="前端程序员如何快速转型全栈工程师（基础版）">
-<meta property="og:url" content="https://www.taohui.tech/2018/09/03/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/index.html">
+<meta property="og:title" content="《见识》读书笔记：大家智慧">
+<meta property="og:url" content="https://www.taohui.tech/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/index.html">
 <meta property="og:site_name" content="个人笔记">
-<meta property="og:description" content="前端与后端的思维专注点很不相同，前端聚焦在如何把内容以可视化的方式展现给用户，后端聚焦在如何利用IT基础设施实现业务逻辑。所以前端参与后端开发时（全栈工程师必备！）首先需要理解后端会做哪些事，其次才是如何才能做好这些事。 所谓“利用IT基础设施实现业务逻辑”，意味着以下几个概念：">
+<meta property="og:description" content="周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/2018/09/mysql%E5%AE%A2%E6%88%B7%E7%AB%AF-3.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/09/UML%E7%A4%BA%E4%BE%8B-1.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/09/iis%E4%B8%BE%E4%BE%8Bmvc-1.jpg">
-<meta property="article:published_time" content="2018-09-03T11:57:50.000Z">
-<meta property="article:modified_time" content="2021-01-28T08:56:33.881Z">
+<meta property="article:published_time" content="2018-04-07T10:06:46.000Z">
+<meta property="article:modified_time" content="2021-02-04T08:18:15.099Z">
 <meta property="article:author" content="陶辉">
-<meta property="article:tag" content="全栈">
-<meta property="article:tag" content="前端">
-<meta property="article:tag" content="后端">
+<meta property="article:tag" content="陶辉,网络协议,Nginx,深入理解,极客时间,抓包,性能,分布式,Linux,TCP,HTTP,高并发">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/2018/09/mysql%E5%AE%A2%E6%88%B7%E7%AB%AF-3.jpg">
 
-<link rel="canonical" href="https://www.taohui.tech/2018/09/03/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/">
+<link rel="canonical" href="https://www.taohui.tech/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/">
 
 
 <script id="page-configurations">
@@ -55,7 +49,7 @@
   };
 </script>
 
-  <title>前端程序员如何快速转型全栈工程师（基础版） | 个人笔记</title>
+  <title>《见识》读书笔记：大家智慧 | 个人笔记</title>
   
 
 
@@ -205,7 +199,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/09/03/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -218,7 +212,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          前端程序员如何快速转型全栈工程师（基础版）
+          《见识》读书笔记：大家智慧
         </h1>
 
         <div class="post-meta">
@@ -228,24 +222,20 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2018-09-03 19:57:50" itemprop="dateCreated datePublished" datetime="2018-09-03T19:57:50+08:00">2018-09-03</time>
+              <time title="创建时间：2018-04-07 18:06:46" itemprop="dateCreated datePublished" datetime="2018-04-07T18:06:46+08:00">2018-04-07</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 16:56:33" itemprop="dateModified" datetime="2021-01-28T16:56:33+08:00">2021-01-28</time>
+                <time title="修改时间：2021-02-04 16:18:15" itemprop="dateModified" datetime="2021-02-04T16:18:15+08:00">2021-02-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
-                </span>
-                  ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
                 </span>
@@ -264,14 +254,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>1.4k</span>
+              <span>2.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -283,26 +273,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>前端与后端的思维专注点很不相同，前端聚焦在如何把内容以可视化的方式展现给用户，后端聚焦在如何利用IT基础设施实现业务逻辑。所以前端参与后端开发时（全栈工程师必备！）首先需要理解后端会做哪些事，其次才是如何才能做好这些事。 所谓“利用IT基础设施实现业务逻辑”，意味着以下几个概念：</p>
+        <p>周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？</p>
 <a id="more"></a>
-<h1 id="IT基础设施有哪些？"><a href="#IT基础设施有哪些？" class="headerlink" title="IT基础设施有哪些？"></a>IT基础设施有哪些？</h1><p>数据库一定是最重要的，这里特指关系数据库，例如mysql。因为前端所用的数据库往往非常简单，浏览器或者APP毕竟只服务于一位用户，而后端的数据库需要服务于全部用户，这不是一个量级。在现实世界中，一旦量级发生改变，需要用到的技术就完全不一样了。数据库的基本操作ACID、事务、关联查询、索引都是完成业务逻辑的必备品。 <img src="/2018/09/mysql%E5%AE%A2%E6%88%B7%E7%AB%AF-3.jpg"> 缓存也是前端必须理解的概念。后端可以直接操作SATA磁盘，SSD磁盘，内存等不同的存储介质，而这些介质的存取速度差异巨大。CPU操作L1和L2缓存只有3个纳秒以内，到了L3缓存（可以以MB为单位计量了）就得10纳秒以上了，而到了内存就得100纳秒以上，通过网卡访问远端则需要数百微秒，访问机械硬盘则要几十毫秒。为了能够让用户的请求尽快获得响应，必须使用缓存。很少的场景下才会直接编写缓存，通常后端都在使用的缓存服务包括redis、memcached等，其中前者使用更多。</p>
-<h1 id="如何正确的分析业务逻辑？"><a href="#如何正确的分析业务逻辑？" class="headerlink" title="如何正确的分析业务逻辑？"></a>如何正确的分析业务逻辑？</h1><p>UML图是一个非常好的手段！类图、时序图、状态图可以帮助后端理清先做什么、再做什么、不会漏掉什么。这是因为后端的程序需要整年的运行不能宕机，而前端是没有这种要求的。因此，后端必须全面的考虑各种异常情况，防止一个用户（请求）引起的意外把整个服务宕机，影响了全部用户。 <img src="/2018/09/UML%E7%A4%BA%E4%BE%8B-1.jpg"></p>
-<h1 id="业务逻辑如何与IT设施结合？"><a href="#业务逻辑如何与IT设施结合？" class="headerlink" title="业务逻辑如何与IT设施结合？"></a>业务逻辑如何与IT设施结合？</h1><p>了解MVC模型！前端有许多模型，例如MVVM等，这些名词不重要，因为它们的关注点各不相同。对于后端，通常M意味着关系数据库，所以后端的WEB框架一定围绕着M进行。我们分析任何一个WEB框架，一定先要看它的数据库模型，即如何将数据库中的表、行映射到编程语言中。另一方面，HTTP协议有许多特性，它会导致MVC框架试图以此解耦，将URL的配置与业务处理代码分开。最后，WEB框架由于处理场景的复杂，通常以可插拔的方式将许多插件串行的组合起来处理一个请求。前端在学习WEB框架时，把握这三点即可快速掌握。 <img src="/2018/09/iis%E4%B8%BE%E4%BE%8Bmvc-1.jpg"> 前端做后端时最容易犯2个错误：</p>
-<h1 id="日志打得很少"><a href="#日志打得很少" class="headerlink" title="日志打得很少"></a>日志打得很少</h1><p>后端的复杂场景会导致bug难以复现（相比前端更难），且一个应用服务可能跑在多个服务器上，所以error、info、debug等级日志的输出显得尤为重要！没有日志，问题很难定位！</p>
-<h1 id="资源没有即用即放！"><a href="#资源没有即用即放！" class="headerlink" title="资源没有即用即放！"></a>资源没有即用即放！</h1><p>因为服务是7*24小时运行的，所以一点点资源泄露（如打开了句柄却未关闭）都会被时间放大！最后导致严重后果。   后端的代码如何更高效？答案一定是算法！ 好的算法在我看来就是3点：</p>
-<ol>
-<li> 不做重复的事；</li>
-<li> 充分利用已知信息或者中间计算结果；</li>
-<li> 充分利用IT基础设施的特性。比如多核、CPU亲和性、存储介质的性价比、网络报文的收发等。</li>
-</ol>
-<p>为了达到这一点，我们必须学习：</p>
-<ol>
-<li> 算法复杂度；</li>
-<li> 分而治之的思想，这可能是所有算法思想中最有用的了；</li>
-<li> 计算机体系的特点，如CPU架构、网络通讯成本等；</li>
-<li> 常用数据结构，如树、哈希表、图等。</li>
-</ol>
-<p>本文出现的原因是团队中有前端同事想在后端试试水，我当然非常欢迎，于是尽量从我对前端的理解上阐述后端开发的要点，或者更准确的说，是后端WEB应用开发工程师的开发要点。全栈工程师的要求高得多，这里虽然有些标题党嫌疑，但好在标明了基础版，进阶版在好好谈谈前端转全栈工程师的其他要求。</p>
+<p>产品的商业价值在影响着这一点，百度的竞价排名里认为你需要综合考虑百度的利益，所以结果展示不会以对你有用的信息传达给你为首要价值。说到这里，对当年google离开中国又多了一些理解，因为中国监管对搜索结果展示的要求确实违背了google的核心价值。当然，展示有用的信息也需要高超的技术才能实现。 有用的信息不一定要属于你，但是只要你能把它送达用户，这就是核心的价值。因为你把信息与用户连接在了一起。我们团队正在做的产品就是在试图连接物联网与人，其实本质上也是把最有用的信息送达用户。如果用户觉得不好用，或者这个信息没有价值，哪怕通过其他手段强制用户使用产品，就像一个小伙在追求姑娘不断献殷勤但姑娘很反感一样，用户都会有一种强买强卖的感觉。坚持送达最有用的信息给用户，是需要做为第一准则的，因为有太多的其他因素在诱惑你的团队：技术难度、推广速度都会影响我们的决断，而互联网产品本来就不是静态的，它需要反复迭代，在迭代过程中的疲惫里，如果不能坚持这一点，很难想象产品可以做大。我们公司的名字是“智链达”，其意义就在于用智能的技术把有用的信息送达用户。 何谓有用的信息呢？其实这个并不容易判断，我们基于自己的常识判断某类信息是对用户有用的，可是，如果我们与用户是一类人，那么可以通过站在对方的角度思考这类信息，但是中国社会在几十年内的快速变化，虽然貌似大家通过免费的互联网可以获取到同等的信息，实则受制于见识与格局，中国人在见识层面上的分层还是比较明显的。每个人都有过这种感觉吧：非常明显的道理跟某些人却怎么也讲不通。如果我们的用户与我们不是一类人，那么如何知道信息是对用户有用的呢？深入用户中调研吧。可是，并不是什么人都能做到，只有见识和经历达到一定阶段的人才能做得好。所以，好的企业掌舵人都是产品、销售、运营出身，就在于他能更准确的判断。 拉里佩奇还有个智慧是“把产品做成牙刷”，就是让用户每天都会用那么一小会。所以，你的app其实需要的是，用户每天打开都能发现价值。如果不能做到每天，用户就会遗忘，可能会好几天才想起来用一下，这样效果就差了很多。宝洁的产品这么成功，还在经常打广告，google这么常用，也时不时冒出个新的应用点，许多app都会有社区在运营且经常搞点引爆话题类的线上线下活动，这都是因为：牙刷经常在用，但需要用爆点吸引用户的注意力。否则，用户还是容易遗忘的。比如intel虽然其x86 cpu架构不如其他公司，但它是18个月更新一次产品，其竞争对手们在产品性能上并不输入intel但却是36个月更新一次产品，虽然intel因为迭代速度快团队规模更大管理要求更高，但它始终能引起用户的关注，所以intel成功了。 吴军老师分享了其好友与巴菲特一餐饭中的所得，最重要的就是不做自己不懂的事。其实能把这一点做得比较好的人是很少的，对于企业或者个来看似乎都意味着放弃了许多唾手可得的利润。仿佛这个产品不需要采购，完全可以自研；好像成立一个部门做这件事，能大大提高效率，提升公司的价值，还能节约运营成本；似乎这支股票在这波涨势下买来是十拿九稳的赚钱。吴军好友在拿下央视标王对其公司下属纷纷要求成立广告公司时说：<strong>我确实不知道为什么我们不可能办好，但是我知道一定会是一个失败的结果。因为如果你们的逻辑成立的话，今天世界上最大的广告公司应该是可口可乐广告公司或者宝洁广告公司，但是结果却不是，这里面必然有它的原因。</strong>对个人来说，少花点时间在自己不擅长的事上，多花点时间在自己的职业生涯里，做自己最擅长的事，这才是收益最大的选择。 吴军举了他的好友摩拜单车CEO王晓峰的例子。王晓峰在创业前就是金牌销售，他有3个智慧分享： 1、销售的本质是把钱收回来，而不是把东西卖出去。之前做技术专家时我就从未想过，在中国的传统行业里其实把钱收回来是非常困难的。因为互联网产品其实对这一点相对容易些，特别是如果我们在设计产品时就能考虑到这一点，其销售方式、技术手段、运营模式都在最初就考虑如何把钱收回来。 2、一定要用户把买的东西最快的用掉。比如许多理发店就通过充值赠送、办会员卡打折的方式来吸引用户，但用户花钱买的卡却大都需要很久才能用掉。这样产品设计就有问题了。现在如阿里云、腾讯云、华为云等也有类似的活动，但他们一直在不断的推出更多的PAAS产品，在业务上总是能解决更多的痛点，总在吸引用户把充值卡里的钱尽快的用掉。 3、商品和服务要让消费者有面子。其实现在许多高端手机其设计上都是为了让用户拿出来感觉有面子。罗胖在2018年跨年演讲时就说过，他们不敢做让“得到”用户感觉没面子的事。以前自行车总给人低端的印象，而共享单车们为了让用户感觉有面子，才会把共享单车都设计得挺酷。我们运营总监这点也跟我强调过，一定要让用户感觉用了我们的产品倍有面子，而不是一听名字一看界面就感觉很乡土。当然，有面子并不是说就不接地气，这两点并不矛盾。能把这两点结合好，才能变成一个优秀的产品。</p>
 
     </div>
 
@@ -320,7 +293,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2018/09/03/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/" title="前端程序员如何快速转型全栈工程师（基础版）">https://www.taohui.tech/2018/09/03/前端程序员如何快速转型全栈工程师（基础版）/</a>
+    <a href="https://www.taohui.tech/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/" title="《见识》读书笔记：大家智慧">https://www.taohui.tech/2018/04/07/生活感悟/《见识》读书笔记：大家智慧/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -330,11 +303,6 @@
 
 
       <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/%E5%85%A8%E6%A0%88/" rel="tag"># 全栈</a>
-              <a href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag"># 前端</a>
-              <a href="/tags/%E5%90%8E%E7%AB%AF/" rel="tag"># 后端</a>
-          </div>
 
         
   <div class="post-widgets">
@@ -347,12 +315,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2018/07/24/%E4%BA%A7%E5%93%81%E6%80%9D%E7%BB%B4%E7%9A%84%E4%BF%AE%E7%82%BC-%E6%8A%80%E6%9C%AF%E7%9A%84%E5%BF%85%E4%BF%AE%E8%AF%BE/" rel="prev" title="产品思维的修炼：技术的必修课">
-      <i class="fa fa-chevron-left"></i> 产品思维的修炼：技术的必修课
+    <a href="/2017/12/23/419/" rel="prev" title="详解python django面向关系数据库的ORM对象映射系统（1）">
+      <i class="fa fa-chevron-left"></i> 详解python django面向关系数据库的ORM对象映射系统（1）
     </a></div>
       <div class="post-nav-item">
-    <a href="/2018/09/05/%E5%88%A9%E7%94%A8cpu%E7%BC%93%E5%AD%98%E5%AE%9E%E7%8E%B0%E9%AB%98%E6%80%A7%E8%83%BD%E7%A8%8B%E5%BA%8F/" rel="next" title="利用cpu缓存实现高性能程序">
-      利用cpu缓存实现高性能程序 <i class="fa fa-chevron-right"></i>
+    <a href="/2018/04/08/nginx/udp%E7%9A%84%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%EF%BC%9Anginx/" rel="next" title="Udp的反向代理：nginx">
+      Udp的反向代理：nginx <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -412,7 +380,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IT%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD%E6%9C%89%E5%93%AA%E4%BA%9B%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">IT基础设施有哪些？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%AD%A3%E7%A1%AE%E7%9A%84%E5%88%86%E6%9E%90%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">如何正确的分析业务逻辑？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%A6%82%E4%BD%95%E4%B8%8EIT%E8%AE%BE%E6%96%BD%E7%BB%93%E5%90%88%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">业务逻辑如何与IT设施结合？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E6%89%93%E5%BE%97%E5%BE%88%E5%B0%91"><span class="nav-number">4.</span> <span class="nav-text">日志打得很少</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B5%84%E6%BA%90%E6%B2%A1%E6%9C%89%E5%8D%B3%E7%94%A8%E5%8D%B3%E6%94%BE%EF%BC%81"><span class="nav-number">5.</span> <span class="nav-text">资源没有即用即放！</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -523,6 +490,9 @@
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
     <span title="站点阅读时长">4:14</span>
 </div>
+  <div class="addthis_inline_share_toolbox">
+    <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-601bb94e759f4bbd" async="async"></script>
+  </div>
 
         
 <div class="busuanzi-count">
