@@ -21,25 +21,25 @@
 <p>如果查看django源代码会发现上图中的红色类BaseManagerFromQuerySet并不存在，它是由type元类生成的，也就是由它将QuerySet类里的方法注入到Manager类中的，从而让objects对象拥有了操作表的方法。这套系统依赖于python元类才能实现，那么，什么是元类呢？ </p>
 <p>类是用于生成对象的，大部分编程语言都需要提前把类定义好才能编写基于“类”生成对象的代码。然而，python是个例外：一切皆对象，包括类也是对象，那么生成“类”这个对象的“类”称呼什么呢？元类！python允许开发者使用元类在运行时更改生成“类”的方式。 </p>
 <p>就像object是所有类的基类，而type是所有元类的基类。任何类都是由type生成的，哪怕我们显式定义的类也会由type默认的生成。所以，我们自然也可以由type隐式得生成类，type生成类的方式如下： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">cls &#x3D; type(name, base, attrs) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">cls = <span class="built_in">type</span>(name, base, attrs) </span><br></pre></td></tr></table></figure>
 <p>name也就是类名，base是基类，而attrs就是属性，所有的成员和方法都在其中。type返回的则是类。而上图中的BaseManagerFromQuerySet类就是这么生成的，如下所示： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def from\_queryset(cls, queryset\_class, class\_name&#x3D;None): </span><br><span class="line">if class\_name is None: </span><br><span class="line">class\_name &#x3D; &#39;%sFrom%s&#39; % (cls.\_\_name\_\_, queryset\_class.\_\_name\_\_) </span><br><span class="line">class\_dict &#x3D; &#123; &#39;\_queryset\_class&#39;: queryset\_class, &#125; </span><br><span class="line">class\_dict.update(cls.\_get\_queryset\_methods(queryset\_class)) </span><br><span class="line">return type(class\_name, (cls,), class\_dict) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">from</span>\<span class="title">_queryset</span>(<span class="params">cls, queryset\_class, <span class="keyword">class</span>\_name=<span class="literal">None</span></span>):</span> </span><br><span class="line"><span class="keyword">if</span> <span class="class"><span class="keyword">class</span>\<span class="title">_name</span> <span class="title">is</span> <span class="title">None</span>:</span> </span><br><span class="line">class\_name = &#x27;%sFrom%s&#x27; % (cls.\_\_name\_\_, queryset\_class.\_\_name\_\_) </span><br><span class="line">class\_dict = &#123; &#x27;\_queryset\_class&#x27;: queryset\_class, &#125; </span><br><span class="line"><span class="class"><span class="keyword">class</span>\<span class="title">_dict</span>.<span class="title">update</span>(<span class="params">cls.\_get\_queryset\_methods(<span class="params">queryset\_class</span>)</span>) </span></span><br><span class="line"><span class="class"><span class="title">return</span> <span class="title">type</span>(<span class="params"><span class="keyword">class</span>\_name, (<span class="params">cls,</span>), <span class="keyword">class</span>\_dict</span>) </span></span><br></pre></td></tr></table></figure>
 <p>所以，这里通常queryset_class就是QuerySet类，而cls就是BaseManager类。BaseManager的_get_queryset_methods方法负责把QuerySet中的方法注入到class_dict属性中，进而让BaseManagerFromQuerySet类具备了SQL操作方法。而Manager类就是继承上面构造出的类，如下所示： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class Manager(BaseManager.from\_queryset(QuerySet)): pass </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Manager</span>(<span class="params">BaseManager.<span class="keyword">from</span>\_queryset(<span class="params">QuerySet</span>)</span>):</span> <span class="keyword">pass</span> </span><br></pre></td></tr></table></figure>
 <p>python中的类生成对象时，都是先由__new__方法生成对象，再通过__init__方法初始化对象。由于python并不需要用户管理内存，所以我们定义类时往往只重载__init__方法。元类生成类时也一样，只不过类不需要__init__方法初始化，所以我们通常定义元类时需要重载__new__方法。 </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class ModelBase(type): &quot;&quot;&quot; Metaclass for all models. &quot;&quot;&quot; def \_\_new\_\_(cls, name, bases, attrs): super\_new &#x3D; super(ModelBase, cls).\_\_new\_\_ new\_attrs &#x3D; &#123;...&#125; new\_class &#x3D; super\_new(cls, name, bases, new\_attrs)   ...   manager &#x3D; Manager() manager.auto\_created &#x3D; True cls.add\_to\_class(&#39;objects&#39;, manager)   return new\_class </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ModelBase</span>(<span class="params"><span class="built_in">type</span></span>):</span> <span class="string">&quot;&quot;&quot; Metaclass for all models. &quot;&quot;&quot;</span> </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_new</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">cls, name, bases, attrs</span>):</span> </span><br><span class="line">    <span class="built_in">super</span>\_new = <span class="built_in">super</span>(ModelBase, cls).\_\_new\_\_ new\_attrs = &#123;...&#125; new\_class = <span class="built_in">super</span>\_new(cls, name, bases, new\_attrs)   ...   manager = Manager() manager.auto\_created = <span class="literal">True</span> cls.add\_to\_class(<span class="string">&#x27;objects&#x27;</span>, manager)   <span class="keyword">return</span> new\_class </span><br></pre></td></tr></table></figure>
 <p>上面的ModelBase方法就是生成所有Model类的方法。同时，objects也是在生成类的时候就自动插入的。这里要插一句：python使用meta元类的规则是首先在当前类中查找是否使用元类，如果没有，再依次去父类中查看是否使用元类，若查找到显式指定的元类，则直接使用该元类创建类，若未找到，则使用默认的type元类生成类。所以，虽然用户描述表的Model类并没有使用元类，但仍然隐式得通过基类django.db.models.base.Model类使用了上面的ModelBase元类。而Model使用元类的方法也不太一样： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class Model(six.with\_metaclass(ModelBase)): </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Model</span>(<span class="params">six.<span class="keyword">with</span>\_metaclass(<span class="params">ModelBase</span>)</span>):</span> </span><br></pre></td></tr></table></figure>
 <p>而通常我们可能是这么使用的： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class Model(object, metaclass&#x3D;ModelBase): </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Model</span>(<span class="params"><span class="built_in">object</span>, metaclass=ModelBase</span>):</span> </span><br></pre></td></tr></table></figure>
 <p>这是因为，six这个库又基于上面的<strong>查找元类也会从父类找一遍</strong>规则套了一层： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def with\_metaclass(meta, \*bases): class metaclass(meta): </span><br><span class="line">def \_\_new\_\_(cls, name, this\_bases, d): return meta(name, bases, d) </span><br><span class="line">return type.\_\_new\_\_(metaclass, &#39;temporary\_class&#39;, (), &#123;&#125;) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">with</span>\<span class="title">_metaclass</span>(<span class="params">meta, \*bases</span>):</span> <span class="class"><span class="keyword">class</span> <span class="title">metaclass</span>(<span class="params">meta</span>):</span> </span><br><span class="line"><span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_new</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">cls, name, this\_bases, d</span>):</span> <span class="keyword">return</span> meta(name, bases, d) </span><br><span class="line"><span class="keyword">return</span> <span class="built_in">type</span>.\_\_new\_\_(metaclass, <span class="string">&#x27;temporary\_class&#x27;</span>, (), &#123;&#125;) </span><br></pre></td></tr></table></figure>
 <p>Model是继承自动生成的父类temporary_class，而temporary_class，则使用了元类ModelBase生成。而上文的add_to_class实际调用了setattr方法，它可以向一个python object添加一个属性或者方法，如下 ： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">def setattr(p\_object, name, value) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">setattr</span>(<span class="params">p\_object, name, value</span>) </span></span><br></pre></td></tr></table></figure>
 <p>这里name就是目标属性的变量名，value是其值。实际上，类成员中代表的是列，而代表行的Model实例是在Model父类的__init__方法中设置的，如下： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">fields\_iter &#x3D; iter(opts.fields) for val, field in zip(args, fields\_iter): if val is \_DEFERRED: continue setattr(self, field.attname, val) kwargs.pop(field.name, None)   </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">fields\_iter = <span class="built_in">iter</span>(opts.fields) <span class="keyword">for</span> val, field <span class="keyword">in</span> <span class="built_in">zip</span>(args, fields\_iter): <span class="keyword">if</span> val <span class="keyword">is</span> \_DEFERRED: <span class="keyword">continue</span> <span class="built_in">setattr</span>(self, field.attname, val) kwargs.pop(field.name, <span class="literal">None</span>)   </span><br></pre></td></tr></table></figure>
 <p>还需要注意的是objects其实是由ManagerDescripter作为descripter包装了Manager对象，如下所示： </p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class ManagerDescriptor(object): def \_\_init\_\_(self, manager): self.manager &#x3D; manager   def \_\_get\_\_(self, instance, cls&#x3D;None): if instance is not None: raise AttributeError(&quot;Manager isn&#39;t accessible via %s instances&quot; % cls.\_\_name\_\_)   if cls.\_meta.abstract: raise AttributeError(&quot;Manager isn&#39;t available; %s is abstract&quot; % ( cls.\_meta.object\_name, ))   return cls.\_meta.managers\_map\[self.manager.name\] </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ManagerDescriptor</span>(<span class="params"><span class="built_in">object</span></span>):</span> </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_init</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">self, manager</span>):</span> </span><br><span class="line">    self.manager = manager   </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_get</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">self, instance, cls=<span class="literal">None</span></span>):</span> </span><br><span class="line">    <span class="keyword">if</span> instance <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>: </span><br><span class="line">      <span class="keyword">raise</span> AttributeError(<span class="string">&quot;Manager isn&#x27;t accessible via %s instances&quot;</span> % cls.\_\_name\_\_)   </span><br><span class="line">    <span class="keyword">if</span> cls.\_meta.abstract: </span><br><span class="line">      <span class="keyword">raise</span> AttributeError(<span class="string">&quot;Manager isn&#x27;t available; %s is abstract&quot;</span> % ( cls.\_meta.<span class="built_in">object</span>\_name, ))   </span><br><span class="line">    <span class="keyword">return</span> cls.\_meta.managers\_map\[self.manager.name\] </span><br></pre></td></tr></table></figure>
 <p>因为__get__方法的instance其实是调用objects的对象，如果通过类调用，例如Article.objects时，则instance参数为None。所以，这个descripter就是起到只允许非abstract类调用的目的。 以上就是ORM整体架构，下一篇我们再详述QuerySet是如何支持复杂查询的。</p>
 ]]></content>
       <categories>
@@ -50,35 +50,6 @@
         <tag>model</tag>
         <tag>ORM</tag>
         <tag>元类</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>API的接口变迁</title>
-    <url>/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/</url>
-    <content><![CDATA[<p>最近前端团队越发觉得目前API接口有些不好用，所以我也借此重新理一下我们的API接口。</p>
-<p>API没有什么完美的设计理念和原则，只有最适合当下的设计。这个最适合包括：当前使用的技术架构、团队规模、团队成员技术特点、开发时间、人力成本、未来业务与技术的预期等。我先来回顾下我们产品的API变迁过程。</p>
-<a id="more"></a>
-<p>作为从0到1的创业公司，客户、CEO提出的需求是全新没有产品先例可以参考的，故首先要验证产品原型，而最初只有我一个技术人员，因此开发效率是关键。此时，使用后端模板弱化API是速度最快的，讨论出一个页面往往一天就可以把前后端全部开发完成。特别使用django这种既把ORM做得灵活又好用，又把后端模板与表单、ORM的结合做到极致的全能型WEB框架后，一个人就可以维护上百个WEB页面和数据库表。</p>
-<p>而接下来，业务驱动要求不光有浏览器还得有微信服务号、微信小程序、iOS和android的APP，这样之前的后端模板方式就有大问题了，往往每种前端都需要独立的后端模板，大量的重复代码将会产生，这对长期维护的产品是不可接受的。而团队成员也在扩张中，前后端人员招聘到位后，专业的前端人员比我这种后端出身的所谓“全栈”开发速度快很多。此时，我们第一位前端阿正建议使用前后端分离技术，用大前端框架与后端解耦合，开发频繁交互体验更好的单页式应用。而在我看来，这样也可以更好的满足多种前端并存时的产品，尤其是APP的开发上，我认定我们的APP不需要原生APP那么复杂的功能，而基于小团队定位、快速迭代开发这个原则，webapp成为我的第一选择，这与大前端是一致的。于是，我决定尝试前后端分离，而API也从此正式登场。</p>
-<p>最初的产品交互原型改动频繁，而且团队的后端磊哥先于前端入职一个多月，所以，哪些数据应该划分到一个API呢？因为不能依据还没确定下来的产品原型图，于是很自然的，就以数据这个维度圈定API粒度了。通常是，一张mysql表就是一组API，包括增删改查。这么做的好处很明显，数据库是经过逻辑抽象的，改动数据库的频率要远远小于前端页面，以及API的请求参数和返回参数。而API是最怕重构式修改的，依据数据库的表设计，最初近百个API很快设计实现出来了，也确实可以支撑前端的开发。然而，问题也很明显，高度抽象的ORM使得关系数据库是完全范式设计的，所以DB表特别多！而前端最初不是一个几十人的团队，而是只有一个人！随便一个页面要拉好几个接口，这样就完全无法接受了，产品的开发速度大受影响。</p>
-<p>如何解决呢？</p>
-<ul>
-<li>方法一：前端多拉几次接口，同时把API调用框架做得再强大些；</li>
-<li>方法二：后端按照前端的要求，增加API的返回值，通常，这是由页面显示的值驱动后端在一个接口中返回多张表的数据，而后端强大的ORM模型可以轻松办到。<br>然而，由于有两套玩法，就会造成不统一，不同的场景不同的前端开发人员选用不同的方式。最重要的是对API权限的考虑不到位。这为当前的困境埋下了隐患。</li>
-</ul>
-<p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
-<p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
-<p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
-<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#x68;&#114;&#64;&#122;&#x6c;&#x64;&#x64;&#x61;&#x74;&#x61;&#x2e;&#99;&#x6e;">&#x68;&#114;&#64;&#122;&#x6c;&#x64;&#x64;&#x61;&#x74;&#x61;&#x2e;&#99;&#x6e;</a>。</p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>django</tag>
-        <tag>api</tag>
-        <tag>webapp</tag>
-        <tag>websocket</tag>
       </tags>
   </entry>
   <entry>
@@ -112,25 +83,32 @@
       </tags>
   </entry>
   <entry>
-    <title>git仓库代码统计</title>
-    <url>/2018/04/17/git%E4%BB%93%E5%BA%93%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1/</url>
-    <content><![CDATA[<p>虽然以代码行数来衡量项目或者程序员并不是一件靠谱的事，但是从统计角度看趋势对于技术管理人员还是很有帮助的！推荐一个比较好用的git仓库代码统计工具：git_stats，它用于按git提交人、提交次数、修改文件数、代码行数、注释量在时间维度上进行统计，亦可按各文件类型进行简单的统计，非常方便。实际上，这么多功能通常都是用WEB在多个页面上显示的，git_stats也是如此，它需要你先安装好ruby以生成基础的页面，再用gem安装好git_stats，最后用git_stats一条语句即可生成展示页面。这些静态页面如需共享，那么搭个nginx显示静态页面即可。</p>
+    <title>API的接口变迁</title>
+    <url>/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/</url>
+    <content><![CDATA[<p>最近前端团队越发觉得目前API接口有些不好用，所以我也借此重新理一下我们的API接口。</p>
+<p>API没有什么完美的设计理念和原则，只有最适合当下的设计。这个最适合包括：当前使用的技术架构、团队规模、团队成员技术特点、开发时间、人力成本、未来业务与技术的预期等。我先来回顾下我们产品的API变迁过程。</p>
 <a id="more"></a>
-<p>废话不多说，演示下步骤： 1、首先到ruby官网（<a href="http://www.ruby-lang.org/en/downloads/">http://www.ruby-lang.org/en/downloads/</a>）上下载最新源码包，例如2.5.1版本，解决后，执行linux下以源码安装习惯用的三招：configure/make/make install。 2、接下来使用gem安装git_stats命令：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gem install git_stats</span><br></pre></td></tr></table></figure>
-<p>3、最后进入你要统计的git代码仓库根目录下，执行命令：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">git_stats generate -o stats --language zh_tw</span><br></pre></td></tr></table></figure>
-<p>这里，-o是指定了html页面的输出目录，而输出目录里共包含了以下页面：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">├── activity</span><br><span class="line">│   ├── by_date.html  #按日期统计活跃度</span><br><span class="line">│   ├── day_of_week.html</span><br><span class="line">│   ├── hour_of_day.html</span><br><span class="line">│   ├── hour_of_week.html</span><br><span class="line">│   ├── month_of_year.html</span><br><span class="line">│   ├── year.html</span><br><span class="line">│   └── year_month.html</span><br><span class="line">├── assets  #库文件</span><br><span class="line">├── authors  #作者数量，并可按作者进行活跃度统计</span><br><span class="line">│   ├── administrator   #每一个作者一个目录</span><br><span class="line">│   │   ├── activity</span><br><span class="line">│   │   │   ├── by_date.html</span><br><span class="line">│   │   │   ├── day_of_week.html</span><br><span class="line">│   │   │   ├── hour_of_day.html</span><br><span class="line">│   │   │   ├── hour_of_week.html</span><br><span class="line">│   │   │   ├── month_of_year.html</span><br><span class="line">│   │   │   ├── year.html</span><br><span class="line">│   │   │   └── year_month.html</span><br><span class="line">│   │   └── author_details</span><br><span class="line">│   │       ├── changed_lines_by_date.html</span><br><span class="line">│   │       ├── commits_by_date.html  </span><br><span class="line">│   │       ├── deletions_by_date.html</span><br><span class="line">│   │       └── insertions_by_date.html</span><br><span class="line">│   ├── best_authors.html</span><br><span class="line">│   ├── changed_lines_by_author_by_date.html</span><br><span class="line">│   ├── commits_sum_by_author_by_date.html</span><br><span class="line">│   ├── deletions_by_author_by_date.html</span><br><span class="line">│   └── insertions_by_author_by_date.html</span><br><span class="line">├── comments  #注释统计</span><br><span class="line">│   └── by_date.html</span><br><span class="line">├── files    #文件统计</span><br><span class="line">│   ├── by_date.html</span><br><span class="line">│   └── by_extension.html</span><br><span class="line">├── general.html</span><br><span class="line">├── index.html</span><br><span class="line">└── lines   #代码行统计</span><br><span class="line">    ├── by_date.html</span><br><span class="line">    └── by_extension.html</span><br></pre></td></tr></table></figure>
-<p>4、搭建nginx用以展示页面。实际上仅需要在配置好的location内加个alias指向上一步中-o选项生成的目录即可。 可见，该工具生成的页面有助于我们统计代码库中总体的代码提交趋势，以及每个coder的代码提交趋势，对于技术管理是有意义的。以下是我截取的最好用的两个页面，首先是按日期统计活跃度： <img src="/2018/04/gitstats%E6%8C%89%E6%97%A5%E6%9C%9F%E6%B4%BB%E8%B7%83%E5%BA%A6%E7%BB%9F%E8%AE%A1-2.jpg"><br>按日期统计代码行数也很好用，虽然代码行数并不能反映出个人的贡献量，但是一些明显不靠谱的事还是能够从这里发现的。 <img src="/2018/04/gitstats%E6%8C%89%E6%97%A5%E6%9C%9F%E7%BB%9F%E8%AE%A1%E4%BB%A3%E7%A0%81%E8%A1%8C%E6%95%B0-2.jpg"></p>
+<p>作为从0到1的创业公司，客户、CEO提出的需求是全新没有产品先例可以参考的，故首先要验证产品原型，而最初只有我一个技术人员，因此开发效率是关键。此时，使用后端模板弱化API是速度最快的，讨论出一个页面往往一天就可以把前后端全部开发完成。特别使用django这种既把ORM做得灵活又好用，又把后端模板与表单、ORM的结合做到极致的全能型WEB框架后，一个人就可以维护上百个WEB页面和数据库表。</p>
+<p>而接下来，业务驱动要求不光有浏览器还得有微信服务号、微信小程序、iOS和android的APP，这样之前的后端模板方式就有大问题了，往往每种前端都需要独立的后端模板，大量的重复代码将会产生，这对长期维护的产品是不可接受的。而团队成员也在扩张中，前后端人员招聘到位后，专业的前端人员比我这种后端出身的所谓“全栈”开发速度快很多。此时，我们第一位前端阿正建议使用前后端分离技术，用大前端框架与后端解耦合，开发频繁交互体验更好的单页式应用。而在我看来，这样也可以更好的满足多种前端并存时的产品，尤其是APP的开发上，我认定我们的APP不需要原生APP那么复杂的功能，而基于小团队定位、快速迭代开发这个原则，webapp成为我的第一选择，这与大前端是一致的。于是，我决定尝试前后端分离，而API也从此正式登场。</p>
+<p>最初的产品交互原型改动频繁，而且团队的后端磊哥先于前端入职一个多月，所以，哪些数据应该划分到一个API呢？因为不能依据还没确定下来的产品原型图，于是很自然的，就以数据这个维度圈定API粒度了。通常是，一张mysql表就是一组API，包括增删改查。这么做的好处很明显，数据库是经过逻辑抽象的，改动数据库的频率要远远小于前端页面，以及API的请求参数和返回参数。而API是最怕重构式修改的，依据数据库的表设计，最初近百个API很快设计实现出来了，也确实可以支撑前端的开发。然而，问题也很明显，高度抽象的ORM使得关系数据库是完全范式设计的，所以DB表特别多！而前端最初不是一个几十人的团队，而是只有一个人！随便一个页面要拉好几个接口，这样就完全无法接受了，产品的开发速度大受影响。</p>
+<p>如何解决呢？</p>
+<ul>
+<li>方法一：前端多拉几次接口，同时把API调用框架做得再强大些；</li>
+<li>方法二：后端按照前端的要求，增加API的返回值，通常，这是由页面显示的值驱动后端在一个接口中返回多张表的数据，而后端强大的ORM模型可以轻松办到。<br>然而，由于有两套玩法，就会造成不统一，不同的场景不同的前端开发人员选用不同的方式。最重要的是对API权限的考虑不到位。这为当前的困境埋下了隐患。</li>
+</ul>
+<p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
+<p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
+<p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
+<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#64;&#x7a;&#108;&#x64;&#100;&#x61;&#116;&#97;&#46;&#99;&#x6e;">&#104;&#x72;&#64;&#x7a;&#108;&#x64;&#100;&#x61;&#116;&#97;&#46;&#99;&#x6e;</a>。</p>
 ]]></content>
       <categories>
-        <category>编程语言</category>
+        <category>web</category>
       </categories>
       <tags>
-        <tag>git</tag>
-        <tag>git_stats</tag>
-        <tag>ruby</tag>
+        <tag>django</tag>
+        <tag>api</tag>
+        <tag>webapp</tag>
+        <tag>websocket</tag>
       </tags>
   </entry>
   <entry>
@@ -174,6 +152,28 @@
         <tag>nginx</tag>
         <tag>tcp</tag>
         <tag>高可用</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>git仓库代码统计</title>
+    <url>/2018/04/17/git%E4%BB%93%E5%BA%93%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1/</url>
+    <content><![CDATA[<p>虽然以代码行数来衡量项目或者程序员并不是一件靠谱的事，但是从统计角度看趋势对于技术管理人员还是很有帮助的！推荐一个比较好用的git仓库代码统计工具：git_stats，它用于按git提交人、提交次数、修改文件数、代码行数、注释量在时间维度上进行统计，亦可按各文件类型进行简单的统计，非常方便。实际上，这么多功能通常都是用WEB在多个页面上显示的，git_stats也是如此，它需要你先安装好ruby以生成基础的页面，再用gem安装好git_stats，最后用git_stats一条语句即可生成展示页面。这些静态页面如需共享，那么搭个nginx显示静态页面即可。</p>
+<a id="more"></a>
+<p>废话不多说，演示下步骤： 1、首先到ruby官网（<a href="http://www.ruby-lang.org/en/downloads/">http://www.ruby-lang.org/en/downloads/</a>）上下载最新源码包，例如2.5.1版本，解决后，执行linux下以源码安装习惯用的三招：configure/make/make install。 2、接下来使用gem安装git_stats命令：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">gem install git_stats</span><br></pre></td></tr></table></figure>
+<p>3、最后进入你要统计的git代码仓库根目录下，执行命令：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">git_stats generate -o stats --language zh_tw</span><br></pre></td></tr></table></figure>
+<p>这里，-o是指定了html页面的输出目录，而输出目录里共包含了以下页面：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">├── activity</span><br><span class="line">│   ├── by_date.html  #按日期统计活跃度</span><br><span class="line">│   ├── day_of_week.html</span><br><span class="line">│   ├── hour_of_day.html</span><br><span class="line">│   ├── hour_of_week.html</span><br><span class="line">│   ├── month_of_year.html</span><br><span class="line">│   ├── year.html</span><br><span class="line">│   └── year_month.html</span><br><span class="line">├── assets  #库文件</span><br><span class="line">├── authors  #作者数量，并可按作者进行活跃度统计</span><br><span class="line">│   ├── administrator   #每一个作者一个目录</span><br><span class="line">│   │   ├── activity</span><br><span class="line">│   │   │   ├── by_date.html</span><br><span class="line">│   │   │   ├── day_of_week.html</span><br><span class="line">│   │   │   ├── hour_of_day.html</span><br><span class="line">│   │   │   ├── hour_of_week.html</span><br><span class="line">│   │   │   ├── month_of_year.html</span><br><span class="line">│   │   │   ├── year.html</span><br><span class="line">│   │   │   └── year_month.html</span><br><span class="line">│   │   └── author_details</span><br><span class="line">│   │       ├── changed_lines_by_date.html</span><br><span class="line">│   │       ├── commits_by_date.html  </span><br><span class="line">│   │       ├── deletions_by_date.html</span><br><span class="line">│   │       └── insertions_by_date.html</span><br><span class="line">│   ├── best_authors.html</span><br><span class="line">│   ├── changed_lines_by_author_by_date.html</span><br><span class="line">│   ├── commits_sum_by_author_by_date.html</span><br><span class="line">│   ├── deletions_by_author_by_date.html</span><br><span class="line">│   └── insertions_by_author_by_date.html</span><br><span class="line">├── comments  #注释统计</span><br><span class="line">│   └── by_date.html</span><br><span class="line">├── files    #文件统计</span><br><span class="line">│   ├── by_date.html</span><br><span class="line">│   └── by_extension.html</span><br><span class="line">├── general.html</span><br><span class="line">├── index.html</span><br><span class="line">└── lines   #代码行统计</span><br><span class="line">    ├── by_date.html</span><br><span class="line">    └── by_extension.html</span><br></pre></td></tr></table></figure>
+<p>4、搭建nginx用以展示页面。实际上仅需要在配置好的location内加个alias指向上一步中-o选项生成的目录即可。 可见，该工具生成的页面有助于我们统计代码库中总体的代码提交趋势，以及每个coder的代码提交趋势，对于技术管理是有意义的。以下是我截取的最好用的两个页面，首先是按日期统计活跃度： <img src="/2018/04/gitstats%E6%8C%89%E6%97%A5%E6%9C%9F%E6%B4%BB%E8%B7%83%E5%BA%A6%E7%BB%9F%E8%AE%A1-2.jpg"><br>按日期统计代码行数也很好用，虽然代码行数并不能反映出个人的贡献量，但是一些明显不靠谱的事还是能够从这里发现的。 <img src="/2018/04/gitstats%E6%8C%89%E6%97%A5%E6%9C%9F%E7%BB%9F%E8%AE%A1%E4%BB%A3%E7%A0%81%E8%A1%8C%E6%95%B0-2.jpg"></p>
+]]></content>
+      <categories>
+        <category>编程语言</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>git_stats</tag>
+        <tag>ruby</tag>
       </tags>
   </entry>
   <entry>
@@ -322,6 +322,35 @@
       </tags>
   </entry>
   <entry>
+    <title>区块链技术学习笔记</title>
+    <url>/2017/07/03/%E5%8C%BA%E5%9D%97%E9%93%BE%E6%8A%80%E6%9C%AF%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</url>
+    <content><![CDATA[<p>罗列了想到的6条学习笔记。</p>
+<a id="more"></a>
+<ol>
+<li>区块链技术是一个解决了拜占庭将军（百度百科<a href="http://baike.baidu.com/link?url=AlDGv2eQB6dkraSO8TzN0XylxEfgSW_VN94FOooKYcJrYz9ttpRD1IRWnLA25tM_7QcK_kB_8IfINpYzdBMZcbw51ESxmr3tkC7r6O32EshJ_wL6PExj-UBUJCExD11CuFfoIfaRqzH04cVQAHKOamLbVqcKr-Y_NZhAj4wCNC3">拜占庭将军问题</a>）节点的分布式数据系统！这是它最大的不同，也导致了这个技术存在诸多限制。 为了方便理解，先插个话题。做服务器端开发的程序员，都对zookeeper不陌生，我们解决分布式ACP问题时，寻找一致性解决方案时都会想到它。zookeeper实际使用了paxos的简化版算法（本文不展开，请参考我之前写过的两篇文章：<a href="https://www.taohui.pub/2015/03/27/paxos%e5%88%86%e5%b8%83%e5%bc%8f%e4%b8%80%e8%87%b4%e6%80%a7%e7%ae%97%e6%b3%95-%e8%ae%b2%e8%bf%b0%e8%af%b8%e8%91%9b%e4%ba%ae%e7%9a%84%e5%8f%8d%e7%a9%bf%e8%b6%8a/">paxos分布式一致性算法–讲述诸葛亮的反穿越</a> 以及<a href="/2015/07/27/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">paxos算法如何容错的–讲述五虎将的实践</a>）。</li>
+</ol>
+<p>想搞明白比特币(成于区块链技术)的算法，应先弄明白paxos算法（便于对比），目前商用的方案中，我们都假定服务器内网是不能被攻破的，所以，我们主要解决的是网络传输的不可靠，包括丢包、重发、延迟等问题，以及服务进程的bug导致的服务宕机、重启等。如果内网被攻破，黑客恶意的在某个节点（服务器）伪造网络包，向正常节点发送有问题的数据包，这种场景通常是不考虑的。显然这很合理，企业内网间如果还做大量的安全验证，性能消耗就太大了，基于成本使得商业目标几乎无法达成。 而公有区块链则是不同的，比如目前最成功的比特币，它使用了POW工作量证明算法，这个算法允许网络中存在拜占庭节点！也就是说，网络中即使存在作恶的节点，只要这些作恶的节点小于总节点计算能力的50%，就还能保持一致性！当然这个一致性做得也不怎么样，可能存在分叉好一段时间（1小时甚至更高，其一致性的大小只能获得概率），而且数据的回滚非常糟糕。 </p>
+<ol start="2">
+<li><p>区块链技术的另一个核心特点是全量帐本。即，每一个节点都保持着全网数据！即，每个节点、每台电脑上都保存着所有的数据。多么恐怖的代价！每台电脑的存储容量是有限的，以网络中最差的那台电脑容量为限制，几十个G就差不多了。存储的浪费是很惊人的！所以，别指望非数字帐户的核心数据也能放到区块链网络上，或者仅放个索引，指向现在的网络存储设施。 当然，区块链的核心优势也是全量帐本，最好的也是最坏的！因为，每个节点都维护全量数据，所以，所有节点本质上都是对等的！即，或许这个区块链网络中既有银联的超级服务器，也有个人开发者的公有云小主机，但大家的数据是相同的，谁也不能说数据出问题了必须以我的为准！ 因此，全量帐本解决了社会信任问题！特别对于金融供应链来说，原本的中心化服务企业可能大家都很难接受，而基于区块链技术后，小企业的顾虑没了，大企业考虑做大这个联盟可能更有利于谈判从而做大蛋糕！ 全量帐本还带来一个副作用，就是数据透明，没有隐私！！！这对很多人来说是不可接受的。每一个节点都有所有人的数据，你敢把你何时何地消费了多少钱放在上面吗？？？ </p>
+</li>
+<li><p>区块链技术还有个特点，就是所有的交易记录都是不可修改、不可删除的！这是其算法决定的。所以，这对于公益、扶贫、反腐等是很有吸引力的，蚂蚁金服目前也只敢在公益上用用区块链技术。 </p>
+</li>
+<li><p>区块链技术底层使用了P2P网络技术，大量使用反对称加密技术（相信程序员们没有不知道SSL的）来验证基于公网的消息可靠性，基于哈希算法实现了如快速验证数据未被篡改等诸多特性（POW的工作量证明算法，核心就是哈希算法）。基于多种分布式网络的一致性算法。所以，区块链使用了一堆老技术，实现了新的理念！特别是对公有链和联盟链，这种思维方式打造了技术上的社会信任体系！（私有链从这个角度来说没有任何意义！） </p>
+</li>
+<li><p>比特币的火爆原因，我认为，除了区块链技术本身的以上特性外，更多的是它的激励机制：挖矿奖励。即，确认出全网前1个小时左右所有交易的节点获取50比特币奖励（由于比特币总数固定，所以奖励额持续下降中）。这利用了人性的特点，而只要越来越多的人认可这个想象共同体，其价值就会出现。 当然，POW算法才是程序员们最感兴趣的。所谓工作量证明算法，就是全网的所有节点（电脑），都在拼命的消耗自己的计算力（其实就是消耗钱，包括买机器、显卡的钱，电费、房屋租金等等），以此证明我是乐意合作的。很难懂？ 其实很简单：第一，所谓消耗计算力，就是挖矿，所有节点都在不停的挖矿，拼命的用CPU和GPU在运算哈希值，试图抢得新比特币奖励。 第二，为什么消耗了计算力，就能证明我是乐意合作的呢？ 先说一个心理学上的囚徒困境。想必大家港产黑帮片看得多吧？警察抓到2个相关的嫌犯时，最怕他们通过其他人、手机等设备互相联络上。如果联络不上，根据囚徒困境原理，双方都会基于为自己获得最大利益从而出卖对方。但是，一旦他们互相间可以沟通时，其中一个多半会通过描述一种对他非常不利的场景（大家可以想象，比如说：如果我出卖了你，一定会XXXX。当然通过言语没有效果，都会描述一种客观事实），向另一个嫌犯证明自己不会背叛他。接着他们就建立了一种信任关系，警察就很难有成果。 所以，先证明对自己不利，将有利于大家可以合作，建立起信任关系。而POW就是认为，51%的计算力都来自于向往合作的好的节点，少数服从多数。而所有节点都在消耗计算力，就是在证明自己是愿意付出的。 所以，一旦出现一家机构掌握了比特币全网51%的计算能力，结果就是灾难性的！ </p>
+</li>
+<li><p>联盟链目前看是区块链技术商用的最好方式。特别是跨国银行间的汇款等操作！信任问题，在跨越国家、法律、文化等多领域时才会剧烈地凸显出来，区块链的用武之地！</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>区块链</category>
+      </categories>
+      <tags>
+        <tag>区块链</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>在阿里云ECS上进行vpn ipsec网络对接</title>
     <url>/2017/01/28/%E5%9C%A8%E9%98%BF%E9%87%8C%E4%BA%91ecs%E4%B8%8A%E8%BF%9B%E8%A1%8Cvpn-ipsec%E7%BD%91%E7%BB%9C%E5%AF%B9%E6%8E%A5/</url>
     <content><![CDATA[<p>当我们需要与一些安全级别要求很高的服务对接时，服务提供商的网络提供方式可能是使用ipsec点对点对接网络。如果我们不是使用公有云，而是有自己的机房和路由器，这些就只是按照服务方的参数要求配置下路由器的小事情。但对公有云来说（例如阿里云），我们没有自己的路由器，当对接方要求我们使用预共享密匙进行ipsec点对点对接，第一反应什么鬼（之前没接触过的朋友可以看下这篇文章<a href="http://www.ibm.com/developerworks/cn/[Linux]">http://www.ibm.com/developerworks/cn/[Linux]</a>(<a href="http://lib.csdn.net/base/linux">http://lib.csdn.net/base/linux</a> “Linux知识库”)/l-ipsec/，对该概念讲得蛮清楚）？而接下来拥有私有云独立机房的服务提供方则可能要求最简单直接的解决方案：拉条专线接入服务提供者机房（这个开发成本和运维成本都不小，不适合小而美型的敏捷项目！）？或者买个路由器，在办公室找台机器与服务方对接（高可靠性完全无法保障了）？ 本文讲述使用openswan在linux centos 7下进行ipsec vpn网络的对接，由于相对小众中文资料不多，故也是一篇实践总结笔记。</p>
@@ -361,35 +390,6 @@
       </tags>
   </entry>
   <entry>
-    <title>区块链技术学习笔记</title>
-    <url>/2017/07/03/%E5%8C%BA%E5%9D%97%E9%93%BE%E6%8A%80%E6%9C%AF%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</url>
-    <content><![CDATA[<p>罗列了想到的6条学习笔记。</p>
-<a id="more"></a>
-<ol>
-<li>区块链技术是一个解决了拜占庭将军（百度百科<a href="http://baike.baidu.com/link?url=AlDGv2eQB6dkraSO8TzN0XylxEfgSW_VN94FOooKYcJrYz9ttpRD1IRWnLA25tM_7QcK_kB_8IfINpYzdBMZcbw51ESxmr3tkC7r6O32EshJ_wL6PExj-UBUJCExD11CuFfoIfaRqzH04cVQAHKOamLbVqcKr-Y_NZhAj4wCNC3">拜占庭将军问题</a>）节点的分布式数据系统！这是它最大的不同，也导致了这个技术存在诸多限制。 为了方便理解，先插个话题。做服务器端开发的程序员，都对zookeeper不陌生，我们解决分布式ACP问题时，寻找一致性解决方案时都会想到它。zookeeper实际使用了paxos的简化版算法（本文不展开，请参考我之前写过的两篇文章：<a href="https://www.taohui.pub/2015/03/27/paxos%e5%88%86%e5%b8%83%e5%bc%8f%e4%b8%80%e8%87%b4%e6%80%a7%e7%ae%97%e6%b3%95-%e8%ae%b2%e8%bf%b0%e8%af%b8%e8%91%9b%e4%ba%ae%e7%9a%84%e5%8f%8d%e7%a9%bf%e8%b6%8a/">paxos分布式一致性算法–讲述诸葛亮的反穿越</a> 以及<a href="/2015/07/27/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">paxos算法如何容错的–讲述五虎将的实践</a>）。</li>
-</ol>
-<p>想搞明白比特币(成于区块链技术)的算法，应先弄明白paxos算法（便于对比），目前商用的方案中，我们都假定服务器内网是不能被攻破的，所以，我们主要解决的是网络传输的不可靠，包括丢包、重发、延迟等问题，以及服务进程的bug导致的服务宕机、重启等。如果内网被攻破，黑客恶意的在某个节点（服务器）伪造网络包，向正常节点发送有问题的数据包，这种场景通常是不考虑的。显然这很合理，企业内网间如果还做大量的安全验证，性能消耗就太大了，基于成本使得商业目标几乎无法达成。 而公有区块链则是不同的，比如目前最成功的比特币，它使用了POW工作量证明算法，这个算法允许网络中存在拜占庭节点！也就是说，网络中即使存在作恶的节点，只要这些作恶的节点小于总节点计算能力的50%，就还能保持一致性！当然这个一致性做得也不怎么样，可能存在分叉好一段时间（1小时甚至更高，其一致性的大小只能获得概率），而且数据的回滚非常糟糕。 </p>
-<ol start="2">
-<li><p>区块链技术的另一个核心特点是全量帐本。即，每一个节点都保持着全网数据！即，每个节点、每台电脑上都保存着所有的数据。多么恐怖的代价！每台电脑的存储容量是有限的，以网络中最差的那台电脑容量为限制，几十个G就差不多了。存储的浪费是很惊人的！所以，别指望非数字帐户的核心数据也能放到区块链网络上，或者仅放个索引，指向现在的网络存储设施。 当然，区块链的核心优势也是全量帐本，最好的也是最坏的！因为，每个节点都维护全量数据，所以，所有节点本质上都是对等的！即，或许这个区块链网络中既有银联的超级服务器，也有个人开发者的公有云小主机，但大家的数据是相同的，谁也不能说数据出问题了必须以我的为准！ 因此，全量帐本解决了社会信任问题！特别对于金融供应链来说，原本的中心化服务企业可能大家都很难接受，而基于区块链技术后，小企业的顾虑没了，大企业考虑做大这个联盟可能更有利于谈判从而做大蛋糕！ 全量帐本还带来一个副作用，就是数据透明，没有隐私！！！这对很多人来说是不可接受的。每一个节点都有所有人的数据，你敢把你何时何地消费了多少钱放在上面吗？？？ </p>
-</li>
-<li><p>区块链技术还有个特点，就是所有的交易记录都是不可修改、不可删除的！这是其算法决定的。所以，这对于公益、扶贫、反腐等是很有吸引力的，蚂蚁金服目前也只敢在公益上用用区块链技术。 </p>
-</li>
-<li><p>区块链技术底层使用了P2P网络技术，大量使用反对称加密技术（相信程序员们没有不知道SSL的）来验证基于公网的消息可靠性，基于哈希算法实现了如快速验证数据未被篡改等诸多特性（POW的工作量证明算法，核心就是哈希算法）。基于多种分布式网络的一致性算法。所以，区块链使用了一堆老技术，实现了新的理念！特别是对公有链和联盟链，这种思维方式打造了技术上的社会信任体系！（私有链从这个角度来说没有任何意义！） </p>
-</li>
-<li><p>比特币的火爆原因，我认为，除了区块链技术本身的以上特性外，更多的是它的激励机制：挖矿奖励。即，确认出全网前1个小时左右所有交易的节点获取50比特币奖励（由于比特币总数固定，所以奖励额持续下降中）。这利用了人性的特点，而只要越来越多的人认可这个想象共同体，其价值就会出现。 当然，POW算法才是程序员们最感兴趣的。所谓工作量证明算法，就是全网的所有节点（电脑），都在拼命的消耗自己的计算力（其实就是消耗钱，包括买机器、显卡的钱，电费、房屋租金等等），以此证明我是乐意合作的。很难懂？ 其实很简单：第一，所谓消耗计算力，就是挖矿，所有节点都在不停的挖矿，拼命的用CPU和GPU在运算哈希值，试图抢得新比特币奖励。 第二，为什么消耗了计算力，就能证明我是乐意合作的呢？ 先说一个心理学上的囚徒困境。想必大家港产黑帮片看得多吧？警察抓到2个相关的嫌犯时，最怕他们通过其他人、手机等设备互相联络上。如果联络不上，根据囚徒困境原理，双方都会基于为自己获得最大利益从而出卖对方。但是，一旦他们互相间可以沟通时，其中一个多半会通过描述一种对他非常不利的场景（大家可以想象，比如说：如果我出卖了你，一定会XXXX。当然通过言语没有效果，都会描述一种客观事实），向另一个嫌犯证明自己不会背叛他。接着他们就建立了一种信任关系，警察就很难有成果。 所以，先证明对自己不利，将有利于大家可以合作，建立起信任关系。而POW就是认为，51%的计算力都来自于向往合作的好的节点，少数服从多数。而所有节点都在消耗计算力，就是在证明自己是愿意付出的。 所以，一旦出现一家机构掌握了比特币全网51%的计算能力，结果就是灾难性的！ </p>
-</li>
-<li><p>联盟链目前看是区块链技术商用的最好方式。特别是跨国银行间的汇款等操作！信任问题，在跨越国家、法律、文化等多领域时才会剧烈地凸显出来，区块链的用武之地！</p>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>区块链</category>
-      </categories>
-      <tags>
-        <tag>区块链</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>基于websocket接口的jmeter自动化测试实践（1）</title>
     <url>/2017/03/21/%E5%9F%BA%E4%BA%8Ewebsocket%E6%8E%A5%E5%8F%A3%E7%9A%84jmeter%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95%E5%AE%9E%E8%B7%B5%EF%BC%881%EF%BC%89/</url>
     <content><![CDATA[<p>自动化测试对于小团队来说非常重要，特别是技术负责人更偏向于用技术解决问题时（习惯用管理解决问题时，可能会用手动+人海方式）。<br>而在接口测试中，jmeter无疑是一个低成本方案的自动化测试工具。 </p>
@@ -421,6 +421,28 @@
         <category>web</category>
         <category>高并发</category>
       </categories>
+  </entry>
+  <entry>
+    <title>基于websocket接口的jmeter自动化测试实践（2）</title>
+    <url>/2017/04/05/%E5%9F%BA%E4%BA%8Ewebsocket%E6%8E%A5%E5%8F%A3%E7%9A%84jmeter%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95%E5%AE%9E%E8%B7%B5%EF%BC%882%EF%BC%89-2/</url>
+    <content><![CDATA[<h1 id="jmeter属性"><a href="#jmeter属性" class="headerlink" title="jmeter属性"></a>jmeter属性</h1><p>通常我们会使用用户自定义变量，把每个用例共用的东西提取出来。然而，当测试环境多起来时，这些写死在jmx脚本里的变量就不那么好用了。例如，对多个环境测试时，难道要复制多个脚本、单独改变量值？ </p>
+<p>此时，我们可以使用jmeter<strong>属性</strong>。因为属性是可以通过命令行传递的，例如：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-Jtestproperty&#x3D;202</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
+
+<p><code>而在需要使用变量的地方直接用$&#123;__P(testproperty,)&#125;使用命令行传递的值。</code> 当然，如果脚本已经大量使用了user defined variable，且可能会有一个默认环境一批默认值，那么，在user defined variable里把变量的值设为${__P(testproperty,30)}携带默认值30即可。<br><img src="https://www.taohui.pub/wp-content/uploads/2017/03/jmeter%E5%B1%9E%E6%80%A7%E7%9A%84%E4%BD%BF%E7%94%A8-2.jpg"> </p>
+<h1 id="循环中的计数器"><a href="#循环中的计数器" class="headerlink" title="循环中的计数器"></a>循环中的计数器</h1><p>我们需要循环使用一系列值用于某个用例，且每个值与循环到第几次有关时，可以在循环中使用计数器。 </p>
+<p>这时需要注意，如果在thread loop里计数器会一直累加，如果希望在每次thread loop中重新清零，要选择reset。 <img src="https://www.taohui.pub/wp-content/uploads/2017/03/jmeter%E8%AE%A1%E6%95%B0%E5%99%A8-2.jpg"> </p>
+<h1 id="浮点随机数"><a href="#浮点随机数" class="headerlink" title="浮点随机数"></a>浮点随机数</h1><p>有时，我们需要构造浮点式的随机数。而jmeter默认的随机数只有整型。此时，可以利用请求中都是字符串，以字符串默认连接组合的方式构造浮点数。 </p>
+<h1 id="嵌入java值"><a href="#嵌入java值" class="headerlink" title="嵌入java值"></a>嵌入java值</h1><p>当我们需要构造一些测试值，但自带的jmeter函数并不支持时，可以考虑能够直接使用原生java代码生成变量的beanshell。<br>例如，我们需要构造一个日期为前天，自带的__time只能获取到当前日期。而加入一个beanshell PreProcesser就可以加入java代码得到值。<br>其中，beanshell里生成的变量，可以调用vars.set(key,value)设置到jmeter上下文中。而想使用已经存在的jmeter上下文中的变量时，则可以使用vars.get(key)。需要注意，返回的value是字符串类型。 <img src="https://www.taohui.pub/wp-content/uploads/2017/04/jmeter%E7%9A%84beanshell_PreProcesser-2.jpg"> </p>
+<h1 id="组合条件判断"><a href="#组合条件判断" class="headerlink" title="组合条件判断"></a>组合条件判断</h1><p>做条件判断时，我们很可能会做多个条件组合的判断，而默认的jmeter if controller是不支持的。此时可以这么用：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$&#123;__javaScript($&#123;count&#125;&lt;60 &amp;&amp; $&#123;code&#125;&#x3D;&#x3D;&quot;5001&quot;)&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>jmeter</tag>
+      </tags>
   </entry>
   <entry>
     <title>如何用googletest写单元测试</title>
@@ -464,28 +486,6 @@
       </categories>
       <tags>
         <tag>gmock</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基于websocket接口的jmeter自动化测试实践（2）</title>
-    <url>/2017/04/05/%E5%9F%BA%E4%BA%8Ewebsocket%E6%8E%A5%E5%8F%A3%E7%9A%84jmeter%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95%E5%AE%9E%E8%B7%B5%EF%BC%882%EF%BC%89-2/</url>
-    <content><![CDATA[<h1 id="jmeter属性"><a href="#jmeter属性" class="headerlink" title="jmeter属性"></a>jmeter属性</h1><p>通常我们会使用用户自定义变量，把每个用例共用的东西提取出来。然而，当测试环境多起来时，这些写死在jmx脚本里的变量就不那么好用了。例如，对多个环境测试时，难道要复制多个脚本、单独改变量值？ </p>
-<p>此时，我们可以使用jmeter<strong>属性</strong>。因为属性是可以通过命令行传递的，例如：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-Jtestproperty&#x3D;202</span><br></pre></td></tr></table></figure>
-<a id="more"></a>
-
-<p><code>而在需要使用变量的地方直接用$&#123;__P(testproperty,)&#125;使用命令行传递的值。</code> 当然，如果脚本已经大量使用了user defined variable，且可能会有一个默认环境一批默认值，那么，在user defined variable里把变量的值设为${__P(testproperty,30)}携带默认值30即可。<br><img src="https://www.taohui.pub/wp-content/uploads/2017/03/jmeter%E5%B1%9E%E6%80%A7%E7%9A%84%E4%BD%BF%E7%94%A8-2.jpg"> </p>
-<h1 id="循环中的计数器"><a href="#循环中的计数器" class="headerlink" title="循环中的计数器"></a>循环中的计数器</h1><p>我们需要循环使用一系列值用于某个用例，且每个值与循环到第几次有关时，可以在循环中使用计数器。 </p>
-<p>这时需要注意，如果在thread loop里计数器会一直累加，如果希望在每次thread loop中重新清零，要选择reset。 <img src="https://www.taohui.pub/wp-content/uploads/2017/03/jmeter%E8%AE%A1%E6%95%B0%E5%99%A8-2.jpg"> </p>
-<h1 id="浮点随机数"><a href="#浮点随机数" class="headerlink" title="浮点随机数"></a>浮点随机数</h1><p>有时，我们需要构造浮点式的随机数。而jmeter默认的随机数只有整型。此时，可以利用请求中都是字符串，以字符串默认连接组合的方式构造浮点数。 </p>
-<h1 id="嵌入java值"><a href="#嵌入java值" class="headerlink" title="嵌入java值"></a>嵌入java值</h1><p>当我们需要构造一些测试值，但自带的jmeter函数并不支持时，可以考虑能够直接使用原生java代码生成变量的beanshell。<br>例如，我们需要构造一个日期为前天，自带的__time只能获取到当前日期。而加入一个beanshell PreProcesser就可以加入java代码得到值。<br>其中，beanshell里生成的变量，可以调用vars.set(key,value)设置到jmeter上下文中。而想使用已经存在的jmeter上下文中的变量时，则可以使用vars.get(key)。需要注意，返回的value是字符串类型。 <img src="https://www.taohui.pub/wp-content/uploads/2017/04/jmeter%E7%9A%84beanshell_PreProcesser-2.jpg"> </p>
-<h1 id="组合条件判断"><a href="#组合条件判断" class="headerlink" title="组合条件判断"></a>组合条件判断</h1><p>做条件判断时，我们很可能会做多个条件组合的判断，而默认的jmeter if controller是不支持的。此时可以这么用：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$&#123;__javaScript($&#123;count&#125;&lt;60 &amp;&amp; $&#123;code&#125;&#x3D;&#x3D;&quot;5001&quot;)&#125;</span><br></pre></td></tr></table></figure>]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>jmeter</tag>
       </tags>
   </entry>
   <entry>
@@ -550,8 +550,8 @@
 ]]></content>
       <categories>
         <category>web</category>
-        <category>编程语言</category>
         <category>技术人生</category>
+        <category>编程语言</category>
         <category>高并发</category>
         <category>算法</category>
       </categories>
@@ -632,9 +632,31 @@
         <category>web</category>
       </categories>
       <tags>
-        <tag>wordpress</tag>
         <tag>高可用</tag>
         <tag>docker</tag>
+        <tag>wordpress</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>nginx核心知识100讲课件</title>
+    <url>/2018/12/27/nginx/nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2%E8%AF%BE%E4%BB%B6/</url>
+    <content><![CDATA[<p>当前编译参数：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">.&#x2F;configure --with-http_auth_request_module --with-http_realip_module --with-http_v2_module --with-debug --add-module&#x3D;&#x2F;home&#x2F;web&#x2F;nginx-http-concat&#x2F; --with-http_random_index_module --with-http_sub_module --with-http_addition_module --with-http_secure_link_module --with-http_geoip_module --with-http_ssl_module --with-stream_ssl_module --with-stream_realip_module --with-stream_ssl_preread_module --with-stream --add-module&#x3D;&#x2F;home&#x2F;web&#x2F;ngx_cache_purge&#x2F; --with-http_slice_module --with-google_perftools_module --with-threads --with-ld-opt&#x3D;-ltcmalloc --with-http_gzip_static_module --with-http_gunzip_module --with-http_stub_status_module</span><br></pre></td></tr></table></figure>
+<p>课件下载地址： </p>
+<ul>
+<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第一部分课件</a> </li>
+<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第二部分课件</a> </li>
+<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第三部分课件</a> </li>
+<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E5%9B%9B%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第四部分课件</a> </li>
+<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%BA%94%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第五部分课件</a> </li>
+<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E5%85%AD%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第六部分课件</a> </li>
+</ul>
+]]></content>
+      <categories>
+        <category>nginx</category>
+      </categories>
+      <tags>
+        <tag>nginx</tag>
       </tags>
   </entry>
   <entry>
@@ -746,28 +768,6 @@
       </tags>
   </entry>
   <entry>
-    <title>nginx核心知识100讲课件</title>
-    <url>/2018/12/27/nginx/nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2%E8%AF%BE%E4%BB%B6/</url>
-    <content><![CDATA[<p>当前编译参数：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">.&#x2F;configure --with-http_auth_request_module --with-http_realip_module --with-http_v2_module --with-debug --add-module&#x3D;&#x2F;home&#x2F;web&#x2F;nginx-http-concat&#x2F; --with-http_random_index_module --with-http_sub_module --with-http_addition_module --with-http_secure_link_module --with-http_geoip_module --with-http_ssl_module --with-stream_ssl_module --with-stream_realip_module --with-stream_ssl_preread_module --with-stream --add-module&#x3D;&#x2F;home&#x2F;web&#x2F;ngx_cache_purge&#x2F; --with-http_slice_module --with-google_perftools_module --with-threads --with-ld-opt&#x3D;-ltcmalloc --with-http_gzip_static_module --with-http_gunzip_module --with-http_stub_status_module</span><br></pre></td></tr></table></figure>
-<p>课件下载地址： </p>
-<ul>
-<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第一部分课件</a> </li>
-<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第二部分课件</a> </li>
-<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第三部分课件</a> </li>
-<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E5%9B%9B%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第四部分课件</a> </li>
-<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E4%BA%94%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第五部分课件</a> </li>
-<li><a href="/pdf/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86100%E8%AE%B2-%E7%AC%AC%E5%85%AD%E9%83%A8%E5%88%86%E8%AF%BE%E4%BB%B6.pdf">Nginx核心知识100讲-第六部分课件</a> </li>
-</ul>
-]]></content>
-      <categories>
-        <category>nginx</category>
-      </categories>
-      <tags>
-        <tag>nginx</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Udp的反向代理：nginx</title>
     <url>/2018/04/08/nginx/udp%E7%9A%84%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%EF%BC%9Anginx/</url>
     <content><![CDATA[<p>在实时性要求较高的特殊场景下，简单的UDP协议仍然是我们的主要手段。UDP协议没有重传机制，还适用于同时向多台主机广播，因此在诸如多人会议、实时竞技游戏、DNS查询等场景里很适用，视频、音频每一帧可以允许丢失但绝对不能重传，网络不好时用户可以容忍黑一下或者声音嘟一下，如果突然把几秒前的视频帧或者声音重播一次就乱套了。使用UDP协议作为信息承载的传输层协议时，就要面临反向代理如何选择的挑战。通常我们有数台企业内网的服务器向客户端提供服务，此时需要在下游用户前有一台反向代理服务器做UDP包的转发、依据各服务器的实时状态做负载均衡，而关于UDP反向代理服务器的使用介绍网上并不多见。本文将讲述udp协议的会话机制原理，以及基于nginx如何配置udp协议的反向代理，包括如何维持住session、透传客户端ip到上游应用服务的3种方案等。</p>
@@ -833,6 +833,21 @@
       </tags>
   </entry>
   <entry>
+    <title>《深入理解Nginx：模块开发与架构解析》示例代码下载</title>
+    <url>/2017/01/27/nginx/%E3%80%8A%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3nginx%EF%BC%9A%E6%A8%A1%E5%9D%97%E5%BC%80%E5%8F%91%E4%B8%8E%E6%9E%B6%E6%9E%84%E8%A7%A3%E6%9E%90%E3%80%8B%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81%E4%B8%8B/</url>
+    <content><![CDATA[<h1 id="第三章示例源代码"><a href="#第三章示例源代码" class="headerlink" title="第三章示例源代码"></a>第三章示例源代码</h1><p><a href="/zip/chapter3.zip">chapter3</a> </p>
+<h1 id="第四章示例源代码"><a href="#第四章示例源代码" class="headerlink" title="第四章示例源代码"></a>第四章示例源代码</h1><p><a href="/zip/chapter4.zip">chapter4</a> </p>
+<h1 id="第五章示例源代码"><a href="#第五章示例源代码" class="headerlink" title="第五章示例源代码"></a>第五章示例源代码</h1><p><a href="/zip/chapter5.zip">chapter5</a> </p>
+<h1 id="第六章示例源代码"><a href="#第六章示例源代码" class="headerlink" title="第六章示例源代码"></a>第六章示例源代码</h1><p><a href="/zip/chapter6.zip">chapter6</a></p>
+]]></content>
+      <categories>
+        <category>nginx</category>
+      </categories>
+      <tags>
+        <tag>nginx</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>《Nginx核心知识100讲》--我在极客时间的视频课</title>
     <url>/2018/11/06/nginx/%E3%80%8Anginx%E6%A0%B8%E5%BF%83%E8%AF%BE%E7%A8%8B100%E8%AE%B2%E3%80%8B-%E6%88%91%E5%9C%A8%E6%9E%81%E5%AE%A2%E6%97%B6%E9%97%B4%E7%9A%84%E8%A7%86%E9%A2%91%E8%AF%BE/</url>
     <content><![CDATA[<p>Nginx 很火，火到无论是创业公司，还是 BAT 等一线互联网公司，都会使用 Nginx。因为它就像一个万能药，在任何存在性能需求的场合总能找见它的身影。<strong>它可以轻松在百万并发连接下实现高吞吐量的 Web 服务，同时诸多应用场景下的问题都可以通过种种 Nginx 模块得以解决，而我们所需的工作量也并不大</strong>。 实战出真知。 2010 年初，我在思科第一次使用了 Nginx。那时我们的文档上传下载服务需要做重构，于是我在调研了 Lighthttpd、Nginx 等开源组件后，决定选择 Nginx 重构服务。因为我在阅读完 Nginx 的源码后，被其设计哲学、类 Linux 内核的代码风格所吸引，且模块设计极其稳定，6 年的快速发展也几乎未有何变化。 </p>
@@ -876,21 +891,6 @@
         <tag>极客时间</tag>
         <tag>极客邦</tag>
         <tag>百万并发</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>《深入理解Nginx：模块开发与架构解析》示例代码下载</title>
-    <url>/2017/01/27/nginx/%E3%80%8A%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3nginx%EF%BC%9A%E6%A8%A1%E5%9D%97%E5%BC%80%E5%8F%91%E4%B8%8E%E6%9E%B6%E6%9E%84%E8%A7%A3%E6%9E%90%E3%80%8B%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81%E4%B8%8B/</url>
-    <content><![CDATA[<h1 id="第三章示例源代码"><a href="#第三章示例源代码" class="headerlink" title="第三章示例源代码"></a>第三章示例源代码</h1><p><a href="/zip/chapter3.zip">chapter3</a> </p>
-<h1 id="第四章示例源代码"><a href="#第四章示例源代码" class="headerlink" title="第四章示例源代码"></a>第四章示例源代码</h1><p><a href="/zip/chapter4.zip">chapter4</a> </p>
-<h1 id="第五章示例源代码"><a href="#第五章示例源代码" class="headerlink" title="第五章示例源代码"></a>第五章示例源代码</h1><p><a href="/zip/chapter5.zip">chapter5</a> </p>
-<h1 id="第六章示例源代码"><a href="#第六章示例源代码" class="headerlink" title="第六章示例源代码"></a>第六章示例源代码</h1><p><a href="/zip/chapter6.zip">chapter6</a></p>
-]]></content>
-      <categories>
-        <category>nginx</category>
-      </categories>
-      <tags>
-        <tag>nginx</tag>
       </tags>
   </entry>
   <entry>
@@ -1214,6 +1214,25 @@
       </tags>
   </entry>
   <entry>
+    <title>进阶 Nginx 高手必须跨越的 5 座大山</title>
+    <url>/2018/12/25/nginx/%E8%BF%9B%E9%98%B6-nginx-%E9%AB%98%E6%89%8B%E5%BF%85%E9%A1%BB%E8%B7%A8%E8%B6%8A%E7%9A%84-5-%E5%BA%A7%E5%A4%A7%E5%B1%B1/</url>
+    <content><![CDATA[<p>图片较多，摘要中不再显示！</p>
+<a id="more"></a>
+<p><a href="https://time.geekbang.org/column/article/74528"><img src="/2018/12/1.jpg"></a></p>
+<p> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B12.jpg"></a></p>
+<h1 id="点击查看知识图谱的高清大图"><a href="#点击查看知识图谱的高清大图" class="headerlink" title="点击查看知识图谱的高清大图"></a>点击查看知识图谱的<a href="https://time.geekbang.org/column/article/74506"><strong>高清大图</strong></a></h1><p><a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B13-1.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B14.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B15.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B16.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B17.jpg"></a> <a href="http://www.taohui.pub/2018/12/27/nginx%e6%a0%b8%e5%bf%83%e7%9f%a5%e8%af%86100%e8%ae%b2%e8%af%be%e4%bb%b6/poster/"><img src="/2018/12/poster.jpg"></a></p>
+]]></content>
+      <categories>
+        <category>nginx</category>
+      </categories>
+      <tags>
+        <tag>nginx</tag>
+        <tag>极客时间</tag>
+        <tag>进阶</tag>
+        <tag>高手</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>设计模式在C语言中的应用--读nginx源码</title>
     <url>/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/</url>
     <content><![CDATA[<p>市面上的“设计模式“书籍文章，皆针对<a href="http://lib.csdn.net/base/javase" title="Java SE知识库">Java</a>/C++/C#等面向对象语言，似乎离开了面向对象的种种特性，设计模式就无法实现，没有用武之地了。 </p>
@@ -1244,25 +1263,6 @@
         <tag>adapter模式</tag>
         <tag>strategy模式</tag>
         <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>进阶 Nginx 高手必须跨越的 5 座大山</title>
-    <url>/2018/12/25/nginx/%E8%BF%9B%E9%98%B6-nginx-%E9%AB%98%E6%89%8B%E5%BF%85%E9%A1%BB%E8%B7%A8%E8%B6%8A%E7%9A%84-5-%E5%BA%A7%E5%A4%A7%E5%B1%B1/</url>
-    <content><![CDATA[<p>图片较多，摘要中不再显示！</p>
-<a id="more"></a>
-<p><a href="https://time.geekbang.org/column/article/74528"><img src="/2018/12/1.jpg"></a></p>
-<p> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B12.jpg"></a></p>
-<h1 id="点击查看知识图谱的高清大图"><a href="#点击查看知识图谱的高清大图" class="headerlink" title="点击查看知识图谱的高清大图"></a>点击查看知识图谱的<a href="https://time.geekbang.org/column/article/74506"><strong>高清大图</strong></a></h1><p><a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B13-1.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B14.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B15.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B16.jpg"></a> <a href="https://time.geekbang.org/course/intro/138"><img src="/2018/12/nginx%E4%BA%94%E5%BA%A7%E5%A4%A7%E5%B1%B17.jpg"></a> <a href="http://www.taohui.pub/2018/12/27/nginx%e6%a0%b8%e5%bf%83%e7%9f%a5%e8%af%86100%e8%ae%b2%e8%af%be%e4%bb%b6/poster/"><img src="/2018/12/poster.jpg"></a></p>
-]]></content>
-      <categories>
-        <category>nginx</category>
-      </categories>
-      <tags>
-        <tag>nginx</tag>
-        <tag>极客时间</tag>
-        <tag>进阶</tag>
-        <tag>高手</tag>
       </tags>
   </entry>
   <entry>
@@ -1324,6 +1324,225 @@
       </tags>
   </entry>
   <entry>
+    <title>两种战争</title>
+    <url>/2015/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%B8%A4%E7%A7%8D%E6%88%98%E4%BA%89/</url>
+    <content><![CDATA[<p>有一种国家，越打仗越有钱，例如英国，曾经的日不落帝国，又比如美国以色列等等。还有一种国家，特别是中世纪以前的国家，越打仗越穷，例如大家熟悉的汉武帝，打完匈奴国力大损。</p>
+<p>为什么会有这两种截然相反的现象呢？因为利益诉求不明确，但最大原因是利益分配不公！</p>
+<a id="more"></a>
+<p>打仗，必然是为了利益，要么是防止别人抢自己的利益，无论是土地还是财富，要么是抢原本不是自己的利益，这是事实。</p>
+<p>打仗的主体是国家的全体人民，穷人出人，富人出钱，打仗通常带来通货膨胀，所以即使不加税不捐款你也要出力的。</p>
+<p>由以上前提可以得出，国家越打仗越有钱，是因为打仗保护的利益或者抢来的利益都归为打仗的主体了，例如英国的商人、企业家，他们获得了廉价的原材料，例如水手士兵，他们的财富提高了，例如本土的工人，他们所在企业更加盈利从而工人的薪水水涨船高。</p>
+<p>有的国家越打仗越没钱，因为利益分配的主体是少数官员或者官商，例如抢来的金银之物献给皇宫、将士，企业家没有拿到好处，少数的官商拿到好处后必须献给挺他们的官员，而不是员工，因此全国出力的大部分人没有拿到好处，但战争却消耗了他们的实力，这种恶性循环下国家就会越打越穷。</p>
+<p>所以，打仗必须要思考：是为了保护利益？还是为了争夺利益？如果是保护了利益，那么保护了谁的利益？如果是争夺利益，那么新争夺到的利益最终如何分配？例如，打下海上油气田，是否油价能够下降？由原材料价格的下降，是否能够完全的传导到战争中受损最大的民众？如果不能完全传导，那么落到人民身上的好处到底有多少？战争胜利后，油价仅仅回落到原先的水平吗？</p>
+<p>希望嚷嚷着对日开战的人们认真想想这个问题先。</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>《见识》读书笔记：大家智慧</title>
+    <url>/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/</url>
+    <content><![CDATA[<p>周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？</p>
+<a id="more"></a>
+<p>产品的商业价值在影响着这一点，百度的竞价排名里认为你需要综合考虑百度的利益，所以结果展示不会以对你有用的信息传达给你为首要价值。说到这里，对当年google离开中国又多了一些理解，因为中国监管对搜索结果展示的要求确实违背了google的核心价值。当然，展示有用的信息也需要高超的技术才能实现。 有用的信息不一定要属于你，但是只要你能把它送达用户，这就是核心的价值。因为你把信息与用户连接在了一起。我们团队正在做的产品就是在试图连接物联网与人，其实本质上也是把最有用的信息送达用户。如果用户觉得不好用，或者这个信息没有价值，哪怕通过其他手段强制用户使用产品，就像一个小伙在追求姑娘不断献殷勤但姑娘很反感一样，用户都会有一种强买强卖的感觉。坚持送达最有用的信息给用户，是需要做为第一准则的，因为有太多的其他因素在诱惑你的团队：技术难度、推广速度都会影响我们的决断，而互联网产品本来就不是静态的，它需要反复迭代，在迭代过程中的疲惫里，如果不能坚持这一点，很难想象产品可以做大。我们公司的名字是“智链达”，其意义就在于用智能的技术把有用的信息送达用户。 何谓有用的信息呢？其实这个并不容易判断，我们基于自己的常识判断某类信息是对用户有用的，可是，如果我们与用户是一类人，那么可以通过站在对方的角度思考这类信息，但是中国社会在几十年内的快速变化，虽然貌似大家通过免费的互联网可以获取到同等的信息，实则受制于见识与格局，中国人在见识层面上的分层还是比较明显的。每个人都有过这种感觉吧：非常明显的道理跟某些人却怎么也讲不通。如果我们的用户与我们不是一类人，那么如何知道信息是对用户有用的呢？深入用户中调研吧。可是，并不是什么人都能做到，只有见识和经历达到一定阶段的人才能做得好。所以，好的企业掌舵人都是产品、销售、运营出身，就在于他能更准确的判断。 拉里佩奇还有个智慧是“把产品做成牙刷”，就是让用户每天都会用那么一小会。所以，你的app其实需要的是，用户每天打开都能发现价值。如果不能做到每天，用户就会遗忘，可能会好几天才想起来用一下，这样效果就差了很多。宝洁的产品这么成功，还在经常打广告，google这么常用，也时不时冒出个新的应用点，许多app都会有社区在运营且经常搞点引爆话题类的线上线下活动，这都是因为：牙刷经常在用，但需要用爆点吸引用户的注意力。否则，用户还是容易遗忘的。比如intel虽然其x86 cpu架构不如其他公司，但它是18个月更新一次产品，其竞争对手们在产品性能上并不输入intel但却是36个月更新一次产品，虽然intel因为迭代速度快团队规模更大管理要求更高，但它始终能引起用户的关注，所以intel成功了。 吴军老师分享了其好友与巴菲特一餐饭中的所得，最重要的就是不做自己不懂的事。其实能把这一点做得比较好的人是很少的，对于企业或者个来看似乎都意味着放弃了许多唾手可得的利润。仿佛这个产品不需要采购，完全可以自研；好像成立一个部门做这件事，能大大提高效率，提升公司的价值，还能节约运营成本；似乎这支股票在这波涨势下买来是十拿九稳的赚钱。吴军好友在拿下央视标王对其公司下属纷纷要求成立广告公司时说：<strong>我确实不知道为什么我们不可能办好，但是我知道一定会是一个失败的结果。因为如果你们的逻辑成立的话，今天世界上最大的广告公司应该是可口可乐广告公司或者宝洁广告公司，但是结果却不是，这里面必然有它的原因。</strong>对个人来说，少花点时间在自己不擅长的事上，多花点时间在自己的职业生涯里，做自己最擅长的事，这才是收益最大的选择。 吴军举了他的好友摩拜单车CEO王晓峰的例子。王晓峰在创业前就是金牌销售，他有3个智慧分享： 1、销售的本质是把钱收回来，而不是把东西卖出去。之前做技术专家时我就从未想过，在中国的传统行业里其实把钱收回来是非常困难的。因为互联网产品其实对这一点相对容易些，特别是如果我们在设计产品时就能考虑到这一点，其销售方式、技术手段、运营模式都在最初就考虑如何把钱收回来。 2、一定要用户把买的东西最快的用掉。比如许多理发店就通过充值赠送、办会员卡打折的方式来吸引用户，但用户花钱买的卡却大都需要很久才能用掉。这样产品设计就有问题了。现在如阿里云、腾讯云、华为云等也有类似的活动，但他们一直在不断的推出更多的PAAS产品，在业务上总是能解决更多的痛点，总在吸引用户把充值卡里的钱尽快的用掉。 3、商品和服务要让消费者有面子。其实现在许多高端手机其设计上都是为了让用户拿出来感觉有面子。罗胖在2018年跨年演讲时就说过，他们不敢做让“得到”用户感觉没面子的事。以前自行车总给人低端的印象，而共享单车们为了让用户感觉有面子，才会把共享单车都设计得挺酷。我们运营总监这点也跟我强调过，一定要让用户感觉用了我们的产品倍有面子，而不是一听名字一看界面就感觉很乡土。当然，有面子并不是说就不接地气，这两点并不矛盾。能把这两点结合好，才能变成一个优秀的产品。</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>《风起陇西》：杰出的三国谍战小说</title>
+    <url>/2018/07/11/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E9%A3%8E%E8%B5%B7%E9%99%87%E8%A5%BF%E3%80%8B%EF%BC%9A%E6%9D%B0%E5%87%BA%E7%9A%84%E4%B8%89%E5%9B%BD%E8%B0%8D%E6%88%98%E5%B0%8F%E8%AF%B4/</url>
+    <content><![CDATA[<p>花了近一个月，在喜马拉雅听完了马亲王的这本《风起陇西》(之所以听了这么久，主要我对这种休闲小说都是放在晚上睡前听的。)。书不长，但情节精彩异常，对三国谜来说给了完全不同的视角。</p>
+<a id="more"></a>
+<p>为什么喜欢三国呢？其实我的阅读入门读物就是《三国演义》，那是在初一时开始读的。在这之前，主要都是在读小人书、故事会之类的读物，呵。入门读物都是对人生影响巨大的，至少会激活基因中的很多隐藏因素：-）每次读三国，前半部分总是读的激情澎湃，反复读过10遍以上有么有，但是到白帝城刘备死后就跳跃式快进了。而这本《风起陇西》其实说得是诸葛亮二出祁山到四出祁山之间的故事，用了非常西式的写作方法，人物的对话可能会有代出感，但这不重要，因为情节太精彩了！ <a href="/2018/07/unnamed-file-1-2.jpg"><img src="/2018/07/unnamed-file-1-2.jpg"></a> 喜欢它的原因都列在上面这张思维脑图上了。特别想提以下三点： </p>
+<ol>
+<li>“为了汉室”，一群执着的蜀汉精英，但缺乏个人思考，注定悲剧的英雄们更感人！ </li>
+<li>荀诩这个正面的形象很喜欢，做事情一往无前，有激情、有担当，是我辈学习的楷模！ </li>
+<li>诸葛亮，鲁讯说三国演义里的他多智近妖，更多的书里把他写成一个平庸的管理者、杰出的政治家、弱爆的军事家，而这本书里把他描述成一个了不起的谍战顶层设计者、政治权谋老手！很喜欢这种有料的观点。就像看电视剧《军师联盟》里的曹操一样，感觉非常爽！</li>
+</ol>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+      <tags>
+        <tag>三国演义</tag>
+        <tag>诸葛亮</tag>
+        <tag>谍战</tag>
+        <tag>风起陇西</tag>
+        <tag>马伯庸</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从码农到工程师：只要做到这6点</title>
+    <url>/2018/04/21/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%BB%8E%E7%A0%81%E5%86%9C%E5%88%B0%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%9A%E5%8F%AA%E8%A6%81%E5%81%9A%E5%88%B0%E8%BF%996%E7%82%B9/</url>
+    <content><![CDATA[<p>许多程序员自称码农，因为每天事情总也做不完，而这些工作也没有给自己带来职业上的提升，总在原地打转，自己的工作似乎随时可被新人替换，可有可无。于是，年轻些的考虑着转管理或者转行，年纪大些的则被所谓的40岁危机困扰焦虑着。另一方面，有些程序员工作高效，能力出众，每当机会来临时总能获得职位上升，收入迅速的提高，个人价值的提升又从精神上给自己带来满足感，常常斗志昂扬，而这样能解决复杂问题的程序员才叫工程师。本文中笔者将根据自己10多年从业经历谈谈如何从码农升级到工程师。 </p>
+<a id="more"></a>
+<p>事实上，互联网行业的项目需求从来不是静态的，项目是动态的、永远在不停迭代，所以即使你能力再好效率再高，也不可能让你处在空档期，所以，相比其他行业程序员们总是很容易处于忙忙碌碌的状态中。另一方面，项目里哪怕没有新功能了程序员自身也有很大的欲望去优化、重构代码，还是忙忙碌碌。但是，到底<strong>客户的问题、行业的痛点有没有真正解决</strong>？项目给公司带来多少收益？我手头的工作对公司下一步的发展有何意义？这些通常不在程序员们的思考范围：这与我何干？我是专业写代码的，这些应该由老板、产品经理、运营、销售、其他业务部门去考虑，我只需要精益求精把代码写好写稳定就可以了，我预留了许多扩展接口，到时公司需要的话去扩展模块就行了，我何必要知道与我工作无关的事？这个想法其实是让许多程序员始终停留在码农阶段，与那些卓越的工程师同等辛苦，但待遇层次总是相差甚远的罪魁祸首。 </p>
+<p>吴军老师在《见识》一书中把工程师定义为5个等级，相邻的等级间会有10倍的差距，而第五级工程师以下其实就是码农。 <img src="/2018/04/8a7f9a0f01c0b934decba63aca9098f7-1.jpg"> 实际上，能够到达第五级，就已经从码农提升为工程师了。比如，现在有一个任务需要实现一个功能子系统，一个第五级工程师能够与产品经理深入挖掘需求及其到底是否解决了问题，能够用算法建模解决现实中的问题，能够独立跨部门沟通获取所需的资源及协调其他工程师的帮助，能够正确的使用各种开源组件保质保量不重复造轮子，能够解决开发过程中出现的各种坑，按时交付出高质量的产品，这才是一个<strong>合格的第五级工程师</strong>了。码农离第五级工程师到底有多远呢？大家可以观察下身周，码农往往沟通技巧欠缺，不愿深入理解需求的意义，不愿深入研究某个技术或者框架的意义，或者只是深入研究某些语法糖却不考虑维护代价，喜欢造轮子，只要接手别人的工作先不愿精读代码而是想着按自己最熟悉的方式重构，做到一半时各种困难下开始退缩求助，于是交付时不断的延期再延期。。。 </p>
+<p>成为一个合格的第五级工程师，需要哪些条件呢？ </p>
+<h1 id="要有欲望成为高阶工程师！"><a href="#要有欲望成为高阶工程师！" class="headerlink" title="要有欲望成为高阶工程师！"></a>要有欲望成为高阶工程师！</h1><p>无欲则刚，如果内心就不大想成为一个高级工程师，那么肯定不愿付出更多的努力，肯定<strong>不会主动的加班</strong>，也不会在不加班的时候脑袋里还在想着问题和项目上的事，而加班或者正常上班时敷衍的时间比例很高。从低一级迈向高一级时，若不愿意付出比同级人更多的努力，又谈何升级呢？在任何领域，努力一定是成功的必要条件。 </p>
+<h1 id="懂得做减法的学问。"><a href="#懂得做减法的学问。" class="headerlink" title="懂得做减法的学问。"></a>懂得做减法的学问。</h1><p>事务性的工作总是非常多的，同时也会接到很多需求功能以及测试提交的bug，还有兴趣爱好呢？！很多想看的演唱会、连续剧、电影等着你，还有许多朋友聚会应酬要参加，还有朋友圈要刷刷，微博大V们的文章要读读，股票要炒炒，理财要学学，游戏要玩玩，所以，忙忙碌碌里职业技能没有得到一点增长。 或者你效率奇高，但你要做的事太多了，效率不等于效能，效能是指<strong>完成的</strong>事情*事情的意义。事情要做到100%完成，而且必须是重要的事。既然你想成为高阶工程师，那么请把不重要的事从你一天的计划中移除吧。就像上图中吴军老师所说的，每升级到下一级，你的收入都将呈现10倍上涨的趋势，这收益远远大于你去做自己并不擅长的炒股所获取的收益（长期来看）。而所谓的应酬、各类资讯、个人爱好，并不是只要清楚的认识到自己想要什么就能够正确的做减法，这需要你的认知升级。 而在leader分配下来的任务里，也需要你准确的判断出优先级，一定要先把最重要的事百分百的完成。这需要你与leader间密切沟通，因为技术管理者所掌握的信息量远大于你，而且信息在时刻变化着，他那里的信息及时度也超过你，唯有从你的上级那里才能快速的了解到工作的优先级。这也需要与产品经理、上下游部门间密切沟通，这样你才能准确的了解到你的工作对别人的意义，这也有助于你判断优先级。 总之，做减法是一门学问。 </p>
+<h1 id="有效的做到10000小时定律。"><a href="#有效的做到10000小时定律。" class="headerlink" title="有效的做到10000小时定律。"></a>有效的做到10000小时定律。</h1><p>一万小时定律是作家格拉德威尔在《异类》一书中指出的定律。“人们眼中的天才之所以卓越非凡，并非天资超人一等，而是付出了持续不断的努力。1万小时的锤炼是任何人从平凡变成世界级大师的必要条件。”他将此称为“一万小时定律”。要成为某个领域的专家，需要10000小时，按比例计算就是：如果每天工作八个小时，一周工作五天，那么成为一个领域的专家至少需要五年。这就是一万小时定律。 显然，并不是任何人在一个领域工作五年就能成为大师的。有效的做到这一万小时的关键是，<strong>这一次的努力请最大程度的复用上一次努力的结果</strong>！例如当下许多互联网从业者一年就跳槽一次，先不谈是不是应该跳槽（如果只是想通过跳槽涨薪，而不是原公司没有新的位置带给自己职业发展，那就有问题了），首先你能感觉到跳槽之后是在最大程度的复用上一家公司里自己的努力吗？如果一切是在从头开始，包括新的开发工具、新的技术栈、新的业务场景、新的产业链、新的合作关系、新的同事圈子等，那么很显然十万小时也不够成为专家的。 或者从另一个角度，有些人经常换工具、框架、编程语言，如果你能够在学新技术时，始终感觉到与自己熟悉的技术一一对应，基于此能够轻易的举一反三，那么这就是在高效的复用上一次的努力。反之，或者你上一个技术还学得不到家，换了新技术后很难敏感的发现共通性，这就很糟糕。 </p>
+<h1 id="抓住关键节点。"><a href="#抓住关键节点。" class="headerlink" title="抓住关键节点。"></a>抓住关键节点。</h1><p>当我们手头有许多小功能，或者与许多团队有交互时，往往经常被开会、被沟通，事情也又杂又多。此时，务必把手头上的事在分好优先级的基础上，确认每件工作的几个关键节点：完成时间点，中期交付或者需要他人交付产品、文档给你的时间点，需要协调其他人启动的时间点等等。抓住了这些时间点，往往一头乱麻的事就自然理清了。当我们的时间非常碎片化时，一定要尽力抽出大块整块的时间，这能让我们有时间思考，而且减少了任务切换的成本，而这依赖于很好的抓住关键节点。 </p>
+<h1 id="常识的重要性。"><a href="#常识的重要性。" class="headerlink" title="常识的重要性。"></a>常识的重要性。</h1><p>一个有志向的农民和一个航空航天专业的毕业生都在做飞机，其最大的不同在于常识。对于不同的程序员来说，常识并不相同。我有一些同事本不是计算机专业，有些还是先做了几年其他行业再转过来做前端程序员。这样，如算法复杂度、网络模型等计算机科学体系里的基础知识对于他们就不再是常识，而常识通常是将事情做到50%程度的关键。常识的缺失会导致与同级程序员相比做事情事倍功半，这从长期来看一定会让你早早的触及职业天花板，而补足常识的缺失相较起来还是比较容易的（毕竟这本不是什么尖端知识），但许多人长年不愿在此下功夫。 </p>
+<h1 id="有后劲儿。"><a href="#有后劲儿。" class="headerlink" title="有后劲儿。"></a>有后劲儿。</h1><p>有些人工作年限越久，竞争力越强，职业上升空间很大，反例其实更多，而这种有无“后劲”在我看来其实关键在于有没有科学的职场做事方法。比如习惯做乙方的外包程序员，转到甲方开始做产品时，还是习惯于把产品当成别人家的孩子，缺乏一种主人翁的精神，而在任何公司做任何产品，如果没有一种把自己的产品当孩子的感觉，就很容易向其他人表现出<strong>喜欢推诿、不肯担责任</strong>的特点，而缺乏主动精神往往导致项目前期准备工作不足，后期疲于奔命。没有主人翁精神，往往对整个研发链条自己这块以外的部分不愿意了解，这样没有办法管理好你的上游和下游，最终导致自己的工作困难重重，难出成绩。 对自己的产品有主人翁精神，会让自己保有一种使命感，进而相对更敬业、更有激情，而这对团队是有正向激励作用的。而且，有这种精神后，往往会想办法把工作流程标准化，把知识分享给团队同事以提升团队的作战能力，进而让产品更优秀。自己的工作有一点提升，与同时带动其他同事有一点提升，这是有<strong>量级差别</strong>的。当有晋升机会时，主管们自然更偏爱把机会给这样的同事。   </p>
+<p>结语：职业发展的天花板在哪？许多人说是需要认知升级，但这太抽象了。在我看来，能做到以上6点，从码农上升为优秀的工程师（在所有互联网公司都极受欢迎）并不在话下。</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+      <tags>
+        <tag>10000小时</tag>
+        <tag>工程师</tag>
+        <tag>码农</tag>
+        <tag>认识</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>前端程序员如何快速转型全栈工程师（基础版）</title>
+    <url>/2018/09/03/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/</url>
+    <content><![CDATA[<p>前端与后端的思维专注点很不相同，前端聚焦在如何把内容以可视化的方式展现给用户，后端聚焦在如何利用IT基础设施实现业务逻辑。所以前端参与后端开发时（全栈工程师必备！）首先需要理解后端会做哪些事，其次才是如何才能做好这些事。 所谓“利用IT基础设施实现业务逻辑”，意味着以下几个概念：</p>
+<a id="more"></a>
+<h1 id="IT基础设施有哪些？"><a href="#IT基础设施有哪些？" class="headerlink" title="IT基础设施有哪些？"></a>IT基础设施有哪些？</h1><p>数据库一定是最重要的，这里特指关系数据库，例如mysql。因为前端所用的数据库往往非常简单，浏览器或者APP毕竟只服务于一位用户，而后端的数据库需要服务于全部用户，这不是一个量级。在现实世界中，一旦量级发生改变，需要用到的技术就完全不一样了。数据库的基本操作ACID、事务、关联查询、索引都是完成业务逻辑的必备品。 <img src="/2018/09/mysql%E5%AE%A2%E6%88%B7%E7%AB%AF-3.jpg"> 缓存也是前端必须理解的概念。后端可以直接操作SATA磁盘，SSD磁盘，内存等不同的存储介质，而这些介质的存取速度差异巨大。CPU操作L1和L2缓存只有3个纳秒以内，到了L3缓存（可以以MB为单位计量了）就得10纳秒以上了，而到了内存就得100纳秒以上，通过网卡访问远端则需要数百微秒，访问机械硬盘则要几十毫秒。为了能够让用户的请求尽快获得响应，必须使用缓存。很少的场景下才会直接编写缓存，通常后端都在使用的缓存服务包括redis、memcached等，其中前者使用更多。</p>
+<h1 id="如何正确的分析业务逻辑？"><a href="#如何正确的分析业务逻辑？" class="headerlink" title="如何正确的分析业务逻辑？"></a>如何正确的分析业务逻辑？</h1><p>UML图是一个非常好的手段！类图、时序图、状态图可以帮助后端理清先做什么、再做什么、不会漏掉什么。这是因为后端的程序需要整年的运行不能宕机，而前端是没有这种要求的。因此，后端必须全面的考虑各种异常情况，防止一个用户（请求）引起的意外把整个服务宕机，影响了全部用户。 <img src="/2018/09/UML%E7%A4%BA%E4%BE%8B-1.jpg"></p>
+<h1 id="业务逻辑如何与IT设施结合？"><a href="#业务逻辑如何与IT设施结合？" class="headerlink" title="业务逻辑如何与IT设施结合？"></a>业务逻辑如何与IT设施结合？</h1><p>了解MVC模型！前端有许多模型，例如MVVM等，这些名词不重要，因为它们的关注点各不相同。对于后端，通常M意味着关系数据库，所以后端的WEB框架一定围绕着M进行。我们分析任何一个WEB框架，一定先要看它的数据库模型，即如何将数据库中的表、行映射到编程语言中。另一方面，HTTP协议有许多特性，它会导致MVC框架试图以此解耦，将URL的配置与业务处理代码分开。最后，WEB框架由于处理场景的复杂，通常以可插拔的方式将许多插件串行的组合起来处理一个请求。前端在学习WEB框架时，把握这三点即可快速掌握。 <img src="/2018/09/iis%E4%B8%BE%E4%BE%8Bmvc-1.jpg"> 前端做后端时最容易犯2个错误：</p>
+<h1 id="日志打得很少"><a href="#日志打得很少" class="headerlink" title="日志打得很少"></a>日志打得很少</h1><p>后端的复杂场景会导致bug难以复现（相比前端更难），且一个应用服务可能跑在多个服务器上，所以error、info、debug等级日志的输出显得尤为重要！没有日志，问题很难定位！</p>
+<h1 id="资源没有即用即放！"><a href="#资源没有即用即放！" class="headerlink" title="资源没有即用即放！"></a>资源没有即用即放！</h1><p>因为服务是7*24小时运行的，所以一点点资源泄露（如打开了句柄却未关闭）都会被时间放大！最后导致严重后果。   后端的代码如何更高效？答案一定是算法！ 好的算法在我看来就是3点：</p>
+<ol>
+<li> 不做重复的事；</li>
+<li> 充分利用已知信息或者中间计算结果；</li>
+<li> 充分利用IT基础设施的特性。比如多核、CPU亲和性、存储介质的性价比、网络报文的收发等。</li>
+</ol>
+<p>为了达到这一点，我们必须学习：</p>
+<ol>
+<li> 算法复杂度；</li>
+<li> 分而治之的思想，这可能是所有算法思想中最有用的了；</li>
+<li> 计算机体系的特点，如CPU架构、网络通讯成本等；</li>
+<li> 常用数据结构，如树、哈希表、图等。</li>
+</ol>
+<p>本文出现的原因是团队中有前端同事想在后端试试水，我当然非常欢迎，于是尽量从我对前端的理解上阐述后端开发的要点，或者更准确的说，是后端WEB应用开发工程师的开发要点。全栈工程师的要求高得多，这里虽然有些标题党嫌疑，但好在标明了基础版，进阶版在好好谈谈前端转全栈工程师的其他要求。</p>
+]]></content>
+      <categories>
+        <category>web</category>
+        <category>技术人生</category>
+      </categories>
+      <tags>
+        <tag>全栈</tag>
+        <tag>前端</tag>
+        <tag>后端</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>产品思维的修炼：技术的必修课</title>
+    <url>/2018/07/24/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%BA%A7%E5%93%81%E6%80%9D%E7%BB%B4%E7%9A%84%E4%BF%AE%E7%82%BC-%E6%8A%80%E6%9C%AF%E7%9A%84%E5%BF%85%E4%BF%AE%E8%AF%BE/</url>
+    <content><![CDATA[<p>作为写了十多年代码的技术表示：产品思维比程序员们想象中重要得多！掌握了产品思维的程序员能力可以double！我把产品思维的养成要点，从我的认知上提炼了下，供大家参考。 理解产品思维前，首先需要了解产品经理是一群什么样的人；其次我们再来看产品思维的本质；再次看看程序员们的技术思维有什么特点；最后谈谈技术人员如何具备产品思维。</p>
+<a id="more"></a>
+<h1 id="1、产品经理是一群什么样的人？"><a href="#1、产品经理是一群什么样的人？" class="headerlink" title="1、产品经理是一群什么样的人？"></a>1、产品经理是一群什么样的人？</h1><h2 id="1）产品经理必须能保护技术人员！"><a href="#1）产品经理必须能保护技术人员！" class="headerlink" title="1）产品经理必须能保护技术人员！"></a>1）产品经理必须能保护技术人员！</h2><p>需求是混乱无序的，需求有来自管理层关于公司长期目标的、有来自合作伙伴的诉求、有来自销售和市场对新客户的功能代言、有来自运营对存量用户使用体验的代言、有来自品牌对活动运营的诉求，还有来自所谓“用户”由产品经理代言的需求，因为用户种类很多，且随着时间而变化，所以最后这个代言非常难。如果让这些需求直接砸到技术，那么技术是没办法设计、开发、按时交付产品的。产品经理需要把混乱的需求<strong>翻译</strong>成技术可以看得懂、可以执行的产品需求、可以迭代的版本！所以，如果一个产品经理不能够保护技术直面混乱的需求，那么这不是一个好产品经理！产品经理通常会很在意自己的“<strong>人品值</strong>”，每当他们没有保护好技术，使得技术在多个版本里返工，推倒原先的代码和功能实现，这就在消耗他们的人品。当技术对产品经理完全不信任时，这个产品也就该走人了。</p>
+<h2 id="2）产品经理是解决问题、而不是提出问题的人！"><a href="#2）产品经理是解决问题、而不是提出问题的人！" class="headerlink" title="2）产品经理是解决问题、而不是提出问题的人！"></a>2）产品经理是解决问题、而不是提出问题的人！</h2><p>如果在产品评审会，产品经理抛出了许多没有解决方案的问题，那么他不是一个优秀的产品经理。所有人都有无数的idea，每个人都可以很挑剔，提问题的人应当是产品经理以外的所有人！产品经理的核心职责是解决问题，给出问题的解决方案（当然，产品经理可以私下与专家讨论，汇聚想法，而不是在需求评审会里提问题）！</p>
+<h2 id="3）比技术更懂运营的人！"><a href="#3）比技术更懂运营的人！" class="headerlink" title="3）比技术更懂运营的人！"></a>3）比技术更懂运营的人！</h2><p>互联网行业与传统的IT行业最大的差别在于，前者提供的是服务，是<strong>持续交付</strong>的，而后者提供的是软件，是一次性交付的！因此，互联网产品非常需要运营，它与产品是共生的！而运营需要考虑行业蓝图，谁是敌人？谁是友军？公司的资源在哪？我处在供应链的哪个环节？谁是惹不起的？BAT哪家有红利可以使用？哪里投入产出比最高？产品现在是早期、增长期还是成熟期？是应该不计成本的投入给种子用户，还是该规模化拉大众用户进场了？这些离研发似乎有些远，但确是产品经理得懂的必知必会。</p>
+<h2 id="4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！"><a href="#4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！" class="headerlink" title="4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！"></a>4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！</h2><p>产品经理非常需要严谨的逻辑，因为他需要<strong>设计流程</strong>，而流程是不能容忍“例外”的！同时，他还需要与各种角色沟通，并能够从沟通中获取到自己需要的信息，同时准确、讲究方式方法的把信息传达给目标角色。</p>
+<h2 id="5）产品经理是用户代言人！"><a href="#5）产品经理是用户代言人！" class="headerlink" title="5）产品经理是用户代言人！"></a>5）产品经理是用户代言人！</h2><p>对互联网产品来说，每个人都是用户！但用户作为群体是没办法发声的，产品经理必须为用户群体发声！当然，这需要强大的能力，包括用户调研、前端埋点、数据分析等各种招数。 简单的聊完产品经理，我们再看看产品思维是什么。</p>
+<h1 id="2、产品思维是什么？"><a href="#2、产品思维是什么？" class="headerlink" title="2、产品思维是什么？"></a>2、产品思维是什么？</h1><h2 id="1）大局观：操盘思维"><a href="#1）大局观：操盘思维" class="headerlink" title="1）大局观：操盘思维"></a>1）大局观：操盘思维</h2><p>首先要把自己放在产品的操盘手位置上去思考。例如下面的金牛瘦狗图，横坐标是市场占有率，市场占有率高（左边）当然最好！ <img src="http://www.taohui.pub/wp-content/uploads/2018/07/unnamed-file-2-3.jpg"> 纵轴表示需求增长率，上方表示需求增长很快，这表示我们必须花更多的资源才能满足用户。所以，左上角就是明星产品，它值得花大力气去研发，而下方的金牛则是可以考虑变现，潜力不足但市场占有率很高。对于右上角市场占有率低且需求增长很快，则明显是个“鸡肋”，这种问题产品应该尽快放弃掉。 能像以上这样思考问题，就有了行业视角、老板视角，这样的大局观是高级产品经理必须具备的。或者使用下面的SWOT态势分析法，从战略层面上定位自己的产品。 <img src="/2018/07/SWOT-2.jpg"> 现在我们再来看很多问题就一目了然。比如，互联网的商业模式要么是to C从用户那里收费，这要求我们的用户体验必须是第一流的，就像腾讯！ 要么是to B从服务的企业那里收费，这要求我们的技术能力必然远强于企业客户，所以我们要在技术能力上下大功夫，就像百度； 要么是在B to C商家向用户出售产品的过程中收取服务佣金，这要求我们的运营能力必须非常强，能够整合商家到平台上，吸引用户消费，就像阿里。 所以，你的产品的商业模式到底是什么？最大的成本花在哪里了？</p>
+<h2 id="2）用户体验思维"><a href="#2）用户体验思维" class="headerlink" title="2）用户体验思维"></a>2）用户体验思维</h2><p>本质上，互联网产品需要取悦用户，由用户的微笑价值进而才能产生商业价值。 <img src="http://www.taohui.pub/wp-content/uploads/2018/07/unnamed-file-3-2.jpg"> 这要求我们必须具备从用户体验出发的设计思维，就像下面这张图，从用户体验的5个层面上思考产品的设计： <img src="/2018/07/unnamed-file-4-3.jpg"> 界面好看不好看，从来不是决定一个产品成功或者失败的关键因素！所以，上面这张图越是下面的层次越是重要！</p>
+<h2 id="3）互联网式的产品迭代思维"><a href="#3）互联网式的产品迭代思维" class="headerlink" title="3）互联网式的产品迭代思维"></a>3）互联网式的产品迭代思维</h2><p>互联网行业最擅长快速迭代的交付产品，这是有原因的： 1、快速交付产品可以减少版本风险！时间跨度越长，交付的产品与我们的预期差距越大，版本风险越大！ 2、互联网产品有许多都是从0到1的突破性产品，而不是从1到N！这样，在探索期内，降低试错成本非常重要，产品必须灵活的快速尝试简单、实现迅速的功能，由种子用户的运营中反馈到版本迭代中去，进而修正产品，这样最有效。 而快速迭代也不能乱来，就像下图中的<strong>MVP最小化可实行产品</strong>设计。当我们想造一辆汽车，不能第1个版本先迭代造出轮子，第2个版本选出车身，第3个版本集成，这可以是快速迭代，但它不是MVP。 <img src="/2018/07/MVP%E6%9C%80%E5%B0%8F%E5%8C%96%E5%8F%AF%E5%AE%9E%E8%A1%8C%E4%BA%A7%E5%93%81-2.png"> 以滑板车、自行车、摩托车、汽车的方式迭代，这才是MVP，才能给用户提供微笑价值！</p>
+<h2 id="5）有运营视角"><a href="#5）有运营视角" class="headerlink" title="5）有运营视角"></a>5）有运营视角</h2><p>产品经理需要有运营视角，因为需要从迭代中要数据，从数据中去迭代。在产品的不同发展周期，用户群体也是不同的，如下图所示。 <img src="/2018/07/unnamed-file-7.png"> 产品早期愿意尝鲜的用户是创新者，他们是不走寻常路的，广告投放对他们无效。而对他们则应该增加投入成本，找到可以解决用户痛点的引爆点，从而使用户增长斜率从小于1到大于1！而且这些用户就像恋爱理论里的18岁红颜（“我要我要我就要”），“懒惰而贪婪”，是产品经理（“我给我给我全给”）<strong>最理想的用户</strong>，从他们身上可以最快速的试错。而这些用户最不吝于用口碑去宣传产品，只要产品能给他们惊喜！一定要珍惜这样的用户，千万不能让他们跑了！！ 在增长期才应该在媒体上投放广告轰炸，给大众用户以“大家都在用XXX”的感觉，大众用户走的是群体思维，爱从众。   下面再来看看技术思维的不同之处。</p>
+<h1 id="3、技术思维有什么特点？"><a href="#3、技术思维有什么特点？" class="headerlink" title="3、技术思维有什么特点？"></a>3、技术思维有什么特点？</h1><h2 id="1）讨厌不确定性！"><a href="#1）讨厌不确定性！" class="headerlink" title="1）讨厌不确定性！"></a>1）讨厌不确定性！</h2><p>技术人最讨厌的就是不确定性。如果产品经理在跟技术阐明需求时，表达出各种不确定性。特别是，即使某个需求点可能有变化，但变化的趋势也完全不确定时，技术就要抓狂了！</p>
+<h2 id="2）严谨的工程师思维！"><a href="#2）严谨的工程师思维！" class="headerlink" title="2）严谨的工程师思维！"></a>2）严谨的工程师思维！</h2><p>产品经理讲述概念、场景时最喜欢类比，因为讲故事这个能力产品经理很擅长！但是请记住，工程师不吃这套！比如产品经理为了说明需求，可以拿一个完全不同的故事来说事，因为这两件事有共同点，这样表述重点突出也更性感生动（在产品经理看来）。但工程师的思维很严谨，他的潜意识会优先判断这两件事有没有可类比性！通常，产品经理只是为了让故事服务于他的观点，而所有的“故事”都是不严谨的，所以产品经理一旦想拿“故事”与工程师沟通，首先就会遭遇“<strong>穷举法</strong>”的为难，找例外嘛，这是程序员非常擅长的事！当然，程序员的招还有很多，因为所有的设计模式准则都能套用在现实世界。所以，如果产品经理理论功底欠缺，或者拿与其他角色沟通的方式与程序员交流，就会陷入困境。</p>
+<h2 id="3）重视数据与逻辑！"><a href="#3）重视数据与逻辑！" class="headerlink" title="3）重视数据与逻辑！"></a>3）重视数据与逻辑！</h2><p>技术人员非常讲究逻辑、数据、方法，包括在很感性的人际交往中。而产品经理遭遇的局面往往错综复杂，在信息不足时非常需要产品经理基于经验和方法论的主观判断能力。这时，由于产品经理拿不出论据，在与技术沟通时就会非常吃力。</p>
+<h2 id="4）聚焦在实现上"><a href="#4）聚焦在实现上" class="headerlink" title="4）聚焦在实现上"></a>4）聚焦在实现上</h2><p>技术人员谈需求时下意识的就会讨论各种实现方案的成本与优劣！所以，技术人员很容易陷入在局部细节中，而忽视了总体目标与整体结构，缺乏计划性。</p>
+<h2 id="5）完美主义"><a href="#5）完美主义" class="headerlink" title="5）完美主义"></a>5）完美主义</h2><p>技术人员非常在意自己的代码是否优美，可扩展性好不好，像不像一件艺术品。通常又懒于关注他人，于是特别喜欢<strong>重构</strong>新接手的他人代码，当然自己的代码也超爱重构！完美主义极易导致设计过度，忽视了项目的成本和进度。   技术人员在具备了产品思维后，就可以直接对自己的产品负责，进而同时为产品设计、测试、运营赋能。而且可以从任务导向转为目标导向，大幅提升效能，优化产品的招数套路也会更多！下面我们来看看如何具备产品思维。</p>
+<h1 id="4、技术人员如何具备产品思维？"><a href="#4、技术人员如何具备产品思维？" class="headerlink" title="4、技术人员如何具备产品思维？"></a>4、技术人员如何具备产品思维？</h1><h2 id="1）调整视角，目标导向"><a href="#1）调整视角，目标导向" class="headerlink" title="1）调整视角，目标导向"></a>1）调整视角，目标导向</h2><p>把任务导向调整为目标导向，不再仅仅去看产品经理PRD文档上的需求，而是去看产品的生命周期与发展，关注行业、公司、部门、团队的总体目标，这样就能理解产品思维。当然，屁股决定脑袋，因为职位与职责所以不用为决策（如果有的话）的后果负责（通常，互联网公司都不会让技术对失败的产品负责），所以技术尤其不应当<strong>固执</strong>（！！！），保持头脑的极度开放，从长远目标看任务。</p>
+<h2 id="2）培养用户体验导向的思维"><a href="#2）培养用户体验导向的思维" class="headerlink" title="2）培养用户体验导向的思维"></a>2）培养用户体验导向的思维</h2><p>这是互联网服务下必修的技能，网上各种文章，不再赘述。</p>
+<h2 id="3）了解点基因、神经科学、心理学"><a href="#3）了解点基因、神经科学、心理学" class="headerlink" title="3）了解点基因、神经科学、心理学"></a>3）了解点基因、神经科学、心理学</h2><p>程序员非常需要学点心理学知识并践行，比起机器来人性很复杂，无论是了解产品用户还是与同事协作，都需要食点人间烟火。而学习心理学上的很多系统性理论能够降低<strong>未知恐惧</strong>感，特别是近来非常流行的基因、神经科学与心理学的交叉理论知识。</p>
+<h2 id="4）广泛了解各类互联网产品"><a href="#4）广泛了解各类互联网产品" class="headerlink" title="4）广泛了解各类互联网产品"></a>4）广泛了解各类互联网产品</h2><p>不能因自己的喜好就抗拒使用新类型的互联网产品，好奇心是掌握产品思维的必要条件！   技术人员天天爱看的文章、视频都是关于数据库、分布式框架、消息系统、算法、神经网络、爬虫这样的纯技术知识，当然，如果你有非常紧迫的任务，可以立刻提升工作效率那另说。从长远看，沉下心学学与技术不那么相关的产品知识，其实对我们的未来发展更好！就像产品经常说的两点之间曲线最快（<strong>最速曲线</strong>，如下图），我们的职业生涯也是一样，下面这条红色的曲线和蓝色的直线，小球沿线下落时红线是最快的。 <img src="http://www.taohui.pub/wp-content/uploads/2018/07/unnamed-file-1.gif"> 这其实要求我们多蓄点势能再出发，到达终点的时间会更短些！ 本文其实是笔者最近看完后显慧的《产品的视角：从热门到门道》一书有感而作。笔者从资深后端架构师，跨度为创业公司的联合创始人，翻完这本薄薄的小书后，豁然发现这两年自己踩了无数的坑，于是写下本文给团队的研发小伙伴们看看，如何快速提升自己的产品思维，也希望能给广大的互联网从业者们以启发。最后附上我的读书笔记思维导图供大家快速查阅。特别欣赏这本书序言里的一句话：你所做的一切，都是为了明天的某个时刻做准备！所以，程序员们，学点与技术无关的知识吧！ <img src="/2018/07/unnamed-file-5-2.jpg"></p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+      <tags>
+        <tag>MVP</tag>
+        <tag>SWOT</tag>
+        <tag>三堂课</tag>
+        <tag>产品思维</tag>
+        <tag>产品经理</tag>
+        <tag>微笑价值</tag>
+        <tag>用户体验</tag>
+        <tag>瘦狗金牛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何高效的主持会议</title>
+    <url>/2018/10/21/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E5%A6%82%E4%BD%95%E9%AB%98%E6%95%88%E7%9A%84%E4%B8%BB%E6%8C%81%E4%BC%9A%E8%AE%AE/</url>
+    <content><![CDATA[<p>达利欧《原则》谈到“如果由你主持会议，应把握好对话”，深有感触，主持好会议不容易，这需要各种综合能力：时间管理、冲突管理、同理心、对企业文化的理解、集体心理学、强大的逻辑分析能力等。这里我以达利欧的建议为主线，谈谈我的个人理解。</p>
+<a id="more"></a>
+<h2 id="1、明确主持人及会议服务对象"><a href="#1、明确主持人及会议服务对象" class="headerlink" title="1、明确主持人及会议服务对象"></a>1、明确主持人及会议服务对象</h2><p>会议一定要以实现负责人的某个目标为目的！比如，我有一个方案，但我不确定它是否足够完备、合理，那么我的目的就是找持有不同意见的权威人士坐下来，以开放式辩论的方法达成目标；或者我希望把我的方案明确的表述给实现者，那么会议就应当以讲清楚方案、达成共识为主。 <strong>如果会议没有主持人，或者主持人没有明确的目标，那么这个会议一定是效率低下的。</strong></p>
+<h2 id="2、表达要清晰准确，不要造成语言上的困惑"><a href="#2、表达要清晰准确，不要造成语言上的困惑" class="headerlink" title="2、表达要清晰准确，不要造成语言上的困惑"></a>2、表达要清晰准确，不要造成语言上的困惑</h2><p>不同于编程语言是上下文无关的，我们的自然语言是有上下文相关性的。这个相关性不只是紧挨着的句子，还可能会跨度很长，还会包含大量的常识。所以，会议中的口头表达，要求与会者必须具备相应的上下文理解能力。请确保表达务必是清晰的。 在会议邀请（或者事后的会议纪要）的电子邮件中，把问题（及答案）清晰的记录下来是有必要的。</p>
+<h2 id="3、根据目标及优先级确定沟通方式"><a href="#3、根据目标及优先级确定沟通方式" class="headerlink" title="3、根据目标及优先级确定沟通方式"></a>3、根据目标及优先级确定沟通方式</h2><p>如果你需要开放式辩论，请务必挑选合适的参会者。因为辩论极其耗时，而且随着参与者人数的增多，耗时会成几何级数上升！所以一定要挑对人，这些参会者对你目标的完成最有帮助！挑选专业方向权威且与你观念不同的人是个好主意！在开放式辩论会议中，出现大家都不发言表达独立观点、或者个人拒不接受不同观点都是非常糟糕的。 <strong>如果A群体对目标实现的帮助非常大，B群体则可能有一些帮助，我不建议把A、B两群人放在一场开放式辩论会议中，而应该第一场先与A群体进行会议，第二场再与B群体。这会大大提高效率。</strong></p>
+<h2 id="4、主持讨论时要果断、开明"><a href="#4、主持讨论时要果断、开明" class="headerlink" title="4、主持讨论时要果断、开明"></a>4、主持讨论时要果断、开明</h2><p>所谓果断，就是判断一场讨论可能会耗时很久，但达成的结论对会议的目标达成没多少帮助，那么就应该果断停止讨论！例如产品评审会上，因为市场调研数据不足，可能出现研发挑战方案的执行意义，此时主持人必须快速判定这次讨论对完成方案落地的帮助有多大。有时参会者因为经验缺乏，他提出的问题主持人在剖析他提出的逻辑时有助于帮助他深化理解，如果时间允许这是值得的。 人的系统一（或者叫快系统，或者叫情绪系统，或者叫潜意识）总是倾向拒绝不同的意见（这很能提升内心自洽），主持人以及参与讨论的人必须牢记：<strong>与负责任的权威不同意见交锋，对自己是最有收获的。</strong></p>
+<h2 id="5、在不同层面的讨论对话中穿梭对照"><a href="#5、在不同层面的讨论对话中穿梭对照" class="headerlink" title="5、在不同层面的讨论对话中穿梭对照"></a>5、在不同层面的讨论对话中穿梭对照</h2><p>会议讨论中会有两类问题：一类是具体问题，另一类则是方法论、原则。前者是一个萝卜一个坑，后者则是会对今后一类相似问题持续产生影响。所以后者明显更重要，后者应该持续的在工作中加以改进。在讨论中一定不时在这两类问题中转换，我们必须飞快的意识到当下究竟是在讨论具体问题还是方法论原则，如果是后者优先级应当更高，结论也需要更慎重。</p>
+<h2 id="6、谨防“跑题”"><a href="#6、谨防“跑题”" class="headerlink" title="6、谨防“跑题”"></a>6、谨防“跑题”</h2><p><strong>会议中出现长时间跑题一定是会议主持者的锅！</strong>就参会者来说，“跑题”是必不可免的，所以主持者有责任提醒、管理当前正在进行的讨论。有必要的话，可以通过投影仪或者白板把会议所有议题展示给所有参会者，包括已经达成共识和未达成共识的议题（已经达成共识的结论被参会者再刨出来讨论是极浪费时间的）。</p>
+<h2 id="7、坚持对话的逻辑性"><a href="#7、坚持对话的逻辑性" class="headerlink" title="7、坚持对话的逻辑性"></a>7、坚持对话的逻辑性</h2><p>出现冲突的双方为了维护自身的内心自洽很容易启动情绪攻击，此时很难做到对事不对人。相对来说，如果我们始终保持自己表达的意见是有内在逻辑性的，则很容易避免情绪影响共识达成的情形。一般在会议中，有参会者表达“我觉得···”并且接下来把这一假设事实当成其他结论的论据，那么这一定是缺乏逻辑性的。比如，“我觉得有些用户会觉得我们的产品···，所以我们的产品不应该···”，这种讨论一定会引发冲突！ <strong>讨论务必要建立在事实的基础上！</strong></p>
+<h2 id="8、防止“责任分散效应”"><a href="#8、防止“责任分散效应”" class="headerlink" title="8、防止“责任分散效应”"></a>8、防止“责任分散效应”</h2><p>有些共识在会议中达成了共识，可是会议主持人却没有把工作分解并分配到个人，他可能默认参会者既然一致达成了结论，那么就会各自知道承担怎样的责任。这是错误的，心理学中有“责任分散效应”，这在1964年美国的一起杀人案里首次发现。纽约深夜一位酒吧工作归来的女性，在公寓下被歹徒用刀刺死，案发过程持续三十分钟，有38位邻居发现却无一人报警。事后对美国引发了巨大的震动，大家都在讨论大城市的人性冷漠，而记者采访这38位邻居得到的回答是：每个人都以为别人会报警，所以见死不救并不会引发内心的罪恶感。心理学家后续做了大量类似的实验，发现当个体认为责任是群体的，最终是没有人负责的。 因此<strong>主持人有义务分派、明确参会者个体的责任。</strong></p>
+<h2 id="9、运用两分钟法则避免表述被持续打断"><a href="#9、运用两分钟法则避免表述被持续打断" class="headerlink" title="9、运用两分钟法则避免表述被持续打断"></a>9、运用两分钟法则避免表述被持续打断</h2><p>有些讨论激烈的会议中，可能出现有人的表达频繁被别人打断的场景。此时，主持者有义务让每位意见表达者至少拥有2分钟的时间，可以完整的表述清楚自己的想法。</p>
+<h2 id="10、注意气场强大的“快嘴王”"><a href="#10、注意气场强大的“快嘴王”" class="headerlink" title="10、注意气场强大的“快嘴王”"></a>10、注意气场强大的“快嘴王”</h2><p>有的参会者对自己的观点坚信不疑，且他们很难被人说服，说话语速快，而且可以把这些特点外放表现出，强力推动会议进程，不给其他人认真思考和质疑的机会。此时主持人必须回到自己的目的上来，会议的目标达成有没有被阻碍？快嘴王很容易对语速慢、担心出错出丑的参会者产生影响。主持人应确保参会者能够畅通的提出疑问。</p>
+<h2 id="11、让每一个议题有始有终"><a href="#11、让每一个议题有始有终" class="headerlink" title="11、让每一个议题有始有终"></a>11、让每一个议题有始有终</h2><p>如果议题的讨论持续很久却没有达成任何结论，这是对大家时间的极大浪费。即使议题的最终结论未达成，也应该记录下中间结果。所以，对议题的总结是必不可少的，也应当以会议纪要的方式发送给全体参会者。</p>
+<h2 id="12、活用各种沟通手段"><a href="#12、活用各种沟通手段" class="headerlink" title="12、活用各种沟通手段"></a>12、活用各种沟通手段</h2><p>沟通是耗时的，挨个一对一私下沟通是低效的。并不是除了一对一私下沟通外，只能通过在会议中沟通，就像第2点所说，会议时间几乎是与参与辩论者数量的平方成正比的。我们可以善用公司内的沟通工具，例如wiki、论坛、邮件、公告等，把握信息分享的有效性。   无论大小公司里，总会遇到低效的会议（大公司里会更多），参加这样的会议我总是感觉自己以及多数参会者在<strong>浪费生命</strong>，时间就是生命嘛！但是，人又不适合一心多用，我们的大脑带宽是很低的，如果同时处理多件事，比如又在听会议发言，又在写代码，还在回邮件，一定是每件事都做不好，而且大脑很疲劳！企业文化应当扼杀这样的会议。 做一个高效的会议主持者并不容易，既要达成目的，也要少浪费大家的生命，故而特意写了这篇文章，希望与大家共勉！</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+      <tags>
+        <tag>两分钟法则</tag>
+        <tag>原则</tag>
+        <tag>开会</tag>
+        <tag>责任分散</tag>
+        <tag>跑题</tag>
+        <tag>达利欧</tag>
+        <tag>逻辑性</tag>
+        <tag>高效会议</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>谈谈哲学和人性</title>
+    <url>/2011/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E8%B0%88%E8%B0%88%E5%93%B2%E5%AD%A6%E5%92%8C%E4%BA%BA%E6%80%A7/</url>
+    <content><![CDATA[<p>哲学是什么？学校里的哲学定义我不认同。哲学不是一种知识，是无法“学”到的，大学里的哲学专业和哲学课，只是去研究别人的某些抽象总结出的哲学观点，更象考古学，而我的理解不同：哲学一定是针对自己的，仅可以从别人那里了解一些观点事例，它们可能会较深程度的融入自己的思想中，形成自己的新的哲学思想。­</p>
+<a id="more"></a>
+<p>我的观点，哲学就是自己人生中所有阅历经验思想的总和。总和又是什么？总和包括两部分动作，整理和规则提取：把共性的人生经历模糊的归并，非重要经历丢到记忆死角，重要记忆加入大脑热点记忆中，每当共性归并记忆到达临界点后，就对这批相似的记忆提取出一些不同重要级别的规则。这种种不同级别的规则，各种不同重要级别的阅历记忆，就是哲学！哲学会指导自己的所有行为，任何新事态出现时，哲学会给出共有哪些选择项，规则和热点记忆会给出自己最可能做出的选择，当然，人类的进化规则和你的人性会做出此时是否需要突变的做出另类选择（任性一把？莫名其妙的做了奇怪的选择？情绪化？感性？或者这些都有吧。），总之，哲学最终指导你做出选择。­ </p>
+<p>人性是什么？我认为，就是人作为一种生物在进化过程中产生的属性。有种观点认为，一个人做的任何决定，都是他在当时的情形下，以他当时的信息量、当时的价值观中，做出的最好选择。我基本认同这个观点，但是这里忽略了生物在进化过程中的突变行为，突变行为一定不是当时的最优决定，但是根据DNA决定了此时有必要做出这种虽然不是最优决定，但可用于探索新的更优决定。就像遗传<a href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>中的基因突变，或者蚁群算法中少量蚂蚁的探索行为。所以，一个人的决定大都是当时他所能做出的最好决定，少量可能不是的最好的，但是依照其人性是有必要的探索性决定。­</p>
+<p>所以，人类作为群体进化到现阶段，宏观上个性上的差异并不明显，就是说，大家的人性差不太多。微观上，每个人之间的DNA不同，即使是新生婴儿，有的婴儿生来就更喜欢冒险，可能每五次或者每十次决定中，就有一次是非最优决定。有的婴儿可能生来保守，一百次决定中才有一次轻度的非常规试探。后天也会对人性产生影响。生来喜欢冒险的婴儿，如果每次冒险得到的结果都优于之前的结果，就会强化他的冒险精神，反之他会变得更保守。­同样，有人可能经历过一千次相似经历后才会去整理提取规则，有人可能一百次就会去做，如果提取出的规则总是有好的正效果，就会强化这一趋势。我发现最近两年到合肥闲了后，是越来越爱干这事了，当然是非被动式的整理。</p>
+<p>哲学形成中是靠着人性来指导的，当然哲学也会反过来影响人性。哲学形成中的归并，整理记忆，提取规则，都是人性在起作用。人性很复杂，所以机器人、<a href="http://lib.csdn.net/base/ai" title="人工智能知识库">人工智能</a>技术到现在与人相比还相差很远，毕竟是久远的进化。人性强调比较，没有什么绝对化的东西，一切因素都有权重，以及修正权重的规则。人的记忆在不停的通过五官来记录新东西，但人性在左右这些记忆，会删除一些，把一些记忆放到大箱子里，把相仿的放在一起，只记录有代表性的几个，把一些权重高的放到最容易访问的记忆里。使用记忆时，会自动的在速度和正确率上取最优解。在现实与自身不协调时，会适应现实，并在这个过程中缓慢的调整记忆和规则，所以，越不协调时越容易自我产生催眠效果。­ 哲学和人性，是唯一指导我们思想、决定的两个因素。­</p>
+<p>让我们从股市中去验证这个观点。哲学上人们大不同，因为哲学主要受制于阅历，但是人性差异却没有那么大，因为人性主要来自于亿万年的进化，进化过程中产生的自动趋利避害，自动获取最优，将导致人性害怕风险，在现实与自己的希望不同时，会通过强化希望来使自己坚持下去。这些在股市中都是庄家算计散户的惯用招，而且永不过时。骗子骗人时也是如此，利用人类进化过程中寻找最优解的惯性设套。所以有许多炒股高手说，如果你在后天没有克服人性中最共通的东西，就不要来炒股，譬如喜欢短期记忆的比较，忽视长期数据；短期风险出现时会忽略客观数据；希望与现实不符时用希望来催眠自己；天上掉馅饼时欣然接受等。­</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>linux内核调度算法（3）--多核系统的负载均衡</title>
+    <url>/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%883%EF%BC%89-%E5%A4%9A%E6%A0%B8%E7%B3%BB%E7%BB%9F%E7%9A%84%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
+    <content><![CDATA[<p>多核CPU现在很常见，那么问题来了，一个程序在运行时，只在一个CPU核上运行？还是交替在多个CPU核上运行呢？<a href="http://lib.csdn.net/base/linux" title="Linux知识库">Linux</a>内核是如何在多核间调度进程的呢？又是内核又是CPU核，两个核有点绕，下面称CPU处理器来代替CPU核。 </p>
+<a id="more"></a>
+<p>实际上，如果你没有对你的进程做过特殊处理的话，LINUX内核是有可能把它放到多个CPU处理器上运行的，这是内核的负载均衡。上文说过，每个处理器上有一个runqueue队列，表示这颗处理器上处于run状态的进程链表，在多处理器的内核中，就会有多个runqueue，而如果他们的大小很不均衡，就会触发内核的load_balance函数。这个函数会把某个CPU处理器上过多的进程移到runqueue元素相对少的CPU处理器上。 </p>
+<p>举个例子来简单说明这个过程吧。当我们刚fork出一个子进程时，子进程也还在当前CPU处理器的runqueue里，它与父进程均分父进程的时间片。当然，时间片与多处理器间的负载均衡没有关系。假设我们的系统是双核的，父进程运行在cpu0上，那么这个fork出来的进程也是在cpu0的runqueue中。 </p>
+<p>那么，什么时候会发生负载均衡呢？ </p>
+<ol>
+<li>当cpu1上的runqueue里一个可运行进程都没有的时候。这点很好理解，cpu1无事可作了，这时在cpu1上会调用load_balance，发现在cpu0上还有许多进程等待运行，那么它会从cpu0上的可运行进程里找到优先级最高的进程，拿到自己的runqueue里开始执行。 </li>
+<li>第1种情形不适用于运行队列一直不为空的情况。例如，cpu0上一直有10个可运行进程，cpu1上一直有1个可运行进程，显然，cpu0上的进程们得到了不公平的对待，它们拿到cpu的时间要小得多，第1种情形下的load_balance也一直不会调用。所以，实际上，每经过一个时钟节拍，内核会调用scheduler_tick函数，而这个函数会做许多事，例如减少当前正在执行的进程的时间片，在函数结尾处则会调用rebalance_tick函数。rebalance_tick函数决定以什么样的频率执行负载均衡。</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">static void rebalance_tick(int this_cpu, runqueue_t *this_rq,  </span><br><span class="line">               enum idle_type idle)  </span><br><span class="line">&#123;  </span><br><span class="line">    unsigned long old_load, this_load;  </span><br><span class="line">    unsigned long j &#x3D; jiffies + CPU_OFFSET(this_cpu);  </span><br><span class="line">    struct sched_domain *sd;  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* Update our load *&#x2F;  </span><br><span class="line">    old_load &#x3D; this_rq-&gt;cpu_load;  </span><br><span class="line">    this_load &#x3D; this_rq-&gt;nr_running * SCHED_LOAD_SCALE;  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * Round up the averaging division if load is increasing. This </span><br><span class="line">     * prevents us from getting stuck on 9 if the load is 10, for </span><br><span class="line">     * example. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    if (this_load &gt; old_load)  </span><br><span class="line">        old_load++;  </span><br><span class="line">    this_rq-&gt;cpu_load &#x3D; (old_load + this_load) &#x2F; 2;  </span><br><span class="line">  </span><br><span class="line">    for_each_domain(this_cpu, sd) &#123;  </span><br><span class="line">        unsigned long interval;  </span><br><span class="line">  </span><br><span class="line">        if (!(sd-&gt;flags &amp; SD_LOAD_BALANCE))  </span><br><span class="line">            continue;  </span><br><span class="line">  </span><br><span class="line">        interval &#x3D; sd-&gt;balance_interval;  </span><br><span class="line">        if (idle !&#x3D; SCHED_IDLE)  </span><br><span class="line">            interval *&#x3D; sd-&gt;busy_factor;  </span><br><span class="line">  </span><br><span class="line">        &#x2F;* scale ms to jiffies *&#x2F;  </span><br><span class="line">        interval &#x3D; msecs_to_jiffies(interval);  </span><br><span class="line">        if (unlikely(!interval))  </span><br><span class="line">            interval &#x3D; 1;  </span><br><span class="line">  </span><br><span class="line">        if (j - sd-&gt;last_balance &gt;&#x3D; interval) &#123;  </span><br><span class="line">            if (load_balance(this_cpu, this_rq, sd, idle)) &#123;  </span><br><span class="line">                &#x2F;* We&#39;ve pulled tasks over so no longer idle *&#x2F;  </span><br><span class="line">                idle &#x3D; NOT_IDLE;  </span><br><span class="line">            &#125;  </span><br><span class="line">            sd-&gt;last_balance +&#x3D; interval;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<p>  当idle标志位是SCHED_IDLE时，表示当前CPU处理器空闲，就会以很高的频繁来调用load_balance（1、2个时钟节拍），反之表示当前CPU并不空闲，会以很低的频繁调用load_balance（10-100ms）。具体的数值要看上面的interval了。 当然，多核CPU也有许多种，例如INTEL的超线程技术，而LINUX内核对一个INTEL超线程CPU会看成多个不同的CPU处理器。 </p>
+<p>上面说过，如果你没有对你的进程做过特殊处理的话，LINUX内核是有可能把它放到多个CPU处理器上运行的，但是，有时我们如果希望我们的进程一直运行在某个CPU处理器上，可以做到吗？内核提供了这样的系统调用。系统调用sched_getaffinity会返回当前进程使用的cpu掩码，而sched_setaffinity则可以设定该进程只能在哪几颗cpu处理器上执行。当我们对某些进程有强烈的期待，或者想自己来考虑CPU间的负载均衡，可以这么试试哈。</p>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>kernel</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>linux内核调度算法（2）--CPU时间片如何分配</title>
     <url>/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/</url>
     <content><![CDATA[<p>内核在微观上，把CPU的运行时间分成许多分，然后安排给各个进程轮流运行，造成宏观上所有的进程仿佛同时在执行。双核CPU，实际上最多只能有两个进程在同时运行，大家在top、vmstat命令里看到的正在运行的进程，并不是真的在占有着CPU哈。<br>所以，一些设计良好的高性能进程，比如nginx，都是实际上有几颗CPU，就配几个工作进程，道理就在这。比如你的服务器有8颗CPU，那么nginx worker应当只有8个，当你多于8个时，内核可能会放超过多个nginx worker进程到1个runqueue里，会发生什么呢？就是在这颗CPU上，会比较均匀的把时间分配给这几个nginx worker，每个worker进程运行完一个时间片后，内核需要做进程切换，把正在运行的进程上下文保存下来。假设内核分配的时间片是100ms，做进程切换的时间是5ms，那么进程性能下降还是很明显的，跟你配置的worker有关，越多下降得越厉害。 </p>
@@ -1363,29 +1582,6 @@
         <tag>cpu</tag>
         <tag>kernel</tag>
         <tag>nice</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>linux内核调度算法（3）--多核系统的负载均衡</title>
-    <url>/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%883%EF%BC%89-%E5%A4%9A%E6%A0%B8%E7%B3%BB%E7%BB%9F%E7%9A%84%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
-    <content><![CDATA[<p>多核CPU现在很常见，那么问题来了，一个程序在运行时，只在一个CPU核上运行？还是交替在多个CPU核上运行呢？<a href="http://lib.csdn.net/base/linux" title="Linux知识库">Linux</a>内核是如何在多核间调度进程的呢？又是内核又是CPU核，两个核有点绕，下面称CPU处理器来代替CPU核。 </p>
-<a id="more"></a>
-<p>实际上，如果你没有对你的进程做过特殊处理的话，LINUX内核是有可能把它放到多个CPU处理器上运行的，这是内核的负载均衡。上文说过，每个处理器上有一个runqueue队列，表示这颗处理器上处于run状态的进程链表，在多处理器的内核中，就会有多个runqueue，而如果他们的大小很不均衡，就会触发内核的load_balance函数。这个函数会把某个CPU处理器上过多的进程移到runqueue元素相对少的CPU处理器上。 </p>
-<p>举个例子来简单说明这个过程吧。当我们刚fork出一个子进程时，子进程也还在当前CPU处理器的runqueue里，它与父进程均分父进程的时间片。当然，时间片与多处理器间的负载均衡没有关系。假设我们的系统是双核的，父进程运行在cpu0上，那么这个fork出来的进程也是在cpu0的runqueue中。 </p>
-<p>那么，什么时候会发生负载均衡呢？ </p>
-<ol>
-<li>当cpu1上的runqueue里一个可运行进程都没有的时候。这点很好理解，cpu1无事可作了，这时在cpu1上会调用load_balance，发现在cpu0上还有许多进程等待运行，那么它会从cpu0上的可运行进程里找到优先级最高的进程，拿到自己的runqueue里开始执行。 </li>
-<li>第1种情形不适用于运行队列一直不为空的情况。例如，cpu0上一直有10个可运行进程，cpu1上一直有1个可运行进程，显然，cpu0上的进程们得到了不公平的对待，它们拿到cpu的时间要小得多，第1种情形下的load_balance也一直不会调用。所以，实际上，每经过一个时钟节拍，内核会调用scheduler_tick函数，而这个函数会做许多事，例如减少当前正在执行的进程的时间片，在函数结尾处则会调用rebalance_tick函数。rebalance_tick函数决定以什么样的频率执行负载均衡。</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">static void rebalance_tick(int this_cpu, runqueue_t *this_rq,  </span><br><span class="line">               enum idle_type idle)  </span><br><span class="line">&#123;  </span><br><span class="line">    unsigned long old_load, this_load;  </span><br><span class="line">    unsigned long j &#x3D; jiffies + CPU_OFFSET(this_cpu);  </span><br><span class="line">    struct sched_domain *sd;  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* Update our load *&#x2F;  </span><br><span class="line">    old_load &#x3D; this_rq-&gt;cpu_load;  </span><br><span class="line">    this_load &#x3D; this_rq-&gt;nr_running * SCHED_LOAD_SCALE;  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * Round up the averaging division if load is increasing. This </span><br><span class="line">     * prevents us from getting stuck on 9 if the load is 10, for </span><br><span class="line">     * example. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    if (this_load &gt; old_load)  </span><br><span class="line">        old_load++;  </span><br><span class="line">    this_rq-&gt;cpu_load &#x3D; (old_load + this_load) &#x2F; 2;  </span><br><span class="line">  </span><br><span class="line">    for_each_domain(this_cpu, sd) &#123;  </span><br><span class="line">        unsigned long interval;  </span><br><span class="line">  </span><br><span class="line">        if (!(sd-&gt;flags &amp; SD_LOAD_BALANCE))  </span><br><span class="line">            continue;  </span><br><span class="line">  </span><br><span class="line">        interval &#x3D; sd-&gt;balance_interval;  </span><br><span class="line">        if (idle !&#x3D; SCHED_IDLE)  </span><br><span class="line">            interval *&#x3D; sd-&gt;busy_factor;  </span><br><span class="line">  </span><br><span class="line">        &#x2F;* scale ms to jiffies *&#x2F;  </span><br><span class="line">        interval &#x3D; msecs_to_jiffies(interval);  </span><br><span class="line">        if (unlikely(!interval))  </span><br><span class="line">            interval &#x3D; 1;  </span><br><span class="line">  </span><br><span class="line">        if (j - sd-&gt;last_balance &gt;&#x3D; interval) &#123;  </span><br><span class="line">            if (load_balance(this_cpu, this_rq, sd, idle)) &#123;  </span><br><span class="line">                &#x2F;* We&#39;ve pulled tasks over so no longer idle *&#x2F;  </span><br><span class="line">                idle &#x3D; NOT_IDLE;  </span><br><span class="line">            &#125;  </span><br><span class="line">            sd-&gt;last_balance +&#x3D; interval;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
-<p>  当idle标志位是SCHED_IDLE时，表示当前CPU处理器空闲，就会以很高的频繁来调用load_balance（1、2个时钟节拍），反之表示当前CPU并不空闲，会以很低的频繁调用load_balance（10-100ms）。具体的数值要看上面的interval了。 当然，多核CPU也有许多种，例如INTEL的超线程技术，而LINUX内核对一个INTEL超线程CPU会看成多个不同的CPU处理器。 </p>
-<p>上面说过，如果你没有对你的进程做过特殊处理的话，LINUX内核是有可能把它放到多个CPU处理器上运行的，但是，有时我们如果希望我们的进程一直运行在某个CPU处理器上，可以做到吗？内核提供了这样的系统调用。系统调用sched_getaffinity会返回当前进程使用的cpu掩码，而sched_setaffinity则可以设定该进程只能在哪几颗cpu处理器上执行。当我们对某些进程有强烈的期待，或者想自己来考虑CPU间的负载均衡，可以这么试试哈。</p>
-]]></content>
-      <categories>
-        <category>算法</category>
-      </categories>
-      <tags>
-        <tag>kernel</tag>
       </tags>
   </entry>
   <entry>
@@ -1544,202 +1740,6 @@
         <tag>alder32</tag>
         <tag>rsync</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>《见识》读书笔记：大家智慧</title>
-    <url>/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/</url>
-    <content><![CDATA[<p>周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？</p>
-<a id="more"></a>
-<p>产品的商业价值在影响着这一点，百度的竞价排名里认为你需要综合考虑百度的利益，所以结果展示不会以对你有用的信息传达给你为首要价值。说到这里，对当年google离开中国又多了一些理解，因为中国监管对搜索结果展示的要求确实违背了google的核心价值。当然，展示有用的信息也需要高超的技术才能实现。 有用的信息不一定要属于你，但是只要你能把它送达用户，这就是核心的价值。因为你把信息与用户连接在了一起。我们团队正在做的产品就是在试图连接物联网与人，其实本质上也是把最有用的信息送达用户。如果用户觉得不好用，或者这个信息没有价值，哪怕通过其他手段强制用户使用产品，就像一个小伙在追求姑娘不断献殷勤但姑娘很反感一样，用户都会有一种强买强卖的感觉。坚持送达最有用的信息给用户，是需要做为第一准则的，因为有太多的其他因素在诱惑你的团队：技术难度、推广速度都会影响我们的决断，而互联网产品本来就不是静态的，它需要反复迭代，在迭代过程中的疲惫里，如果不能坚持这一点，很难想象产品可以做大。我们公司的名字是“智链达”，其意义就在于用智能的技术把有用的信息送达用户。 何谓有用的信息呢？其实这个并不容易判断，我们基于自己的常识判断某类信息是对用户有用的，可是，如果我们与用户是一类人，那么可以通过站在对方的角度思考这类信息，但是中国社会在几十年内的快速变化，虽然貌似大家通过免费的互联网可以获取到同等的信息，实则受制于见识与格局，中国人在见识层面上的分层还是比较明显的。每个人都有过这种感觉吧：非常明显的道理跟某些人却怎么也讲不通。如果我们的用户与我们不是一类人，那么如何知道信息是对用户有用的呢？深入用户中调研吧。可是，并不是什么人都能做到，只有见识和经历达到一定阶段的人才能做得好。所以，好的企业掌舵人都是产品、销售、运营出身，就在于他能更准确的判断。 拉里佩奇还有个智慧是“把产品做成牙刷”，就是让用户每天都会用那么一小会。所以，你的app其实需要的是，用户每天打开都能发现价值。如果不能做到每天，用户就会遗忘，可能会好几天才想起来用一下，这样效果就差了很多。宝洁的产品这么成功，还在经常打广告，google这么常用，也时不时冒出个新的应用点，许多app都会有社区在运营且经常搞点引爆话题类的线上线下活动，这都是因为：牙刷经常在用，但需要用爆点吸引用户的注意力。否则，用户还是容易遗忘的。比如intel虽然其x86 cpu架构不如其他公司，但它是18个月更新一次产品，其竞争对手们在产品性能上并不输入intel但却是36个月更新一次产品，虽然intel因为迭代速度快团队规模更大管理要求更高，但它始终能引起用户的关注，所以intel成功了。 吴军老师分享了其好友与巴菲特一餐饭中的所得，最重要的就是不做自己不懂的事。其实能把这一点做得比较好的人是很少的，对于企业或者个来看似乎都意味着放弃了许多唾手可得的利润。仿佛这个产品不需要采购，完全可以自研；好像成立一个部门做这件事，能大大提高效率，提升公司的价值，还能节约运营成本；似乎这支股票在这波涨势下买来是十拿九稳的赚钱。吴军好友在拿下央视标王对其公司下属纷纷要求成立广告公司时说：<strong>我确实不知道为什么我们不可能办好，但是我知道一定会是一个失败的结果。因为如果你们的逻辑成立的话，今天世界上最大的广告公司应该是可口可乐广告公司或者宝洁广告公司，但是结果却不是，这里面必然有它的原因。</strong>对个人来说，少花点时间在自己不擅长的事上，多花点时间在自己的职业生涯里，做自己最擅长的事，这才是收益最大的选择。 吴军举了他的好友摩拜单车CEO王晓峰的例子。王晓峰在创业前就是金牌销售，他有3个智慧分享： 1、销售的本质是把钱收回来，而不是把东西卖出去。之前做技术专家时我就从未想过，在中国的传统行业里其实把钱收回来是非常困难的。因为互联网产品其实对这一点相对容易些，特别是如果我们在设计产品时就能考虑到这一点，其销售方式、技术手段、运营模式都在最初就考虑如何把钱收回来。 2、一定要用户把买的东西最快的用掉。比如许多理发店就通过充值赠送、办会员卡打折的方式来吸引用户，但用户花钱买的卡却大都需要很久才能用掉。这样产品设计就有问题了。现在如阿里云、腾讯云、华为云等也有类似的活动，但他们一直在不断的推出更多的PAAS产品，在业务上总是能解决更多的痛点，总在吸引用户把充值卡里的钱尽快的用掉。 3、商品和服务要让消费者有面子。其实现在许多高端手机其设计上都是为了让用户拿出来感觉有面子。罗胖在2018年跨年演讲时就说过，他们不敢做让“得到”用户感觉没面子的事。以前自行车总给人低端的印象，而共享单车们为了让用户感觉有面子，才会把共享单车都设计得挺酷。我们运营总监这点也跟我强调过，一定要让用户感觉用了我们的产品倍有面子，而不是一听名字一看界面就感觉很乡土。当然，有面子并不是说就不接地气，这两点并不矛盾。能把这两点结合好，才能变成一个优秀的产品。</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>《风起陇西》：杰出的三国谍战小说</title>
-    <url>/2018/07/11/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E9%A3%8E%E8%B5%B7%E9%99%87%E8%A5%BF%E3%80%8B%EF%BC%9A%E6%9D%B0%E5%87%BA%E7%9A%84%E4%B8%89%E5%9B%BD%E8%B0%8D%E6%88%98%E5%B0%8F%E8%AF%B4/</url>
-    <content><![CDATA[<p>花了近一个月，在喜马拉雅听完了马亲王的这本《风起陇西》(之所以听了这么久，主要我对这种休闲小说都是放在晚上睡前听的。)。书不长，但情节精彩异常，对三国谜来说给了完全不同的视角。</p>
-<a id="more"></a>
-<p>为什么喜欢三国呢？其实我的阅读入门读物就是《三国演义》，那是在初一时开始读的。在这之前，主要都是在读小人书、故事会之类的读物，呵。入门读物都是对人生影响巨大的，至少会激活基因中的很多隐藏因素：-）每次读三国，前半部分总是读的激情澎湃，反复读过10遍以上有么有，但是到白帝城刘备死后就跳跃式快进了。而这本《风起陇西》其实说得是诸葛亮二出祁山到四出祁山之间的故事，用了非常西式的写作方法，人物的对话可能会有代出感，但这不重要，因为情节太精彩了！ <a href="/2018/07/unnamed-file-1-2.jpg"><img src="/2018/07/unnamed-file-1-2.jpg"></a> 喜欢它的原因都列在上面这张思维脑图上了。特别想提以下三点： </p>
-<ol>
-<li>“为了汉室”，一群执着的蜀汉精英，但缺乏个人思考，注定悲剧的英雄们更感人！ </li>
-<li>荀诩这个正面的形象很喜欢，做事情一往无前，有激情、有担当，是我辈学习的楷模！ </li>
-<li>诸葛亮，鲁讯说三国演义里的他多智近妖，更多的书里把他写成一个平庸的管理者、杰出的政治家、弱爆的军事家，而这本书里把他描述成一个了不起的谍战顶层设计者、政治权谋老手！很喜欢这种有料的观点。就像看电视剧《军师联盟》里的曹操一样，感觉非常爽！</li>
-</ol>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-      <tags>
-        <tag>三国演义</tag>
-        <tag>诸葛亮</tag>
-        <tag>谍战</tag>
-        <tag>风起陇西</tag>
-        <tag>马伯庸</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>产品思维的修炼：技术的必修课</title>
-    <url>/2018/07/24/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%BA%A7%E5%93%81%E6%80%9D%E7%BB%B4%E7%9A%84%E4%BF%AE%E7%82%BC-%E6%8A%80%E6%9C%AF%E7%9A%84%E5%BF%85%E4%BF%AE%E8%AF%BE/</url>
-    <content><![CDATA[<p>作为写了十多年代码的技术表示：产品思维比程序员们想象中重要得多！掌握了产品思维的程序员能力可以double！我把产品思维的养成要点，从我的认知上提炼了下，供大家参考。 理解产品思维前，首先需要了解产品经理是一群什么样的人；其次我们再来看产品思维的本质；再次看看程序员们的技术思维有什么特点；最后谈谈技术人员如何具备产品思维。</p>
-<a id="more"></a>
-<h1 id="1、产品经理是一群什么样的人？"><a href="#1、产品经理是一群什么样的人？" class="headerlink" title="1、产品经理是一群什么样的人？"></a>1、产品经理是一群什么样的人？</h1><h2 id="1）产品经理必须能保护技术人员！"><a href="#1）产品经理必须能保护技术人员！" class="headerlink" title="1）产品经理必须能保护技术人员！"></a>1）产品经理必须能保护技术人员！</h2><p>需求是混乱无序的，需求有来自管理层关于公司长期目标的、有来自合作伙伴的诉求、有来自销售和市场对新客户的功能代言、有来自运营对存量用户使用体验的代言、有来自品牌对活动运营的诉求，还有来自所谓“用户”由产品经理代言的需求，因为用户种类很多，且随着时间而变化，所以最后这个代言非常难。如果让这些需求直接砸到技术，那么技术是没办法设计、开发、按时交付产品的。产品经理需要把混乱的需求<strong>翻译</strong>成技术可以看得懂、可以执行的产品需求、可以迭代的版本！所以，如果一个产品经理不能够保护技术直面混乱的需求，那么这不是一个好产品经理！产品经理通常会很在意自己的“<strong>人品值</strong>”，每当他们没有保护好技术，使得技术在多个版本里返工，推倒原先的代码和功能实现，这就在消耗他们的人品。当技术对产品经理完全不信任时，这个产品也就该走人了。</p>
-<h2 id="2）产品经理是解决问题、而不是提出问题的人！"><a href="#2）产品经理是解决问题、而不是提出问题的人！" class="headerlink" title="2）产品经理是解决问题、而不是提出问题的人！"></a>2）产品经理是解决问题、而不是提出问题的人！</h2><p>如果在产品评审会，产品经理抛出了许多没有解决方案的问题，那么他不是一个优秀的产品经理。所有人都有无数的idea，每个人都可以很挑剔，提问题的人应当是产品经理以外的所有人！产品经理的核心职责是解决问题，给出问题的解决方案（当然，产品经理可以私下与专家讨论，汇聚想法，而不是在需求评审会里提问题）！</p>
-<h2 id="3）比技术更懂运营的人！"><a href="#3）比技术更懂运营的人！" class="headerlink" title="3）比技术更懂运营的人！"></a>3）比技术更懂运营的人！</h2><p>互联网行业与传统的IT行业最大的差别在于，前者提供的是服务，是<strong>持续交付</strong>的，而后者提供的是软件，是一次性交付的！因此，互联网产品非常需要运营，它与产品是共生的！而运营需要考虑行业蓝图，谁是敌人？谁是友军？公司的资源在哪？我处在供应链的哪个环节？谁是惹不起的？BAT哪家有红利可以使用？哪里投入产出比最高？产品现在是早期、增长期还是成熟期？是应该不计成本的投入给种子用户，还是该规模化拉大众用户进场了？这些离研发似乎有些远，但确是产品经理得懂的必知必会。</p>
-<h2 id="4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！"><a href="#4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！" class="headerlink" title="4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！"></a>4）与逻辑较真，但也能与天马行空的设计师、不专业的用户、不关注细节的老板、目标导向侵入性强的销售、思维严谨保守的技术聊得嗨！</h2><p>产品经理非常需要严谨的逻辑，因为他需要<strong>设计流程</strong>，而流程是不能容忍“例外”的！同时，他还需要与各种角色沟通，并能够从沟通中获取到自己需要的信息，同时准确、讲究方式方法的把信息传达给目标角色。</p>
-<h2 id="5）产品经理是用户代言人！"><a href="#5）产品经理是用户代言人！" class="headerlink" title="5）产品经理是用户代言人！"></a>5）产品经理是用户代言人！</h2><p>对互联网产品来说，每个人都是用户！但用户作为群体是没办法发声的，产品经理必须为用户群体发声！当然，这需要强大的能力，包括用户调研、前端埋点、数据分析等各种招数。 简单的聊完产品经理，我们再看看产品思维是什么。</p>
-<h1 id="2、产品思维是什么？"><a href="#2、产品思维是什么？" class="headerlink" title="2、产品思维是什么？"></a>2、产品思维是什么？</h1><h2 id="1）大局观：操盘思维"><a href="#1）大局观：操盘思维" class="headerlink" title="1）大局观：操盘思维"></a>1）大局观：操盘思维</h2><p>首先要把自己放在产品的操盘手位置上去思考。例如下面的金牛瘦狗图，横坐标是市场占有率，市场占有率高（左边）当然最好！ <img src="http://www.taohui.pub/wp-content/uploads/2018/07/unnamed-file-2-3.jpg"> 纵轴表示需求增长率，上方表示需求增长很快，这表示我们必须花更多的资源才能满足用户。所以，左上角就是明星产品，它值得花大力气去研发，而下方的金牛则是可以考虑变现，潜力不足但市场占有率很高。对于右上角市场占有率低且需求增长很快，则明显是个“鸡肋”，这种问题产品应该尽快放弃掉。 能像以上这样思考问题，就有了行业视角、老板视角，这样的大局观是高级产品经理必须具备的。或者使用下面的SWOT态势分析法，从战略层面上定位自己的产品。 <img src="/2018/07/SWOT-2.jpg"> 现在我们再来看很多问题就一目了然。比如，互联网的商业模式要么是to C从用户那里收费，这要求我们的用户体验必须是第一流的，就像腾讯！ 要么是to B从服务的企业那里收费，这要求我们的技术能力必然远强于企业客户，所以我们要在技术能力上下大功夫，就像百度； 要么是在B to C商家向用户出售产品的过程中收取服务佣金，这要求我们的运营能力必须非常强，能够整合商家到平台上，吸引用户消费，就像阿里。 所以，你的产品的商业模式到底是什么？最大的成本花在哪里了？</p>
-<h2 id="2）用户体验思维"><a href="#2）用户体验思维" class="headerlink" title="2）用户体验思维"></a>2）用户体验思维</h2><p>本质上，互联网产品需要取悦用户，由用户的微笑价值进而才能产生商业价值。 <img src="http://www.taohui.pub/wp-content/uploads/2018/07/unnamed-file-3-2.jpg"> 这要求我们必须具备从用户体验出发的设计思维，就像下面这张图，从用户体验的5个层面上思考产品的设计： <img src="/2018/07/unnamed-file-4-3.jpg"> 界面好看不好看，从来不是决定一个产品成功或者失败的关键因素！所以，上面这张图越是下面的层次越是重要！</p>
-<h2 id="3）互联网式的产品迭代思维"><a href="#3）互联网式的产品迭代思维" class="headerlink" title="3）互联网式的产品迭代思维"></a>3）互联网式的产品迭代思维</h2><p>互联网行业最擅长快速迭代的交付产品，这是有原因的： 1、快速交付产品可以减少版本风险！时间跨度越长，交付的产品与我们的预期差距越大，版本风险越大！ 2、互联网产品有许多都是从0到1的突破性产品，而不是从1到N！这样，在探索期内，降低试错成本非常重要，产品必须灵活的快速尝试简单、实现迅速的功能，由种子用户的运营中反馈到版本迭代中去，进而修正产品，这样最有效。 而快速迭代也不能乱来，就像下图中的<strong>MVP最小化可实行产品</strong>设计。当我们想造一辆汽车，不能第1个版本先迭代造出轮子，第2个版本选出车身，第3个版本集成，这可以是快速迭代，但它不是MVP。 <img src="/2018/07/MVP%E6%9C%80%E5%B0%8F%E5%8C%96%E5%8F%AF%E5%AE%9E%E8%A1%8C%E4%BA%A7%E5%93%81-2.png"> 以滑板车、自行车、摩托车、汽车的方式迭代，这才是MVP，才能给用户提供微笑价值！</p>
-<h2 id="5）有运营视角"><a href="#5）有运营视角" class="headerlink" title="5）有运营视角"></a>5）有运营视角</h2><p>产品经理需要有运营视角，因为需要从迭代中要数据，从数据中去迭代。在产品的不同发展周期，用户群体也是不同的，如下图所示。 <img src="/2018/07/unnamed-file-7.png"> 产品早期愿意尝鲜的用户是创新者，他们是不走寻常路的，广告投放对他们无效。而对他们则应该增加投入成本，找到可以解决用户痛点的引爆点，从而使用户增长斜率从小于1到大于1！而且这些用户就像恋爱理论里的18岁红颜（“我要我要我就要”），“懒惰而贪婪”，是产品经理（“我给我给我全给”）<strong>最理想的用户</strong>，从他们身上可以最快速的试错。而这些用户最不吝于用口碑去宣传产品，只要产品能给他们惊喜！一定要珍惜这样的用户，千万不能让他们跑了！！ 在增长期才应该在媒体上投放广告轰炸，给大众用户以“大家都在用XXX”的感觉，大众用户走的是群体思维，爱从众。   下面再来看看技术思维的不同之处。</p>
-<h1 id="3、技术思维有什么特点？"><a href="#3、技术思维有什么特点？" class="headerlink" title="3、技术思维有什么特点？"></a>3、技术思维有什么特点？</h1><h2 id="1）讨厌不确定性！"><a href="#1）讨厌不确定性！" class="headerlink" title="1）讨厌不确定性！"></a>1）讨厌不确定性！</h2><p>技术人最讨厌的就是不确定性。如果产品经理在跟技术阐明需求时，表达出各种不确定性。特别是，即使某个需求点可能有变化，但变化的趋势也完全不确定时，技术就要抓狂了！</p>
-<h2 id="2）严谨的工程师思维！"><a href="#2）严谨的工程师思维！" class="headerlink" title="2）严谨的工程师思维！"></a>2）严谨的工程师思维！</h2><p>产品经理讲述概念、场景时最喜欢类比，因为讲故事这个能力产品经理很擅长！但是请记住，工程师不吃这套！比如产品经理为了说明需求，可以拿一个完全不同的故事来说事，因为这两件事有共同点，这样表述重点突出也更性感生动（在产品经理看来）。但工程师的思维很严谨，他的潜意识会优先判断这两件事有没有可类比性！通常，产品经理只是为了让故事服务于他的观点，而所有的“故事”都是不严谨的，所以产品经理一旦想拿“故事”与工程师沟通，首先就会遭遇“<strong>穷举法</strong>”的为难，找例外嘛，这是程序员非常擅长的事！当然，程序员的招还有很多，因为所有的设计模式准则都能套用在现实世界。所以，如果产品经理理论功底欠缺，或者拿与其他角色沟通的方式与程序员交流，就会陷入困境。</p>
-<h2 id="3）重视数据与逻辑！"><a href="#3）重视数据与逻辑！" class="headerlink" title="3）重视数据与逻辑！"></a>3）重视数据与逻辑！</h2><p>技术人员非常讲究逻辑、数据、方法，包括在很感性的人际交往中。而产品经理遭遇的局面往往错综复杂，在信息不足时非常需要产品经理基于经验和方法论的主观判断能力。这时，由于产品经理拿不出论据，在与技术沟通时就会非常吃力。</p>
-<h2 id="4）聚焦在实现上"><a href="#4）聚焦在实现上" class="headerlink" title="4）聚焦在实现上"></a>4）聚焦在实现上</h2><p>技术人员谈需求时下意识的就会讨论各种实现方案的成本与优劣！所以，技术人员很容易陷入在局部细节中，而忽视了总体目标与整体结构，缺乏计划性。</p>
-<h2 id="5）完美主义"><a href="#5）完美主义" class="headerlink" title="5）完美主义"></a>5）完美主义</h2><p>技术人员非常在意自己的代码是否优美，可扩展性好不好，像不像一件艺术品。通常又懒于关注他人，于是特别喜欢<strong>重构</strong>新接手的他人代码，当然自己的代码也超爱重构！完美主义极易导致设计过度，忽视了项目的成本和进度。   技术人员在具备了产品思维后，就可以直接对自己的产品负责，进而同时为产品设计、测试、运营赋能。而且可以从任务导向转为目标导向，大幅提升效能，优化产品的招数套路也会更多！下面我们来看看如何具备产品思维。</p>
-<h1 id="4、技术人员如何具备产品思维？"><a href="#4、技术人员如何具备产品思维？" class="headerlink" title="4、技术人员如何具备产品思维？"></a>4、技术人员如何具备产品思维？</h1><h2 id="1）调整视角，目标导向"><a href="#1）调整视角，目标导向" class="headerlink" title="1）调整视角，目标导向"></a>1）调整视角，目标导向</h2><p>把任务导向调整为目标导向，不再仅仅去看产品经理PRD文档上的需求，而是去看产品的生命周期与发展，关注行业、公司、部门、团队的总体目标，这样就能理解产品思维。当然，屁股决定脑袋，因为职位与职责所以不用为决策（如果有的话）的后果负责（通常，互联网公司都不会让技术对失败的产品负责），所以技术尤其不应当<strong>固执</strong>（！！！），保持头脑的极度开放，从长远目标看任务。</p>
-<h2 id="2）培养用户体验导向的思维"><a href="#2）培养用户体验导向的思维" class="headerlink" title="2）培养用户体验导向的思维"></a>2）培养用户体验导向的思维</h2><p>这是互联网服务下必修的技能，网上各种文章，不再赘述。</p>
-<h2 id="3）了解点基因、神经科学、心理学"><a href="#3）了解点基因、神经科学、心理学" class="headerlink" title="3）了解点基因、神经科学、心理学"></a>3）了解点基因、神经科学、心理学</h2><p>程序员非常需要学点心理学知识并践行，比起机器来人性很复杂，无论是了解产品用户还是与同事协作，都需要食点人间烟火。而学习心理学上的很多系统性理论能够降低<strong>未知恐惧</strong>感，特别是近来非常流行的基因、神经科学与心理学的交叉理论知识。</p>
-<h2 id="4）广泛了解各类互联网产品"><a href="#4）广泛了解各类互联网产品" class="headerlink" title="4）广泛了解各类互联网产品"></a>4）广泛了解各类互联网产品</h2><p>不能因自己的喜好就抗拒使用新类型的互联网产品，好奇心是掌握产品思维的必要条件！   技术人员天天爱看的文章、视频都是关于数据库、分布式框架、消息系统、算法、神经网络、爬虫这样的纯技术知识，当然，如果你有非常紧迫的任务，可以立刻提升工作效率那另说。从长远看，沉下心学学与技术不那么相关的产品知识，其实对我们的未来发展更好！就像产品经常说的两点之间曲线最快（<strong>最速曲线</strong>，如下图），我们的职业生涯也是一样，下面这条红色的曲线和蓝色的直线，小球沿线下落时红线是最快的。 <img src="http://www.taohui.pub/wp-content/uploads/2018/07/unnamed-file-1.gif"> 这其实要求我们多蓄点势能再出发，到达终点的时间会更短些！ 本文其实是笔者最近看完后显慧的《产品的视角：从热门到门道》一书有感而作。笔者从资深后端架构师，跨度为创业公司的联合创始人，翻完这本薄薄的小书后，豁然发现这两年自己踩了无数的坑，于是写下本文给团队的研发小伙伴们看看，如何快速提升自己的产品思维，也希望能给广大的互联网从业者们以启发。最后附上我的读书笔记思维导图供大家快速查阅。特别欣赏这本书序言里的一句话：你所做的一切，都是为了明天的某个时刻做准备！所以，程序员们，学点与技术无关的知识吧！ <img src="/2018/07/unnamed-file-5-2.jpg"></p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-      <tags>
-        <tag>MVP</tag>
-        <tag>SWOT</tag>
-        <tag>三堂课</tag>
-        <tag>产品思维</tag>
-        <tag>产品经理</tag>
-        <tag>微笑价值</tag>
-        <tag>用户体验</tag>
-        <tag>瘦狗金牛</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>两种战争</title>
-    <url>/2015/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%B8%A4%E7%A7%8D%E6%88%98%E4%BA%89/</url>
-    <content><![CDATA[<p>有一种国家，越打仗越有钱，例如英国，曾经的日不落帝国，又比如美国以色列等等。还有一种国家，特别是中世纪以前的国家，越打仗越穷，例如大家熟悉的汉武帝，打完匈奴国力大损。</p>
-<p>为什么会有这两种截然相反的现象呢？因为利益诉求不明确，但最大原因是利益分配不公！</p>
-<a id="more"></a>
-<p>打仗，必然是为了利益，要么是防止别人抢自己的利益，无论是土地还是财富，要么是抢原本不是自己的利益，这是事实。</p>
-<p>打仗的主体是国家的全体人民，穷人出人，富人出钱，打仗通常带来通货膨胀，所以即使不加税不捐款你也要出力的。</p>
-<p>由以上前提可以得出，国家越打仗越有钱，是因为打仗保护的利益或者抢来的利益都归为打仗的主体了，例如英国的商人、企业家，他们获得了廉价的原材料，例如水手士兵，他们的财富提高了，例如本土的工人，他们所在企业更加盈利从而工人的薪水水涨船高。</p>
-<p>有的国家越打仗越没钱，因为利益分配的主体是少数官员或者官商，例如抢来的金银之物献给皇宫、将士，企业家没有拿到好处，少数的官商拿到好处后必须献给挺他们的官员，而不是员工，因此全国出力的大部分人没有拿到好处，但战争却消耗了他们的实力，这种恶性循环下国家就会越打越穷。</p>
-<p>所以，打仗必须要思考：是为了保护利益？还是为了争夺利益？如果是保护了利益，那么保护了谁的利益？如果是争夺利益，那么新争夺到的利益最终如何分配？例如，打下海上油气田，是否油价能够下降？由原材料价格的下降，是否能够完全的传导到战争中受损最大的民众？如果不能完全传导，那么落到人民身上的好处到底有多少？战争胜利后，油价仅仅回落到原先的水平吗？</p>
-<p>希望嚷嚷着对日开战的人们认真想想这个问题先。</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>从码农到工程师：只要做到这6点</title>
-    <url>/2018/04/21/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%BB%8E%E7%A0%81%E5%86%9C%E5%88%B0%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%9A%E5%8F%AA%E8%A6%81%E5%81%9A%E5%88%B0%E8%BF%996%E7%82%B9/</url>
-    <content><![CDATA[<p>许多程序员自称码农，因为每天事情总也做不完，而这些工作也没有给自己带来职业上的提升，总在原地打转，自己的工作似乎随时可被新人替换，可有可无。于是，年轻些的考虑着转管理或者转行，年纪大些的则被所谓的40岁危机困扰焦虑着。另一方面，有些程序员工作高效，能力出众，每当机会来临时总能获得职位上升，收入迅速的提高，个人价值的提升又从精神上给自己带来满足感，常常斗志昂扬，而这样能解决复杂问题的程序员才叫工程师。本文中笔者将根据自己10多年从业经历谈谈如何从码农升级到工程师。 </p>
-<a id="more"></a>
-<p>事实上，互联网行业的项目需求从来不是静态的，项目是动态的、永远在不停迭代，所以即使你能力再好效率再高，也不可能让你处在空档期，所以，相比其他行业程序员们总是很容易处于忙忙碌碌的状态中。另一方面，项目里哪怕没有新功能了程序员自身也有很大的欲望去优化、重构代码，还是忙忙碌碌。但是，到底<strong>客户的问题、行业的痛点有没有真正解决</strong>？项目给公司带来多少收益？我手头的工作对公司下一步的发展有何意义？这些通常不在程序员们的思考范围：这与我何干？我是专业写代码的，这些应该由老板、产品经理、运营、销售、其他业务部门去考虑，我只需要精益求精把代码写好写稳定就可以了，我预留了许多扩展接口，到时公司需要的话去扩展模块就行了，我何必要知道与我工作无关的事？这个想法其实是让许多程序员始终停留在码农阶段，与那些卓越的工程师同等辛苦，但待遇层次总是相差甚远的罪魁祸首。 </p>
-<p>吴军老师在《见识》一书中把工程师定义为5个等级，相邻的等级间会有10倍的差距，而第五级工程师以下其实就是码农。 <img src="/2018/04/8a7f9a0f01c0b934decba63aca9098f7-1.jpg"> 实际上，能够到达第五级，就已经从码农提升为工程师了。比如，现在有一个任务需要实现一个功能子系统，一个第五级工程师能够与产品经理深入挖掘需求及其到底是否解决了问题，能够用算法建模解决现实中的问题，能够独立跨部门沟通获取所需的资源及协调其他工程师的帮助，能够正确的使用各种开源组件保质保量不重复造轮子，能够解决开发过程中出现的各种坑，按时交付出高质量的产品，这才是一个<strong>合格的第五级工程师</strong>了。码农离第五级工程师到底有多远呢？大家可以观察下身周，码农往往沟通技巧欠缺，不愿深入理解需求的意义，不愿深入研究某个技术或者框架的意义，或者只是深入研究某些语法糖却不考虑维护代价，喜欢造轮子，只要接手别人的工作先不愿精读代码而是想着按自己最熟悉的方式重构，做到一半时各种困难下开始退缩求助，于是交付时不断的延期再延期。。。 </p>
-<p>成为一个合格的第五级工程师，需要哪些条件呢？ </p>
-<h1 id="要有欲望成为高阶工程师！"><a href="#要有欲望成为高阶工程师！" class="headerlink" title="要有欲望成为高阶工程师！"></a>要有欲望成为高阶工程师！</h1><p>无欲则刚，如果内心就不大想成为一个高级工程师，那么肯定不愿付出更多的努力，肯定<strong>不会主动的加班</strong>，也不会在不加班的时候脑袋里还在想着问题和项目上的事，而加班或者正常上班时敷衍的时间比例很高。从低一级迈向高一级时，若不愿意付出比同级人更多的努力，又谈何升级呢？在任何领域，努力一定是成功的必要条件。 </p>
-<h1 id="懂得做减法的学问。"><a href="#懂得做减法的学问。" class="headerlink" title="懂得做减法的学问。"></a>懂得做减法的学问。</h1><p>事务性的工作总是非常多的，同时也会接到很多需求功能以及测试提交的bug，还有兴趣爱好呢？！很多想看的演唱会、连续剧、电影等着你，还有许多朋友聚会应酬要参加，还有朋友圈要刷刷，微博大V们的文章要读读，股票要炒炒，理财要学学，游戏要玩玩，所以，忙忙碌碌里职业技能没有得到一点增长。 或者你效率奇高，但你要做的事太多了，效率不等于效能，效能是指<strong>完成的</strong>事情*事情的意义。事情要做到100%完成，而且必须是重要的事。既然你想成为高阶工程师，那么请把不重要的事从你一天的计划中移除吧。就像上图中吴军老师所说的，每升级到下一级，你的收入都将呈现10倍上涨的趋势，这收益远远大于你去做自己并不擅长的炒股所获取的收益（长期来看）。而所谓的应酬、各类资讯、个人爱好，并不是只要清楚的认识到自己想要什么就能够正确的做减法，这需要你的认知升级。 而在leader分配下来的任务里，也需要你准确的判断出优先级，一定要先把最重要的事百分百的完成。这需要你与leader间密切沟通，因为技术管理者所掌握的信息量远大于你，而且信息在时刻变化着，他那里的信息及时度也超过你，唯有从你的上级那里才能快速的了解到工作的优先级。这也需要与产品经理、上下游部门间密切沟通，这样你才能准确的了解到你的工作对别人的意义，这也有助于你判断优先级。 总之，做减法是一门学问。 </p>
-<h1 id="有效的做到10000小时定律。"><a href="#有效的做到10000小时定律。" class="headerlink" title="有效的做到10000小时定律。"></a>有效的做到10000小时定律。</h1><p>一万小时定律是作家格拉德威尔在《异类》一书中指出的定律。“人们眼中的天才之所以卓越非凡，并非天资超人一等，而是付出了持续不断的努力。1万小时的锤炼是任何人从平凡变成世界级大师的必要条件。”他将此称为“一万小时定律”。要成为某个领域的专家，需要10000小时，按比例计算就是：如果每天工作八个小时，一周工作五天，那么成为一个领域的专家至少需要五年。这就是一万小时定律。 显然，并不是任何人在一个领域工作五年就能成为大师的。有效的做到这一万小时的关键是，<strong>这一次的努力请最大程度的复用上一次努力的结果</strong>！例如当下许多互联网从业者一年就跳槽一次，先不谈是不是应该跳槽（如果只是想通过跳槽涨薪，而不是原公司没有新的位置带给自己职业发展，那就有问题了），首先你能感觉到跳槽之后是在最大程度的复用上一家公司里自己的努力吗？如果一切是在从头开始，包括新的开发工具、新的技术栈、新的业务场景、新的产业链、新的合作关系、新的同事圈子等，那么很显然十万小时也不够成为专家的。 或者从另一个角度，有些人经常换工具、框架、编程语言，如果你能够在学新技术时，始终感觉到与自己熟悉的技术一一对应，基于此能够轻易的举一反三，那么这就是在高效的复用上一次的努力。反之，或者你上一个技术还学得不到家，换了新技术后很难敏感的发现共通性，这就很糟糕。 </p>
-<h1 id="抓住关键节点。"><a href="#抓住关键节点。" class="headerlink" title="抓住关键节点。"></a>抓住关键节点。</h1><p>当我们手头有许多小功能，或者与许多团队有交互时，往往经常被开会、被沟通，事情也又杂又多。此时，务必把手头上的事在分好优先级的基础上，确认每件工作的几个关键节点：完成时间点，中期交付或者需要他人交付产品、文档给你的时间点，需要协调其他人启动的时间点等等。抓住了这些时间点，往往一头乱麻的事就自然理清了。当我们的时间非常碎片化时，一定要尽力抽出大块整块的时间，这能让我们有时间思考，而且减少了任务切换的成本，而这依赖于很好的抓住关键节点。 </p>
-<h1 id="常识的重要性。"><a href="#常识的重要性。" class="headerlink" title="常识的重要性。"></a>常识的重要性。</h1><p>一个有志向的农民和一个航空航天专业的毕业生都在做飞机，其最大的不同在于常识。对于不同的程序员来说，常识并不相同。我有一些同事本不是计算机专业，有些还是先做了几年其他行业再转过来做前端程序员。这样，如算法复杂度、网络模型等计算机科学体系里的基础知识对于他们就不再是常识，而常识通常是将事情做到50%程度的关键。常识的缺失会导致与同级程序员相比做事情事倍功半，这从长期来看一定会让你早早的触及职业天花板，而补足常识的缺失相较起来还是比较容易的（毕竟这本不是什么尖端知识），但许多人长年不愿在此下功夫。 </p>
-<h1 id="有后劲儿。"><a href="#有后劲儿。" class="headerlink" title="有后劲儿。"></a>有后劲儿。</h1><p>有些人工作年限越久，竞争力越强，职业上升空间很大，反例其实更多，而这种有无“后劲”在我看来其实关键在于有没有科学的职场做事方法。比如习惯做乙方的外包程序员，转到甲方开始做产品时，还是习惯于把产品当成别人家的孩子，缺乏一种主人翁的精神，而在任何公司做任何产品，如果没有一种把自己的产品当孩子的感觉，就很容易向其他人表现出<strong>喜欢推诿、不肯担责任</strong>的特点，而缺乏主动精神往往导致项目前期准备工作不足，后期疲于奔命。没有主人翁精神，往往对整个研发链条自己这块以外的部分不愿意了解，这样没有办法管理好你的上游和下游，最终导致自己的工作困难重重，难出成绩。 对自己的产品有主人翁精神，会让自己保有一种使命感，进而相对更敬业、更有激情，而这对团队是有正向激励作用的。而且，有这种精神后，往往会想办法把工作流程标准化，把知识分享给团队同事以提升团队的作战能力，进而让产品更优秀。自己的工作有一点提升，与同时带动其他同事有一点提升，这是有<strong>量级差别</strong>的。当有晋升机会时，主管们自然更偏爱把机会给这样的同事。   </p>
-<p>结语：职业发展的天花板在哪？许多人说是需要认知升级，但这太抽象了。在我看来，能做到以上6点，从码农上升为优秀的工程师（在所有互联网公司都极受欢迎）并不在话下。</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-      <tags>
-        <tag>10000小时</tag>
-        <tag>工程师</tag>
-        <tag>码农</tag>
-        <tag>认识</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>前端程序员如何快速转型全栈工程师（基础版）</title>
-    <url>/2018/09/03/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/</url>
-    <content><![CDATA[<p>前端与后端的思维专注点很不相同，前端聚焦在如何把内容以可视化的方式展现给用户，后端聚焦在如何利用IT基础设施实现业务逻辑。所以前端参与后端开发时（全栈工程师必备！）首先需要理解后端会做哪些事，其次才是如何才能做好这些事。 所谓“利用IT基础设施实现业务逻辑”，意味着以下几个概念：</p>
-<a id="more"></a>
-<h1 id="IT基础设施有哪些？"><a href="#IT基础设施有哪些？" class="headerlink" title="IT基础设施有哪些？"></a>IT基础设施有哪些？</h1><p>数据库一定是最重要的，这里特指关系数据库，例如mysql。因为前端所用的数据库往往非常简单，浏览器或者APP毕竟只服务于一位用户，而后端的数据库需要服务于全部用户，这不是一个量级。在现实世界中，一旦量级发生改变，需要用到的技术就完全不一样了。数据库的基本操作ACID、事务、关联查询、索引都是完成业务逻辑的必备品。 <img src="/2018/09/mysql%E5%AE%A2%E6%88%B7%E7%AB%AF-3.jpg"> 缓存也是前端必须理解的概念。后端可以直接操作SATA磁盘，SSD磁盘，内存等不同的存储介质，而这些介质的存取速度差异巨大。CPU操作L1和L2缓存只有3个纳秒以内，到了L3缓存（可以以MB为单位计量了）就得10纳秒以上了，而到了内存就得100纳秒以上，通过网卡访问远端则需要数百微秒，访问机械硬盘则要几十毫秒。为了能够让用户的请求尽快获得响应，必须使用缓存。很少的场景下才会直接编写缓存，通常后端都在使用的缓存服务包括redis、memcached等，其中前者使用更多。</p>
-<h1 id="如何正确的分析业务逻辑？"><a href="#如何正确的分析业务逻辑？" class="headerlink" title="如何正确的分析业务逻辑？"></a>如何正确的分析业务逻辑？</h1><p>UML图是一个非常好的手段！类图、时序图、状态图可以帮助后端理清先做什么、再做什么、不会漏掉什么。这是因为后端的程序需要整年的运行不能宕机，而前端是没有这种要求的。因此，后端必须全面的考虑各种异常情况，防止一个用户（请求）引起的意外把整个服务宕机，影响了全部用户。 <img src="/2018/09/UML%E7%A4%BA%E4%BE%8B-1.jpg"></p>
-<h1 id="业务逻辑如何与IT设施结合？"><a href="#业务逻辑如何与IT设施结合？" class="headerlink" title="业务逻辑如何与IT设施结合？"></a>业务逻辑如何与IT设施结合？</h1><p>了解MVC模型！前端有许多模型，例如MVVM等，这些名词不重要，因为它们的关注点各不相同。对于后端，通常M意味着关系数据库，所以后端的WEB框架一定围绕着M进行。我们分析任何一个WEB框架，一定先要看它的数据库模型，即如何将数据库中的表、行映射到编程语言中。另一方面，HTTP协议有许多特性，它会导致MVC框架试图以此解耦，将URL的配置与业务处理代码分开。最后，WEB框架由于处理场景的复杂，通常以可插拔的方式将许多插件串行的组合起来处理一个请求。前端在学习WEB框架时，把握这三点即可快速掌握。 <img src="/2018/09/iis%E4%B8%BE%E4%BE%8Bmvc-1.jpg"> 前端做后端时最容易犯2个错误：</p>
-<h1 id="日志打得很少"><a href="#日志打得很少" class="headerlink" title="日志打得很少"></a>日志打得很少</h1><p>后端的复杂场景会导致bug难以复现（相比前端更难），且一个应用服务可能跑在多个服务器上，所以error、info、debug等级日志的输出显得尤为重要！没有日志，问题很难定位！</p>
-<h1 id="资源没有即用即放！"><a href="#资源没有即用即放！" class="headerlink" title="资源没有即用即放！"></a>资源没有即用即放！</h1><p>因为服务是7*24小时运行的，所以一点点资源泄露（如打开了句柄却未关闭）都会被时间放大！最后导致严重后果。   后端的代码如何更高效？答案一定是算法！ 好的算法在我看来就是3点：</p>
-<ol>
-<li> 不做重复的事；</li>
-<li> 充分利用已知信息或者中间计算结果；</li>
-<li> 充分利用IT基础设施的特性。比如多核、CPU亲和性、存储介质的性价比、网络报文的收发等。</li>
-</ol>
-<p>为了达到这一点，我们必须学习：</p>
-<ol>
-<li> 算法复杂度；</li>
-<li> 分而治之的思想，这可能是所有算法思想中最有用的了；</li>
-<li> 计算机体系的特点，如CPU架构、网络通讯成本等；</li>
-<li> 常用数据结构，如树、哈希表、图等。</li>
-</ol>
-<p>本文出现的原因是团队中有前端同事想在后端试试水，我当然非常欢迎，于是尽量从我对前端的理解上阐述后端开发的要点，或者更准确的说，是后端WEB应用开发工程师的开发要点。全栈工程师的要求高得多，这里虽然有些标题党嫌疑，但好在标明了基础版，进阶版在好好谈谈前端转全栈工程师的其他要求。</p>
-]]></content>
-      <categories>
-        <category>web</category>
-        <category>技术人生</category>
-      </categories>
-      <tags>
-        <tag>全栈</tag>
-        <tag>前端</tag>
-        <tag>后端</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何高效的主持会议</title>
-    <url>/2018/10/21/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E5%A6%82%E4%BD%95%E9%AB%98%E6%95%88%E7%9A%84%E4%B8%BB%E6%8C%81%E4%BC%9A%E8%AE%AE/</url>
-    <content><![CDATA[<p>达利欧《原则》谈到“如果由你主持会议，应把握好对话”，深有感触，主持好会议不容易，这需要各种综合能力：时间管理、冲突管理、同理心、对企业文化的理解、集体心理学、强大的逻辑分析能力等。这里我以达利欧的建议为主线，谈谈我的个人理解。</p>
-<a id="more"></a>
-<h2 id="1、明确主持人及会议服务对象"><a href="#1、明确主持人及会议服务对象" class="headerlink" title="1、明确主持人及会议服务对象"></a>1、明确主持人及会议服务对象</h2><p>会议一定要以实现负责人的某个目标为目的！比如，我有一个方案，但我不确定它是否足够完备、合理，那么我的目的就是找持有不同意见的权威人士坐下来，以开放式辩论的方法达成目标；或者我希望把我的方案明确的表述给实现者，那么会议就应当以讲清楚方案、达成共识为主。 <strong>如果会议没有主持人，或者主持人没有明确的目标，那么这个会议一定是效率低下的。</strong></p>
-<h2 id="2、表达要清晰准确，不要造成语言上的困惑"><a href="#2、表达要清晰准确，不要造成语言上的困惑" class="headerlink" title="2、表达要清晰准确，不要造成语言上的困惑"></a>2、表达要清晰准确，不要造成语言上的困惑</h2><p>不同于编程语言是上下文无关的，我们的自然语言是有上下文相关性的。这个相关性不只是紧挨着的句子，还可能会跨度很长，还会包含大量的常识。所以，会议中的口头表达，要求与会者必须具备相应的上下文理解能力。请确保表达务必是清晰的。 在会议邀请（或者事后的会议纪要）的电子邮件中，把问题（及答案）清晰的记录下来是有必要的。</p>
-<h2 id="3、根据目标及优先级确定沟通方式"><a href="#3、根据目标及优先级确定沟通方式" class="headerlink" title="3、根据目标及优先级确定沟通方式"></a>3、根据目标及优先级确定沟通方式</h2><p>如果你需要开放式辩论，请务必挑选合适的参会者。因为辩论极其耗时，而且随着参与者人数的增多，耗时会成几何级数上升！所以一定要挑对人，这些参会者对你目标的完成最有帮助！挑选专业方向权威且与你观念不同的人是个好主意！在开放式辩论会议中，出现大家都不发言表达独立观点、或者个人拒不接受不同观点都是非常糟糕的。 <strong>如果A群体对目标实现的帮助非常大，B群体则可能有一些帮助，我不建议把A、B两群人放在一场开放式辩论会议中，而应该第一场先与A群体进行会议，第二场再与B群体。这会大大提高效率。</strong></p>
-<h2 id="4、主持讨论时要果断、开明"><a href="#4、主持讨论时要果断、开明" class="headerlink" title="4、主持讨论时要果断、开明"></a>4、主持讨论时要果断、开明</h2><p>所谓果断，就是判断一场讨论可能会耗时很久，但达成的结论对会议的目标达成没多少帮助，那么就应该果断停止讨论！例如产品评审会上，因为市场调研数据不足，可能出现研发挑战方案的执行意义，此时主持人必须快速判定这次讨论对完成方案落地的帮助有多大。有时参会者因为经验缺乏，他提出的问题主持人在剖析他提出的逻辑时有助于帮助他深化理解，如果时间允许这是值得的。 人的系统一（或者叫快系统，或者叫情绪系统，或者叫潜意识）总是倾向拒绝不同的意见（这很能提升内心自洽），主持人以及参与讨论的人必须牢记：<strong>与负责任的权威不同意见交锋，对自己是最有收获的。</strong></p>
-<h2 id="5、在不同层面的讨论对话中穿梭对照"><a href="#5、在不同层面的讨论对话中穿梭对照" class="headerlink" title="5、在不同层面的讨论对话中穿梭对照"></a>5、在不同层面的讨论对话中穿梭对照</h2><p>会议讨论中会有两类问题：一类是具体问题，另一类则是方法论、原则。前者是一个萝卜一个坑，后者则是会对今后一类相似问题持续产生影响。所以后者明显更重要，后者应该持续的在工作中加以改进。在讨论中一定不时在这两类问题中转换，我们必须飞快的意识到当下究竟是在讨论具体问题还是方法论原则，如果是后者优先级应当更高，结论也需要更慎重。</p>
-<h2 id="6、谨防“跑题”"><a href="#6、谨防“跑题”" class="headerlink" title="6、谨防“跑题”"></a>6、谨防“跑题”</h2><p><strong>会议中出现长时间跑题一定是会议主持者的锅！</strong>就参会者来说，“跑题”是必不可免的，所以主持者有责任提醒、管理当前正在进行的讨论。有必要的话，可以通过投影仪或者白板把会议所有议题展示给所有参会者，包括已经达成共识和未达成共识的议题（已经达成共识的结论被参会者再刨出来讨论是极浪费时间的）。</p>
-<h2 id="7、坚持对话的逻辑性"><a href="#7、坚持对话的逻辑性" class="headerlink" title="7、坚持对话的逻辑性"></a>7、坚持对话的逻辑性</h2><p>出现冲突的双方为了维护自身的内心自洽很容易启动情绪攻击，此时很难做到对事不对人。相对来说，如果我们始终保持自己表达的意见是有内在逻辑性的，则很容易避免情绪影响共识达成的情形。一般在会议中，有参会者表达“我觉得···”并且接下来把这一假设事实当成其他结论的论据，那么这一定是缺乏逻辑性的。比如，“我觉得有些用户会觉得我们的产品···，所以我们的产品不应该···”，这种讨论一定会引发冲突！ <strong>讨论务必要建立在事实的基础上！</strong></p>
-<h2 id="8、防止“责任分散效应”"><a href="#8、防止“责任分散效应”" class="headerlink" title="8、防止“责任分散效应”"></a>8、防止“责任分散效应”</h2><p>有些共识在会议中达成了共识，可是会议主持人却没有把工作分解并分配到个人，他可能默认参会者既然一致达成了结论，那么就会各自知道承担怎样的责任。这是错误的，心理学中有“责任分散效应”，这在1964年美国的一起杀人案里首次发现。纽约深夜一位酒吧工作归来的女性，在公寓下被歹徒用刀刺死，案发过程持续三十分钟，有38位邻居发现却无一人报警。事后对美国引发了巨大的震动，大家都在讨论大城市的人性冷漠，而记者采访这38位邻居得到的回答是：每个人都以为别人会报警，所以见死不救并不会引发内心的罪恶感。心理学家后续做了大量类似的实验，发现当个体认为责任是群体的，最终是没有人负责的。 因此<strong>主持人有义务分派、明确参会者个体的责任。</strong></p>
-<h2 id="9、运用两分钟法则避免表述被持续打断"><a href="#9、运用两分钟法则避免表述被持续打断" class="headerlink" title="9、运用两分钟法则避免表述被持续打断"></a>9、运用两分钟法则避免表述被持续打断</h2><p>有些讨论激烈的会议中，可能出现有人的表达频繁被别人打断的场景。此时，主持者有义务让每位意见表达者至少拥有2分钟的时间，可以完整的表述清楚自己的想法。</p>
-<h2 id="10、注意气场强大的“快嘴王”"><a href="#10、注意气场强大的“快嘴王”" class="headerlink" title="10、注意气场强大的“快嘴王”"></a>10、注意气场强大的“快嘴王”</h2><p>有的参会者对自己的观点坚信不疑，且他们很难被人说服，说话语速快，而且可以把这些特点外放表现出，强力推动会议进程，不给其他人认真思考和质疑的机会。此时主持人必须回到自己的目的上来，会议的目标达成有没有被阻碍？快嘴王很容易对语速慢、担心出错出丑的参会者产生影响。主持人应确保参会者能够畅通的提出疑问。</p>
-<h2 id="11、让每一个议题有始有终"><a href="#11、让每一个议题有始有终" class="headerlink" title="11、让每一个议题有始有终"></a>11、让每一个议题有始有终</h2><p>如果议题的讨论持续很久却没有达成任何结论，这是对大家时间的极大浪费。即使议题的最终结论未达成，也应该记录下中间结果。所以，对议题的总结是必不可少的，也应当以会议纪要的方式发送给全体参会者。</p>
-<h2 id="12、活用各种沟通手段"><a href="#12、活用各种沟通手段" class="headerlink" title="12、活用各种沟通手段"></a>12、活用各种沟通手段</h2><p>沟通是耗时的，挨个一对一私下沟通是低效的。并不是除了一对一私下沟通外，只能通过在会议中沟通，就像第2点所说，会议时间几乎是与参与辩论者数量的平方成正比的。我们可以善用公司内的沟通工具，例如wiki、论坛、邮件、公告等，把握信息分享的有效性。   无论大小公司里，总会遇到低效的会议（大公司里会更多），参加这样的会议我总是感觉自己以及多数参会者在<strong>浪费生命</strong>，时间就是生命嘛！但是，人又不适合一心多用，我们的大脑带宽是很低的，如果同时处理多件事，比如又在听会议发言，又在写代码，还在回邮件，一定是每件事都做不好，而且大脑很疲劳！企业文化应当扼杀这样的会议。 做一个高效的会议主持者并不容易，既要达成目的，也要少浪费大家的生命，故而特意写了这篇文章，希望与大家共勉！</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-      <tags>
-        <tag>两分钟法则</tag>
-        <tag>原则</tag>
-        <tag>开会</tag>
-        <tag>责任分散</tag>
-        <tag>跑题</tag>
-        <tag>达利欧</tag>
-        <tag>逻辑性</tag>
-        <tag>高效会议</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>谈谈哲学和人性</title>
-    <url>/2011/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E8%B0%88%E8%B0%88%E5%93%B2%E5%AD%A6%E5%92%8C%E4%BA%BA%E6%80%A7/</url>
-    <content><![CDATA[<p>哲学是什么？学校里的哲学定义我不认同。哲学不是一种知识，是无法“学”到的，大学里的哲学专业和哲学课，只是去研究别人的某些抽象总结出的哲学观点，更象考古学，而我的理解不同：哲学一定是针对自己的，仅可以从别人那里了解一些观点事例，它们可能会较深程度的融入自己的思想中，形成自己的新的哲学思想。­</p>
-<a id="more"></a>
-<p>我的观点，哲学就是自己人生中所有阅历经验思想的总和。总和又是什么？总和包括两部分动作，整理和规则提取：把共性的人生经历模糊的归并，非重要经历丢到记忆死角，重要记忆加入大脑热点记忆中，每当共性归并记忆到达临界点后，就对这批相似的记忆提取出一些不同重要级别的规则。这种种不同级别的规则，各种不同重要级别的阅历记忆，就是哲学！哲学会指导自己的所有行为，任何新事态出现时，哲学会给出共有哪些选择项，规则和热点记忆会给出自己最可能做出的选择，当然，人类的进化规则和你的人性会做出此时是否需要突变的做出另类选择（任性一把？莫名其妙的做了奇怪的选择？情绪化？感性？或者这些都有吧。），总之，哲学最终指导你做出选择。­ </p>
-<p>人性是什么？我认为，就是人作为一种生物在进化过程中产生的属性。有种观点认为，一个人做的任何决定，都是他在当时的情形下，以他当时的信息量、当时的价值观中，做出的最好选择。我基本认同这个观点，但是这里忽略了生物在进化过程中的突变行为，突变行为一定不是当时的最优决定，但是根据DNA决定了此时有必要做出这种虽然不是最优决定，但可用于探索新的更优决定。就像遗传<a href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>中的基因突变，或者蚁群算法中少量蚂蚁的探索行为。所以，一个人的决定大都是当时他所能做出的最好决定，少量可能不是的最好的，但是依照其人性是有必要的探索性决定。­</p>
-<p>所以，人类作为群体进化到现阶段，宏观上个性上的差异并不明显，就是说，大家的人性差不太多。微观上，每个人之间的DNA不同，即使是新生婴儿，有的婴儿生来就更喜欢冒险，可能每五次或者每十次决定中，就有一次是非最优决定。有的婴儿可能生来保守，一百次决定中才有一次轻度的非常规试探。后天也会对人性产生影响。生来喜欢冒险的婴儿，如果每次冒险得到的结果都优于之前的结果，就会强化他的冒险精神，反之他会变得更保守。­同样，有人可能经历过一千次相似经历后才会去整理提取规则，有人可能一百次就会去做，如果提取出的规则总是有好的正效果，就会强化这一趋势。我发现最近两年到合肥闲了后，是越来越爱干这事了，当然是非被动式的整理。</p>
-<p>哲学形成中是靠着人性来指导的，当然哲学也会反过来影响人性。哲学形成中的归并，整理记忆，提取规则，都是人性在起作用。人性很复杂，所以机器人、<a href="http://lib.csdn.net/base/ai" title="人工智能知识库">人工智能</a>技术到现在与人相比还相差很远，毕竟是久远的进化。人性强调比较，没有什么绝对化的东西，一切因素都有权重，以及修正权重的规则。人的记忆在不停的通过五官来记录新东西，但人性在左右这些记忆，会删除一些，把一些记忆放到大箱子里，把相仿的放在一起，只记录有代表性的几个，把一些权重高的放到最容易访问的记忆里。使用记忆时，会自动的在速度和正确率上取最优解。在现实与自身不协调时，会适应现实，并在这个过程中缓慢的调整记忆和规则，所以，越不协调时越容易自我产生催眠效果。­ 哲学和人性，是唯一指导我们思想、决定的两个因素。­</p>
-<p>让我们从股市中去验证这个观点。哲学上人们大不同，因为哲学主要受制于阅历，但是人性差异却没有那么大，因为人性主要来自于亿万年的进化，进化过程中产生的自动趋利避害，自动获取最优，将导致人性害怕风险，在现实与自己的希望不同时，会通过强化希望来使自己坚持下去。这些在股市中都是庄家算计散户的惯用招，而且永不过时。骗子骗人时也是如此，利用人类进化过程中寻找最优解的惯性设套。所以有许多炒股高手说，如果你在后天没有克服人性中最共通的东西，就不要来炒股，譬如喜欢短期记忆的比较，忽视长期数据；短期风险出现时会忽略客观数据；希望与现实不符时用希望来催眠自己；天上掉馅饼时欣然接受等。­</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
   </entry>
   <entry>
     <title>一文解释清楚Google BBR拥塞控制算法原理</title>
@@ -2238,6 +2238,227 @@
       </tags>
   </entry>
   <entry>
+    <title>从wordpress迁移到hexo静态站点</title>
+    <url>/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/</url>
+    <content><![CDATA[<blockquote>
+<p>接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见<a href="">这里</a>）需要重构。干脆基于hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。</p>
+</blockquote>
+<h1 id="wordpress与hexo静态站点的优劣比较"><a href="#wordpress与hexo静态站点的优劣比较" class="headerlink" title="wordpress与hexo静态站点的优劣比较"></a>wordpress与hexo静态站点的优劣比较</h1><p>静态站点的优点在于部署简单、性能优异，比如你可以将其部署在免费的github page上，甚至无须购买域名即可对外提供服务（你可以点击<a href="https://russelltao.github.io/">russelltao.github.io</a>查看我的github页面）。再比如，公有云提供的静态站点服务，可以将其自动部署到CDN站点上（腾讯云的Hexo部署插件见<a href="https://cloud.tencent.com/document/product/1210/43365">这里</a>），用户体验非常好。文章、图片等资源的备份也很简单，可以直接连同代码一起存放在git仓库中。</p>
+<p>当然，静态站点的缺点也很明显，它自身无法处理用户输入的数据，比如文章的评论、阅读量等，需要借助第三方API服务才能实现。虽然类似的服务很多，但今年国家监管得很严，个人站点一旦发现评论就可能会被关站，因此，个人博客改用静态站点其实挺合适的。</p>
+<p>静态站点通常以markdown格式写作，将.md文件渲染为.html文件，再发布到支持Http协议的Web服务器上，比如Apache、NodeJS或者Nginx。GoLang、Python等语言都有成熟的静态站点软件框架，而Javascript语言擅长前端UI界面的渲染，因此基于JS的Hexo框架渲染.md模板效果不错，尤其Hexo的中文文档相对较多，对国内用户更友好。Hexo有一个Next Theme主题非常好用，集成了很多常用插件。因此，我选择Hexo+Next搭建新的静态站点，并将原先的wordpress博客迁移过来，下面记录了相关步骤，供参考。</p>
+<h1 id="搭建hexo-Next主题站点"><a href="#搭建hexo-Next主题站点" class="headerlink" title="搭建hexo Next主题站点"></a>搭建hexo Next主题站点</h1><p>你可以在自己熟悉的操作系统上进行内容创作，再将它发布到Linux服务器上。先来看如何构建静态站点的源码环境。</p>
+<h2 id="在windows上安装生成站点环境"><a href="#在windows上安装生成站点环境" class="headerlink" title="在windows上安装生成站点环境"></a>在windows上安装生成站点环境</h2><p>安装NodeJS及hexo生成器，包括以下3步：</p>
+<ol>
+<li>进入<a href="https://nodejs.org/en/">NodeJS官网</a>下载安装包。</li>
+<li>更换淘宝源，这样下载软件会快一些。<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm config <span class="built_in">set</span> registry http://registry.npm.taobao.org</span><br></pre></td></tr></table></figure></li>
+<li>安装hexo：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
+<h2 id="建立博客站点"><a href="#建立博客站点" class="headerlink" title="建立博客站点"></a>建立博客站点</h2>想好用于存放站点文件的目录名，例如blog，执行：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo init blog</span><br></pre></td></tr></table></figure>
+进入hexo创建的blog目录中，再执行：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> blog</span><br><span class="line">npm install</span><br></pre></td></tr></table></figure>
+完成后，这个站点的目录如下：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── _config.yml</span><br><span class="line">├── package.json</span><br><span class="line">├── scaffolds</span><br><span class="line">├── <span class="built_in">source</span></span><br><span class="line">|   ├── _drafts</span><br><span class="line">|   └── _posts</span><br><span class="line">└── themes</span><br></pre></td></tr></table></figure>
+<h3 id="目录说明"><a href="#目录说明" class="headerlink" title="目录说明"></a>目录说明</h3></li>
+</ol>
+<ul>
+<li>source：所有博客文章（比如.md格式）、图片、视频等内容都在这里，目录层级不限。删除文章时，只要将.md及其引用资源（比如图片）删除即可。<ul>
+<li>_drafts：草稿放在该目录下，这些.md文章默认不会渲染到用于部署的public目录。</li>
+<li>_posts：文章放在此目录下。如果你的文章很多，<strong>为了维护方便，你可以在此目录下继续构建多级子目录放置文章</strong>。</li>
+</ul>
+</li>
+<li>themes：主题样式目录放在此处，比如接下来将要介绍的Next主题。</li>
+<li>scaffolds：新建文章时，会基于该目录下的3个模板文件，构造文章、草稿和页面。</li>
+<li>package.json：依赖软件包信息。</li>
+<li>_config.yml：站点级的配置文件，比如：<ul>
+<li>站点名称可以通过修改title和subtitle完成。</li>
+</ul>
+</li>
+</ul>
+<h2 id="设置Next主题"><a href="#设置Next主题" class="headerlink" title="设置Next主题"></a>设置Next主题</h2><p>默认的主题太难看，而hexo中最流行的Next主题功能非常强大，简单易用，适合新手入门。<br>安装主题很简单，首先将github上的Next主题放到themes目录：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/theme-next/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure>
+<p>接着，将站点配置文件_config.yml文件中theme项修改：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure>
+<p>Next主题已经生效。</p>
+<h3 id="设置主题风格"><a href="#设置主题风格" class="headerlink" title="设置主题风格"></a>设置主题风格</h3><p>目前Next有4种风格，可以通过修改next/_config.yml主题配置文件实现，例如修改为pisces风格：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Schemes</span></span><br><span class="line"><span class="comment">#scheme: Muse</span></span><br><span class="line"><span class="comment">#scheme: Mist</span></span><br><span class="line"><span class="attr">scheme:</span> <span class="string">Pisces</span></span><br><span class="line"><span class="comment">#scheme: Gemini</span></span><br></pre></td></tr></table></figure>
+<h3 id="去除底部LOGO"><a href="#去除底部LOGO" class="headerlink" title="去除底部LOGO"></a>去除底部LOGO</h3><p>如果想将站点底部的Hexo、Next字样消除，可以将footer中的powered置为false：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">footer:</span></span><br><span class="line">  <span class="attr">powered:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<p>如果显示站点创建时间，则可以更改since选项：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">footer:</span></span><br><span class="line">  <span class="attr">since:</span> <span class="number">2021</span></span><br></pre></td></tr></table></figure>
+<h3 id="设置站点语言"><a href="#设置站点语言" class="headerlink" title="设置站点语言"></a>设置站点语言</h3><p>将网站语言修改为中文，可以通过修改站点_config.yml文件完成，目前Next主题支持的语言如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>语言</th>
+<th>代码</th>
+<th>设定示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>English</td>
+<td>en</td>
+<td>language: en</td>
+</tr>
+<tr>
+<td>简体中文</td>
+<td>zh-Hans</td>
+<td>language: zh-Hans</td>
+</tr>
+<tr>
+<td>Français</td>
+<td>fr-FR</td>
+<td>language: fr-FR</td>
+</tr>
+<tr>
+<td>Português</td>
+<td>pt</td>
+<td>language: pt or language: pt-BR</td>
+</tr>
+<tr>
+<td>繁體中文</td>
+<td>zh-hk 或者 zh-tw</td>
+<td>language: zh-hk</td>
+</tr>
+<tr>
+<td>Русский язык</td>
+<td>ru</td>
+<td>language: ru</td>
+</tr>
+<tr>
+<td>Deutsch</td>
+<td>de</td>
+<td>language: de</td>
+</tr>
+<tr>
+<td>日本語</td>
+<td>ja</td>
+<td>language: ja</td>
+</tr>
+<tr>
+<td>Indonesian</td>
+<td>id</td>
+<td>language: id</td>
+</tr>
+<tr>
+<td>Korean</td>
+<td>ko</td>
+<td>language: ko</td>
+</tr>
+</tbody></table>
+<p>故修改为language: zh-CN即可。</p>
+<h1 id="迁移wordpress博客内容"><a href="#迁移wordpress博客内容" class="headerlink" title="迁移wordpress博客内容"></a>迁移wordpress博客内容</h1><h2 id="迁移数据"><a href="#迁移数据" class="headerlink" title="迁移数据"></a>迁移数据</h2><p>首先，安装 hexo-migrator-wordpress 插件。</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install hexo-migrator-wordpress --save</span><br></pre></td></tr></table></figure>
+<p>在 WordPress 仪表盘中导出数据(“Tools” → “Export” → “WordPress”)。注意，<strong>草稿里的文章建议删除后再导出，否则发布日期可能会导致插件异常</strong>。<br>接着，将导出的xxx.xml文件导入hexo站点：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo migrate wordpress xxx.xml</span><br></pre></td></tr></table></figure>
+<p>这个插件问题很多，有些wordpress文章很可能导致migrate过程异常终止。出现这种问题时，我建议你先找到导致migrate抛异常的文章，做相关处理后再重新导出、migrate。</p>
+<p>另外，即使migrate成功后，还需要大量的工作修复数据格式，包括更改代码、表格及段落格式等，如下文所描述的那样。</p>
+<h2 id="更改代码块格式"><a href="#更改代码块格式" class="headerlink" title="更改代码块格式"></a>更改代码块格式</h2><p>wordpress导出的代码段，仅用```来分隔，不会标注代码语言，这就无法使用语法高亮显示功能了。我们需要在``` 之后添加编程语言。比如，Nginx配置文件可以这么写：</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">``` nginx</span><br><span class="line"><span class="attribute">location</span> /a &#123;</span><br><span class="line">  <span class="attribute">alias</span> /d;</span><br><span class="line">&#125;   ```</span><br></pre></td></tr></table></figure>
+<p>点击<a href="https://github.com/highlightjs/highlight.js/blob/master/SUPPORTED_LANGUAGES.md">代码块支持语言</a>查看所有支持的语言。</p>
+<h2 id="更改表格格式"><a href="#更改表格格式" class="headerlink" title="更改表格格式"></a>更改表格格式</h2><p>默认表格迁移到markdown格式，每个行、列交汇处的数值是单行放置的！手动更改为markdown格式表格是极其痛苦的！ 如果你在用VsCode编辑器，可以安装个插件Markdown Shortcut，它可以将导入的数据简单的转换为表格。</p>
+<h2 id="增加分类、标签页"><a href="#增加分类、标签页" class="headerlink" title="增加分类、标签页"></a>增加分类、标签页</h2><p>分类页可以将所有文章的Category分类聚合成为独立的页面，供用户点击选择。同样，标签页可以将所有文章的Tag标签聚合为独立的页面，并通过字体大小、粗体等方式表达标签的引用次数，如下图所示：<br><img src="/images/%E5%BB%BA%E7%AB%99/hexo%E6%A0%87%E7%AD%BE%E9%A1%B5.JPG"></p>
+<p>生成这2个页面的步骤很简单，包括：</p>
+<ol>
+<li>首先生成分类页和标签页：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo new page categories</span><br><span class="line">hexo new page tags</span><br></pre></td></tr></table></figure></li>
+<li>修改2个页面的type值<br>在新生成的source/categories/index.md文件中，添加type项：<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">title:</span> <span class="string">categories</span></span><br><span class="line"><span class="attr">date:</span> <span class="number">2021-01-29 10:17:39</span></span><br><span class="line"><span class="attr">type:</span> <span class="string">&quot;categories&quot;</span></span><br><span class="line"><span class="meta">---</span></span><br></pre></td></tr></table></figure>
+在新生成的source/tags/index.md文件中，同样添加type项：<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">title:</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">date:</span> <span class="number">2021-01-29 10:17:44</span></span><br><span class="line"><span class="attr">type:</span> <span class="string">&#x27;tags&#x27;</span></span><br><span class="line"><span class="meta">---</span></span><br></pre></td></tr></table></figure></li>
+<li>将2个页面添加到网站首页<br>修改next/_config.yml文件，加入tags和categories页：<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">menu:</span></span><br><span class="line">  <span class="attr">home:</span> <span class="string">/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-home</span></span><br><span class="line">  <span class="attr">tags:</span> <span class="string">/tags/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-tags</span></span><br><span class="line">  <span class="attr">categories:</span> <span class="string">/categories/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-th</span></span><br></pre></td></tr></table></figure>
+其中，fa-tags等是图标样式，你可以在<a href="https://fontawesome.com/v4.7.0/icons/">这里</a>找到所有可用的图标。<h2 id="分隔文章摘要"><a href="#分隔文章摘要" class="headerlink" title="分隔文章摘要"></a>分隔文章摘要</h2></li>
+</ol>
+<p>Next主题有3种提取文章摘要在首页显示的方法，包括：</p>
+<ol>
+<li>最好用（也是官方推荐的）的，是在文章中用<code>&lt;!-- more --&gt;</code>分隔内容。虽然这样最灵活，但很难保证首页有限摘要中含有图片。</li>
+<li>在文章最前面的front-matter部分中添加description标签，标签中的内容会放在首页中以摘要方式显示。注意，这里添加图片时，不能使用markdown格式，而必须用&lt;img src=&quot;…&quot;/&gt;这种方式！</li>
+<li>由Next主题按照字符数自动形成摘要，比如：<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">auto_excerpt:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">length:</span> <span class="number">150</span></span><br></pre></td></tr></table></figure>
+这种配置会自动截断前150个字符，形成首页摘要。这个方法效果最差。</li>
+</ol>
+<h2 id="SEO优化"><a href="#SEO优化" class="headerlink" title="SEO优化"></a>SEO优化</h2><p>为了提高站点的访问率，Next主题也已经帮我们做了很多工作。</p>
+<h3 id="增加百度统计"><a href="#增加百度统计" class="headerlink" title="增加百度统计"></a>增加百度统计</h3><p>可以借助百度或者谷歌的统计功能查看站点的访问情况（JS会将用户的访问数据传到谷歌、百度后台），<strong>比如了解下，我们的用户主要靠哪些关键词才搜索到站点</strong>。用法很简单，对于<a href="https://tongji.baidu.com/">百度统计</a>，在注册好帐户后，可以从下图中获取脚本ID：<br><img src="/images/%E5%BB%BA%E7%AB%99/analytics-baidu-id.png"></p>
+<p>再修改next/_config.yml文件：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">baidu_analytics:</span> <span class="string">xxxxx</span></span><br></pre></td></tr></table></figure>
+<p>设置好脚本ID即可。</p>
+<h3 id="设置keywords关键字"><a href="#设置keywords关键字" class="headerlink" title="设置keywords关键字"></a>设置keywords关键字</h3><p>关键字对搜索引擎更友好，方便建立倒排索引时设置词汇权重。关键字分为站点与文章2类，设置方法如下：</p>
+<ol>
+<li>站点级关键字<br>站点配置文件_config.yml中可以设置keywords，多个关键字之间用英文逗号分隔。</li>
+<li>文章关键字<br>在文章最前方的front-matter中添加keywords项，其中填写关键字。</li>
+</ol>
+<h3 id="生成sitemap站点地图"><a href="#生成sitemap站点地图" class="headerlink" title="生成sitemap站点地图"></a>生成sitemap站点地图</h3><p>为了方便搜索引擎收录站点的所有文章，你可以通过以下2步提升收录速度：</p>
+<ol>
+<li>安装站点地图插件(详细用法见<a href="https://github.com/hexojs/hexo-generator-sitemap">这里</a>)：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-sitemap --save</span><br></pre></td></tr></table></figure></li>
+<li>将站点地图链接加入首页<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">menu:</span></span><br><span class="line">  <span class="attr">sitemap:</span> <span class="string">/sitemap.xml</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-sitemap</span></span><br></pre></td></tr></table></figure>
+这样，搜索引擎一经发现/sitemap.xml页面，就会迅速找到所有文章。</li>
+</ol>
+<h1 id="优化Next主题"><a href="#优化Next主题" class="headerlink" title="优化Next主题"></a>优化Next主题</h1><p>Next主题本身很美观也很强大，但如果想定制个性化的页面，还需要修改CSS样式。同时，Next集成了很多第三方平台的功能，这需要协同注册第三方平台才能达到效果。下面总结下常用的主题优化设置。</p>
+<h2 id="分享到微信、微博等平台"><a href="#分享到微信、微博等平台" class="headerlink" title="分享到微信、微博等平台"></a>分享到微信、微博等平台</h2><p>使用Next主题默认的<a href="https://www.addthis.com/">AddThis</a>插件，注册帐号并排列分享顺序（比如默认Facebook、Twitter在最上方，国内用户可以将微博、微信优先级提前）。</p>
+<p>最后在Next主题的_config.yml文件中，将AddThis中的pubid填入AddThis中：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">add_this_id:</span> <span class="string">ra-xxxxxxxxxxxxxxxxx</span></span><br></pre></td></tr></table></figure>
+<h2 id="添加侧边栏头像"><a href="#添加侧边栏头像" class="headerlink" title="添加侧边栏头像"></a>添加侧边栏头像</h2><p>修改/themes/next/layout/_partials/sidebar/site-overview.swig文件：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;site-author motion-element&quot; itemprop=&quot;author&quot; itemscope itemtype=&quot;http://schema.org/Person&quot;&gt;</span><br><span class="line">  &#123;%- if theme.avatar.url %&#125;</span><br><span class="line">    &lt;a href=&quot;/关于陶辉/index.html&quot;&gt;&lt;img class=&quot;site-author-image&quot; itemprop=&quot;image&quot; alt=&quot;&#123;&#123; author &#125;&#125;&quot;</span><br><span class="line">      src=&quot;&#123;&#123; url_for(theme.avatar.url) &#125;&#125;&quot;&gt;&lt;/a&gt;</span><br><span class="line">  &#123;%- endif %&#125;</span><br><span class="line">  &lt;p class=&quot;site-author-name&quot; itemprop=&quot;name&quot;&gt;&#123;&#123; author &#125;&#125;&lt;/p&gt;</span><br><span class="line">  &lt;div class=&quot;site-description&quot; itemprop=&quot;description&quot;&gt;&#123;&#123; description &#125;&#125;&lt;/div&gt;</span><br><span class="line">&lt;/<span class="selector-tag">div</span>&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="显示页面的浏览进度"><a href="#显示页面的浏览进度" class="headerlink" title="显示页面的浏览进度"></a>显示页面的浏览进度</h2><p>修改主题_config.yaml文件，可以让右下角多出1个回到页头的图标，并且显示文章浏览进度：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">back2top:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="comment"># Back to top in sidebar.</span></span><br><span class="line">  <span class="attr">sidebar:</span> <span class="literal">false</span></span><br><span class="line">  <span class="comment"># Scroll percent label in b2t button.</span></span><br><span class="line">  <span class="attr">scrollpercent:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<h2 id="开启文章底部的相关文章推荐"><a href="#开启文章底部的相关文章推荐" class="headerlink" title="开启文章底部的相关文章推荐"></a>开启文章底部的相关文章推荐</h2><p>将related_posts下的enable置为true即可：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">related_posts:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">params:</span></span><br><span class="line">    <span class="attr">maxCount:</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>maxCount可以设置最多推荐的文章数</p>
+<h2 id="开启文章版权声明"><a href="#开启文章版权声明" class="headerlink" title="开启文章版权声明"></a>开启文章版权声明</h2><p>编辑主题_config.yml配置文件，在footer中找到creative_commons，这里可以设置知识共享许可协议。creative_commons中含有以下版权许可声明：<br><img src="/images/%E5%BB%BA%E7%AB%99/%E7%9F%A5%E8%AF%86%E5%85%B1%E4%BA%AB%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE.JPG"></p>
+<p>如果你选择使用by-nc-sa，可以如下设置：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">creative_commons:</span></span><br><span class="line">  <span class="attr">license:</span> <span class="string">by-nc-sa</span></span><br><span class="line">  <span class="attr">sidebar:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">post:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">language:</span> <span class="string">zh-CN</span></span><br></pre></td></tr></table></figure>
+<h2 id="首页加入圆角矩形分隔"><a href="#首页加入圆角矩形分隔" class="headerlink" title="首页加入圆角矩形分隔"></a>首页加入圆角矩形分隔</h2><p>首页多篇文章之间的分隔并不明显，我习惯将每篇文章以矩形框显示。此时，可以修改Next主题中的next/source/css/_common/components/post/post.styl文件，找到use-motion中修改post_block的CSS代码：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.use-motion</span> &#123;</span><br><span class="line">  if (hexo-config(&#x27;motion.transition.post_block&#x27;)) &#123;</span><br><span class="line">    <span class="selector-class">.post-block</span>, <span class="selector-class">.pagination</span>, <span class="selector-class">.comments</span> &#123;</span><br><span class="line">      <span class="attribute">opacity</span>: <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在post_block中加入矩形框，其中-webkit-box-shadow可以设置阴影的颜色和宽度，比如：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.use-motion</span> &#123;</span><br><span class="line">  if (hexo-config(&#x27;motion.transition.post_block&#x27;)) &#123;</span><br><span class="line">    <span class="selector-class">.post-block</span>&#123;</span><br><span class="line">      <span class="attribute">opacity</span>: <span class="number">1</span>;</span><br><span class="line">      <span class="attribute">border-radius</span>: <span class="number">20px</span>;</span><br><span class="line">      <span class="attribute">margin-top</span>: <span class="number">40px</span>;</span><br><span class="line">      <span class="attribute">margin-bottom</span>: <span class="number">20px</span>;</span><br><span class="line">      <span class="attribute">padding</span>: <span class="number">15px</span>;</span><br><span class="line">      <span class="attribute">-webkit-box-shadow</span>: <span class="number">0</span> <span class="number">0</span> <span class="number">5px</span> <span class="built_in">rgba</span>(<span class="number">51</span>, <span class="number">170</span>, <span class="number">51</span>, .<span class="number">5</span>);</span><br><span class="line">      <span class="attribute">-moz-box-shadow</span>: <span class="number">0</span> <span class="number">0</span> <span class="number">15px</span> <span class="built_in">rgba</span>(<span class="number">202</span>, <span class="number">203</span>, <span class="number">204</span>, .<span class="number">5</span>);</span><br><span class="line">    &#125;<span class="selector-class">.pagination</span>, <span class="selector-class">.comments</span> &#123;</span><br><span class="line">    <span class="attribute">opacity</span>: <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="开启文章字数统计及预估阅读时长"><a href="#开启文章字数统计及预估阅读时长" class="headerlink" title="开启文章字数统计及预估阅读时长"></a>开启文章字数统计及预估阅读时长</h2><p><a href="https://github.com/theme-next/hexo-symbols-count-time">hexo-symbols-count-time插件</a>提供了这一功能，使用它首先要安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install hexo-symbols-count-time</span><br></pre></td></tr></table></figure>
+<p>接着，在主题的_config.yml中开启它：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">symbols_count_time:</span></span><br><span class="line">  <span class="attr">separated_meta:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">item_text_post:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">item_text_total:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<h2 id="添加本地搜索功能"><a href="#添加本地搜索功能" class="headerlink" title="添加本地搜索功能"></a>添加本地搜索功能</h2><p><a href="https://github.com/theme-next/hexo-generator-searchdb">hexo-generator-searchdb插件</a>提供了基于JS在本地内容中搜索的能力，使用时首先要安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb</span><br></pre></td></tr></table></figure>
+<p>接着修改Next主题的_config.yml配置文件，打开本地搜索功能：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">local_search:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<h2 id="修改备案ICP号"><a href="#修改备案ICP号" class="headerlink" title="修改备案ICP号"></a>修改备案ICP号</h2><p>国内的站点都需要备案号，并将公安备案号及图标放在网站的最底部。Next主题已经将这一功能内置，你可以在主题配置文件footer中的beian中，填入备案号和图标，比如：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">footer:</span></span><br><span class="line">  <span class="attr">beian:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">icp:</span> <span class="string">&lt;a</span> <span class="string">href=&quot;https://beian.miit.gov.cn&quot;&gt;浙ICP备xxxxxx号&lt;/a&gt;</span></span><br><span class="line">    <span class="attr">gongan_id:</span> <span class="string">3xxxxxxxxxx</span></span><br><span class="line">    <span class="attr">gongan_num:</span> <span class="string">浙公网安备</span> <span class="string">3xxxxxxxxx号</span></span><br><span class="line">    <span class="attr">gongan_icon_url:</span> <span class="string">/images/备案图标.png</span></span><br></pre></td></tr></table></figure>
+<h1 id="部署静态站点"><a href="#部署静态站点" class="headerlink" title="部署静态站点"></a>部署静态站点</h1><p>接下来介绍静态站点的3种部署方式。</p>
+<h2 id="本地测试静态站点"><a href="#本地测试静态站点" class="headerlink" title="本地测试静态站点"></a>本地测试静态站点</h2><p>在部署到生产环境前，首先要在本机开发环境中验证页面功能。以下3项最为常用：</p>
+<ol>
+<li>生成静态站点文件<br>将.md文章在public文件夹下生成HTML站点，可以使用如下命令：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure>
+需要注意，有时public下会有上一次生成的残留文件，可以用clean命令清理：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br></pre></td></tr></table></figure></li>
+<li>部署本机测试环境</li>
+</ol>
+<p>接着，就可以s命令在本机启动NodeJS服务，通过默认的4000端口测试内容了，比如<a href="http://localhost:4000，这样，在本机的浏览器访问即可调试，非常方便。当然，你可以通过-p选项修改监听端口，还可以通过--draft选项测试草稿箱中的文章：">http://localhost:4000，这样，在本机的浏览器访问即可调试，非常方便。当然，你可以通过-p选项修改监听端口，还可以通过--draft选项测试草稿箱中的文章：</a></p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo s --draft -p 8080</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>发布到生产环境<br>测试通过后，就可以通过d命令部署站点了：<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+究竟将public文件夹部署到哪里，下面一一来看。</li>
+</ol>
+<h2 id="部署到免费的github-page上"><a href="#部署到免费的github-page上" class="headerlink" title="部署到免费的github page上"></a>部署到免费的github page上</h2><p>我们通常会将源代码部署到github上，但github还提供了一种功能，可以将静态页面部署在其上。当你用自己的github帐户名建立page仓库后，就可以通过hexo d命令一键部署站点了，非常方便。</p>
+<p>当然，部署前先要安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
+<p>接着，修改站点（不是Next主题）的_config.yml文件，填入仓库地址：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repository:</span> <span class="string">git@github.com:yourgithubname/yourgithubname.github.io</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+<p>** 注意：git不能是https协议，否则需要输入用户名、密码！**</p>
+<h2 id="部署到云服务器通过Nginx提供服务"><a href="#部署到云服务器通过Nginx提供服务" class="headerlink" title="部署到云服务器通过Nginx提供服务"></a>部署到云服务器通过Nginx提供服务</h2><p>如果你有Linux云服务器，可以用Nginx等Web服务器提供静态文件服务（通过root指令，具体的配置方式参见<a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">这里</a>）。此时部署方式可以通过Linux服务器默认就提供的sftp协议上传到服务器中。</p>
+<p>还是先安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">npm install hexo-deployer-sftp --save</span><br></pre></td></tr></table></figure>
+<p>接着修改站点配置文件。注意，如果你想将静态站点一键部署到多个服务器上也是可以的，比如：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">sftp</span></span><br><span class="line">  <span class="attr">host:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">user:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">pass:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">remotePath:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">22</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repository:</span> <span class="string">git@github.com:yourgithubname/yourgithubname.github.io</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+<p>至此，每当你修改完文章，就可以通过hexo d完成站点部署，非常方便。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>静态站点不需要数据库，也不需要php、java等编程语言基于模板生成动态页面，所以其安全性非常高，部署时只需要将public文件夹拷贝到目标服务器即可。</p>
+<p>Hexo是基于Javscript+Nodejs软件生成静态站点的，它可以将Markdown等格式的文章渲染为HTML文件，还支持第三方插件，可以一键部署到远程服务器。</p>
+<p>Next主题是Hexo上的首选主题，集成了许多插件，将备案号、本地搜索、搜索引擎统计、站点地图、文章推荐、版权声明、浏览进度、文章字数统计等功能都集成了进去。而且，我们可以很方便地修改主题样式。如果你的站点没有动态内容，或者通过第三方插件可以完成相应功能，那么Hexo+Next是个很好的解决方案！</p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>wordpress</tag>
+        <tag>nodejs</tag>
+        <tag>hexo</tag>
+        <tag>next</tag>
+        <tag>github</tag>
+        <tag>免费托管</tag>
+        <tag>备案</tag>
+        <tag>管局</tag>
+        <tag>sftp</tag>
+        <tag>评论</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>区块链开源实现hyperledger fabric架构详解</title>
     <url>/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/</url>
     <content><![CDATA[<p>hyperledger fabric是区块链中联盟链的优秀实现，主要代码由IBM、Intel、各大银行等贡献，目前v1.1版的kafka共识方式可达到1000/s次的吞吐量。本文中我们依次讨论：区块链的共通特性、fabric核心概念、fabric的交易执行流程。本文来源于笔者欲对公司部分业务上链而进行培训的PPT，故图多文字少，不要怕太长。</p>
@@ -2656,6 +2877,195 @@
         <tag>脚本引擎</tag>
         <tag>负载均衡</tag>
         <tag>过滤模块</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>深入剖析Nginx负载均衡算法</title>
+    <url>/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/</url>
+    <content><![CDATA[<p>负载均衡是Nginx的核心应用场景，本文将介绍官方提供的5种负载均衡算法及其实现细节。</p>
+<p>Nginx提供的Scalability，主要由复制扩展（AKF X轴）和用户数据扩展（AKF Z轴）组成。所谓复制扩展，是指上游Server进程是完全相同的，因此可以采用最少连接数、Round Robin轮询、随机选择等算法来分发流量。所谓用户数据扩展，是指每个上游Server只处理特定用户的请求，对这种场景Nginx提供了支持权重的哈希算法，以及支持虚拟节点的一致性哈希算法。</p>
+<p>当上游集群规模巨大时，<strong>我们必须了解这些算法的细节，才能有效地均衡负载</strong>。比如，当上游server出错时，Weight权重会动态调整吗？调整策略又是什么？如果算法选出的上游server达到了max_fails限制的失败次数，或者max_conns限制的最大并发连接数，那么又该如何重新选择新路由呢？</p>
+<p>再比如，为了减少宕机、扩容时受影响的Key规模，同时让CRC32哈希值分布更均衡，Nginx为每个Weight权重配置了160个虚拟节点，为什么是这个数字？一致性哈希算法执行的时间复杂度又是多少呢？ </p>
+<a id="more"></a>
+<p>这一讲我将深入分析Nginx的负载均衡算法，同时围绕ngx_http_upstream_rr_peer_s这个核心数据结构，探讨这些HTTP负载均衡模块到底是怎样工作的。同时，本文也是Nginx开源社区基础培训系列课程第二季，即7月16日晚第2次直播课的文字总结。</p>
+<h1 id="RoundRobin权重的实现算法"><a href="#RoundRobin权重的实现算法" class="headerlink" title="RoundRobin权重的实现算法"></a>RoundRobin权重的实现算法</h1><p>在Nginx中，上游服务可以通过server指令声明其IP地址或者域名，并通过upstream块指令定义为一组。这一组server中，将使用同一种负载均衡算法，从请求信息（比如HTTP Header或者IP Header）或者上游服务状态（比如TCP并发连接数）中计算出请求的路由：<br><img src="/images/nginx/Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95.png"><br>如果上游服务器是异构的，例如上图中server 1、3、4、5都是2核4G的服务器，而server 2则是8核16G，那么既可以在server 2上部署多个不同的服务，并把它配置到多个usptream组中，也可以通过server指令后的weight选项，设置算法权重：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="attribute">upstream</span> rrBackend &#123;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8001</span> weight=<span class="number">1</span>;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8002</span> weight=<span class="number">2</span>;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8003</span> weight=<span class="number">3</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="attribute">location</span> /rr &#123;</span><br><span class="line">                <span class="attribute">proxy_pass</span> http://rrBackend;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上面这段配置指令中，并没有显式指定负载均衡算法，此时将使用Nginx框架唯一自带的RoundRobin轮询算法。顾名思义，它将按照server在upstream配置块中的位置，有序访问上游服务。需要注意，加入weight权重后，Nginx并不会依照字面次序访问上游服务。仍然以上述配置为例，你可能认为Nginx应当这么访问：8001、8002、8002、8003、8003、8003（我在本机上启动了这3个HTTP端口，充当上游server，这样验证成本更低），但事实上，Nginx却是按照这个顺序访问的：8003、8002、8003、8001、8002、8003，为什么会这样呢？<strong>实际上这是为了动态权重的实现而设计的</strong>。我们先从实现层面谈起。</p>
+<p>Nginx为每个server设置了2个访问状态：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ngx_http_upstream_rr_peer_s</span> &#123;</span></span><br><span class="line">	... </span><br><span class="line">    <span class="keyword">ngx_int_t</span>                       current_weight;</span><br><span class="line">    <span class="keyword">ngx_int_t</span>                       effective_weight;</span><br><span class="line">...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>其中current_weight初始化为0，而effective_weight就是动态权重，它被初始化为server指令后的weight权重。我们先忽略转发失败的场景，此时RoundRobin算法可以简化为4步：</p>
+<ol>
+<li>   遍历upstream组中的所有server，将current_weight的值增加effective_weight；</li>
+<li>   将全部的权重值相加得到total；</li>
+<li>   选择current_weight最大的server；</li>
+<li>   将这个选中server的current_weight减去total值。</li>
+</ol>
+<p>这样，前6次的运算结果就如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>current_weight</th>
+<th>current_weight加effective_weight</th>
+<th>total</th>
+<th>选中server</th>
+<th>current_weight</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[0,0,0]</td>
+<td>[1,2,3]</td>
+<td>6</td>
+<td>8003</td>
+<td>[1,2,-3]</td>
+</tr>
+<tr>
+<td>[1,2,-3]</td>
+<td>[2,4,0]</td>
+<td>6</td>
+<td>8002</td>
+<td>[2,-2,0]</td>
+</tr>
+<tr>
+<td>[2,-2,0]</td>
+<td>[3,0,3]</td>
+<td>6</td>
+<td>8003</td>
+<td>[3,0,-3]</td>
+</tr>
+<tr>
+<td>[3,0,-3]</td>
+<td>[4,2,0]</td>
+<td>6</td>
+<td>8001</td>
+<td>[-2,2,0]</td>
+</tr>
+<tr>
+<td>[-2,2,0]</td>
+<td>[-1,4,3]</td>
+<td>6</td>
+<td>8002</td>
+<td>[-1,-2,3]</td>
+</tr>
+<tr>
+<td>[-1,-2,3]</td>
+<td>[0,0,6]</td>
+<td>6</td>
+<td>8003</td>
+<td>[0,0,0]</td>
+</tr>
+<tr>
+<td>[0,0,0]</td>
+<td>[1,2,3]</td>
+<td>6</td>
+<td>8003</td>
+<td>[1,2,-3]</td>
+</tr>
+</tbody></table>
+<p>由于总权重为6（1+2+3），所以每6次转发后就是一个新的轮回。我再把简化的RoundRobin源代码列在下方，你可以对照理解：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">    <span class="keyword">ngx_http_upstream_rr_peer_t</span>* best = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">ngx_int_t</span>  total = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (peer = rrp-&gt;peers-&gt;peer, i = <span class="number">0</span>;</span><br><span class="line">         peer;</span><br><span class="line">         peer = peer-&gt;next, i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//在每一轮计算中，current_weight要加上effective_weight</span></span><br><span class="line">peer-&gt;current_weight += peer-&gt;effective_weight; </span><br><span class="line"><span class="comment">//total值是所有effective_weight的累加和</span></span><br><span class="line">        total += peer-&gt;effective_weight;</span><br><span class="line">        <span class="keyword">if</span> (best == <span class="literal">NULL</span> || peer-&gt;current_weight &gt; best-&gt;current_weight) &#123;</span><br><span class="line">            <span class="comment">//每一轮找出current_weight最大的那个server</span></span><br><span class="line">best = peer;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//选出server后，要将最大的</span></span><br><span class="line">    best-&gt;current_weight -= total;</span><br><span class="line">    <span class="keyword">return</span> best;</span><br></pre></td></tr></table></figure>
+<p>可以看到，这段代码只做一遍循环就完成了server选择，执行效率很高。</p>
+<h1 id="网络错误该如何处理？"><a href="#网络错误该如何处理？" class="headerlink" title="网络错误该如何处理？"></a>网络错误该如何处理？</h1><p>在上例中我们假定不会转发失败，所以effective_weight是不变的。但现实中分布式系统出错才是常态，接下来我们看看RoundRobin算法是怎样处理错误的。</p>
+<p>在server指令后，可以加入max_fails和fail_timeout选项，它们共同对转发失败的次数加以限制：</p>
+<ol>
+<li>   在fail_timeout秒内（默认为10秒），<strong>每当转发失败，server的权重都会适当调低（通过effective_weight实现）</strong>；</li>
+<li>   如果转发失败次数达到了max_fails次，则接下来的fail_timeout秒内不再向该server转发任何请求；</li>
+<li>   在等待fail_timeout秒的空窗期后，server将会基于最低权重执行算法，尝试转发请求；</li>
+<li>   <strong>每成功转发1次权重加1，直到恢复至weight配置</strong>。</li>
+</ol>
+<p><strong>这就是动态权重发挥作用的机制，它不只对RoundRobin算法有效，对于最少连接数、一致性哈希算法同样有效</strong>。接下来我们再从实现层面上回顾下这一流程，加深你对动态权重的理解。Nginx为这一功能准备了6个状态变量：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ngx_http_upstream_rr_peer_s</span> &#123;</span></span><br><span class="line">...</span><br><span class="line">    <span class="keyword">ngx_int_t</span>                       weight;</span><br><span class="line">    <span class="keyword">time_t</span>                          accessed;</span><br><span class="line">    <span class="keyword">ngx_uint_t</span>                      max_fails;</span><br><span class="line">    <span class="keyword">ngx_uint_t</span>                      fails;</span><br><span class="line">    <span class="keyword">time_t</span>                          checked;</span><br><span class="line">    <span class="keyword">time_t</span>                          fail_timeout;</span><br><span class="line">...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>其中，weight、max_fails、fail_timeout都是server指令后的选项，它们是固定不变的。fails是窗口期的转发失败次数，accessed表示最近一次转发失败时间，而checked则是最近一次转发时间（无论成功或者失败）。</p>
+<p>这样，当访问上游server失败时，将会把accessed和checked置为当前时间，并将fails次数加1：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">peer-&gt;fails++;</span><br><span class="line">peer-&gt;accessed = now;</span><br><span class="line">peer-&gt;checked = now;</span><br></pre></td></tr></table></figure>
+<p>如果max_fails功能没有关闭（0表示关闭，默认值是1），就会通过effective_weight适当降低权重：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (peer-&gt;max_fails) &#123;</span><br><span class="line">    peer-&gt;effective_weight -= peer-&gt;weight / peer-&gt;max_fails;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当执行负载均衡算法时，如果在fail_timeout秒内连续失败了max_fails次，则不再访问该server：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (peer-&gt;max_fails</span><br><span class="line">    &amp;&amp; peer-&gt;fails &gt;= peer-&gt;max_fails</span><br><span class="line">    &amp;&amp; now - peer-&gt;checked &lt;= peer-&gt;fail_timeout)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">continue</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在过了fail_timeout秒的空窗期后，一旦算法再次选择了该server，就会将checked重置为当前时间：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (now - best-&gt;checked &gt; best-&gt;fail_timeout) &#123;</span><br><span class="line">    best-&gt;checked = now;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一旦最终转发请求成功，就会通过accessed将fails失败次数清零：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (peer-&gt;accessed &lt; peer-&gt;checked) &#123;</span><br><span class="line">    peer-&gt;fails = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意，此时effective_weight还需要通过不断的成功来缓慢恢复权重：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> (peer-&gt;effective_weight &lt; peer-&gt;weight) &#123;</span><br><span class="line">    peer-&gt;effective_weight++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>RoundRobin算法还能控制并发连接数，你可以通过server指令后的max_conns选项设置（默认为0表示不加限制）。它的实现原理非常简单，这里不再介绍。</p>
+<p>可见，RoundRobin算法可以柔性恢复转发错误。如果上游Server进程是复制扩展的（处理的数据相同），那么RoundRobin就是最简单有效的负载均衡算法。</p>
+<h1 id="最少连接数与随机选择算法"><a href="#最少连接数与随机选择算法" class="headerlink" title="最少连接数与随机选择算法"></a>最少连接数与随机选择算法</h1><p>前文之所以要详尽的介绍RoundRobin权重、错误恢复、并发连接限制等功能，是因为Nginx中几乎所有负载均衡算法，都在一定程度上继承了上述机制。接下来我们分析与RoundRobin极为相似的Least Conn和Random算法，它们皆处理沿AKF X轴扩展的场景。</p>
+<p>首先来看Least Conn最少连接数算法。多数场景下，并发TCP连接最少的服务器负载最轻，因此ngx_http_upstream_least_conn_module模块会选择连接最少的server转发请求。只需要在upstream中加入least_conn指令，就可以开启最少连接数算法：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="section">upstream</span> &#123;</span><br><span class="line">	<span class="attribute">server</span> localhost:<span class="number">8001</span> weight=<span class="number">1</span>;</span><br><span class="line">	<span class="attribute">server</span> localhost:<span class="number">8002</span> weight=<span class="number">2</span>;</span><br><span class="line">	least_conn;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>它的实现非常简单，在符合max_fails、fail_timeout失败次数约束、max_conns并发连接数约束下，取当前并发连接数与权重相乘后最小的server即可：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">     <span class="keyword">if</span> (best == <span class="literal">NULL</span></span><br><span class="line">         || peer-&gt;conns * best-&gt;weight &lt; best-&gt;conns * peer-&gt;weight)</span><br><span class="line">     &#123;</span><br><span class="line">         best = peer;</span><br><span class="line">         many = <span class="number">0</span>;</span><br><span class="line">     &#125; <span class="keyword">else</span> <span class="keyword">if</span> (peer-&gt;conns * best-&gt;weight == best-&gt;conns * peer-&gt;weight) &#123;</span><br><span class="line"><span class="comment">// many表示存在多个最少连接服务器</span></span><br><span class="line">         many = <span class="number">1</span>;</span><br><span class="line">     &#125;</span><br></pre></td></tr></table></figure>
+<p>如果存在不只1个的最少连接server，将对这些上游server继续执行RoundRobin算法。</p>
+<p>其次，我们再来看Random随机选择算法。如前文所述，RoundRobin轮询算法是有规律的，当我们需要完全随机的访问上游server时，就可以选择Random算法，它的开启方式非常简单，在upstream中加入random指令即可：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="attribute">upstream</span> rrBackend &#123;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8001</span> weight=<span class="number">1</span>;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8002</span> weight=<span class="number">2</span>;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8003</span> weight=<span class="number">3</span>;</span><br><span class="line">				random;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时，Nginx会建立含有3个元素的有序数组，分别对应3个server，其值为权重的累加值，如下所示：<br>1：server1 | 3(1+2)：server2 | 6(1+2+3)：server3<br>——- | ——- | ——-</p>
+<p>执行随机算法时，首先取小于total_weight（即6）的随机数：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ngx_uint_t</span>  x = ngx_random() % peers-&gt;total_weight; </span><br></pre></td></tr></table></figure>
+<p>接着，基于二分法遍历有序数组，找到下标x对应的上游server：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">    <span class="keyword">ngx_uint_t</span>  i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">ngx_uint_t</span>  j = peers-&gt;number; <span class="comment">//number是upstream下的server个数</span></span><br><span class="line"><span class="keyword">while</span> (j - i &gt; <span class="number">1</span>) &#123;  <span class="comment">//如果存在超过2个server，才需要执行随机选择</span></span><br><span class="line">        <span class="keyword">ngx_uint_t</span>  k = (i + j) / <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">if</span> (x &lt; rp-&gt;conf-&gt;ranges[k].range) &#123;</span><br><span class="line">            j = k;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            i = k;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">return</span> i;  <span class="comment">//返回选中server对应的序号</span></span><br></pre></td></tr></table></figure>
+<p>注意，随机选择出的server很有可能并不满足max_fails、fail_timeout失败次数的约束，或者不满足max_conns并发连接数约束。<strong>对于同一个请求，如果连续20次的随机选择都没有找到合适的server，那么Random算法将会退化为RoundRobin算法选择server</strong>。</p>
+<p>事实上，Random算法还有一个功能，你可以在random指令后添加two least_conn选项，这样算法将会随机找出2个server，再选择并发连接数最少的那1个：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="attribute">upstream</span> rrBackend &#123;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8001</span> weight=<span class="number">1</span>;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8002</span> weight=<span class="number">2</span>;</span><br><span class="line">                <span class="attribute">server</span> localhost:<span class="number">8003</span> weight=<span class="number">3</span>;</span><br><span class="line">				<span class="attribute">random</span> two least_conn;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>官方提供的RoundRobin、最少连接数、随机选择这3个算法，只适用于无差别的上游服务。当上游server只处理特定范围的请求时，可以使用ip_hash、hash以及hash consistent这三种算法。</p>
+<h1 id="哈希算法的问题"><a href="#哈希算法的问题" class="headerlink" title="哈希算法的问题"></a>哈希算法的问题</h1><p>复制扩展无法解决数据增长问题，这样当业务增长到某一阶段，以致上游server无法将高频访问数据全部放于内存中时，性能便会一落千丈。Nginx通过ngx_http_upstream_ip_hash_module、ngx_http_upstream_hash_module这两个模块，实现了哈希与一致性哈希算法，它们可以限制每个上游server处理的数据量，以此提升上游server的性能。我们先来看ip_hash算法。</p>
+<p>每个IP报文头部都含有源IP地址，它标识了唯一的客户端。因此，将IP地址依据字符串哈希函数转换为32位的整数，再对server总数取模，就可以将客户端与上游server的访问关系固定下来。</p>
+<p>它的实现非常简单，包括以下3步：</p>
+<ol>
+<li><p>将IP地址这个字符串转化为哈希值，代码如下所示：</p>
+<pre><code> ngx_uint_t    hash = 89;
+ for (i = 0; i &lt; (ngx_uint_t) iphp-&gt;addrlen; i++) &#123;
+     hash = (hash * 113 + iphp-&gt;addr[i]) % 6271;
+ &#125;</code></pre>
+</li>
+<li><p>接着，基于所有上游server的权重和，缩小哈希值范围：<br>ngx_uint_t  w = hash % iphp-&gt;rrp.peers-&gt;total_weight;</p>
+</li>
+<li><p>最后，通过遍历所有server的权重，选取上游server：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">while</span> (w &gt;= peer-&gt;weight) &#123;</span><br><span class="line">    w -= peer-&gt;weight;</span><br><span class="line">    peer = peer-&gt;next;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可见，<strong>相对于采用二分查找的Random算法，古老的ip_hash性能有所下降（时间复杂度从O(logN)降到O(N)），在server非常多时性能不够理想</strong>。</p>
+</li>
+</ol>
+<p>实际上，ip_hash还有一个很糟糕的问题，就是对于IPv4地址，它会忽略最后1个字节的值。比如若IP地址为AAA.BBB.CCC.DDD，那么ip_hash只会使用AAA.BBB.CCC来求取哈希值，相关代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">case</span> AF_INET:</span><br><span class="line">    <span class="built_in">sin</span> = (struct sockaddr_in *) r-&gt;connection-&gt;sockaddr;</span><br><span class="line">    iphp-&gt;addr = (u_char *) &amp;<span class="built_in">sin</span>-&gt;sin_addr.s_addr;</span><br><span class="line">    iphp-&gt;addrlen = <span class="number">3</span>;</span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure>
+<p>对于后出现的IPv6地址，将会使用全部16个字节的地址。为了向前兼容，ip_hash模块很难修改掉IPv4地址的这个Bug。此时，你可以使用更新的hash指令来解决，它可以对Nginx变量（也接受变量与字符串的组合）取哈希值：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="section">upstream</span> &#123;</span><br><span class="line">	<span class="attribute">server</span> A;</span><br><span class="line">	<span class="attribute">server</span> B;</span><br><span class="line">	<span class="attribute">hash</span> $remote_addr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>hash模块会使用CRC32函数，对变量求出32位的哈希值，之后执行与ip_hash相同的算法。</p>
+<p><strong>哈希算法最大的问题在于，当server数量、权重发生变化时，映射函数就会变化，很容易导致映射关系大幅变动</strong>。比如，当上游server数量为5时，关键字与上游server的映射如下所示：<br> <img src="/images/nginx/LB%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0%E6%9C%AA%E5%8F%98%E5%8A%A8.png"></p>
+<p>一旦server4宕机，这5个关键字的映射关系就会全部变动：<br><img src="/images/nginx/LB%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0%E5%8F%98%E5%8A%A8.png"></p>
+<p>如果上游server为数据建立了缓存，那么此时会导致这5个关键字对应的缓存全部失效。</p>
+<h1 id="一致性哈希算法是怎样实现的？"><a href="#一致性哈希算法是怎样实现的？" class="headerlink" title="一致性哈希算法是怎样实现的？"></a>一致性哈希算法是怎样实现的？</h1><p><strong>一致性哈希算法将哈希算法中的函数映射，改为32位数字构成的环映射，大幅降低了server变动时受影响的关键字数量</strong>。如下图所示，Nginx将关键字（hash指令后的变量）基于CRC32函数转换为无符号的32位整数，其中232与0相接构成了一个环：<br><img src="/images/nginx/%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C%E7%8E%AF.png"> </p>
+<p>这样，3个server将会基于weight权重，各自负责环中的一段弧线，划分了处理关键字的范围。当扩容或者宕机时，只会影响相邻server节点上的关键字。</p>
+<p>当然，这样还是有2个问题：</p>
+<ol>
+<li>   当节点1宕机时，它负责的所有请求都被映射到了节点2，这样节点2可能会抗不住压力继续宕机，进而引发雪崩效应。扩容时也一样，当增加节点3时，只是分流了节点2上的请求，这对节点0、节点1完全没有帮助。</li>
+<li>   如果server只是基于权重划分哈希环，那么很难保证全部关键字均衡地落进每个server上。</li>
+</ol>
+<p>解决这2个问题的方案，就是在哈希环上，增加一层二次映射的虚拟节点环。这样，二次哈希既可以让数据分布更均衡，也可以由全体server共同分担宕机压力，享受扩容带来的收益。</p>
+<p>虚拟节点数量越多，分布会越均衡。然而，在有序的哈希环上选择server，最快的方法也只是二分查找法，它的时间复杂度是O(logN)，因此，虚拟节点数还是得控制在一个范围内。通常，每个真实节点对应的虚拟节点数在100到200之间，而Nginx选择为每个权重分配160个虚拟节点。</p>
+<p>下面我们看下Nginx是如何实现一致性哈希算法的。对于哈希环上的每个虚拟节点，Nginx都会分配1个ngx_http_upstream_chash_point_t结构体表示：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint32_t</span>                            hash;</span><br><span class="line">    <span class="keyword">ngx_str_t</span>                          *server;</span><br><span class="line">&#125; <span class="keyword">ngx_http_upstream_chash_point_t</span>;</span><br></pre></td></tr></table></figure>
+<p>其中，hash是二次哈希映射后的值，server则指向真实的上游服务。这些虚拟节点环会以数组的形式放在ngx_http_upstream_chash_points_t结构体中：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">ngx_uint_t</span>                          number;</span><br><span class="line">    <span class="keyword">ngx_http_upstream_chash_point_t</span>     point[<span class="number">1</span>];</span><br><span class="line">&#125; <span class="keyword">ngx_http_upstream_chash_points_t</span>;</span><br></pre></td></tr></table></figure>
+<p>其中，number成员保存了虚拟节点的总数量，而point则是虚拟节点环的首地址。</p>
+<p>构建虚拟节点环的初始化代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line">     <span class="keyword">ngx_uint_t</span>	npoints = peer-&gt;weight * <span class="number">160</span>; <span class="comment">//每个权重赋予160个虚拟节点</span></span><br><span class="line">     <span class="keyword">for</span> (<span class="keyword">ngx_uint_t</span> j = <span class="number">0</span>; j &lt; npoints; j++) &#123;</span><br><span class="line">         hash = base_hash; <span class="comment">//基于上游server的IP、端口进行首次哈希</span></span><br><span class="line"><span class="comment">//基于相同的算法执行二次哈希</span></span><br><span class="line">         ngx_crc32_update(&amp;hash, prev_hash.byte, <span class="number">4</span>);</span><br><span class="line">         ngx_crc32_final(hash);</span><br><span class="line"><span class="comment">//将二次哈希值放入ngx_http_upstream_chash_point_t环中</span></span><br><span class="line">         points-&gt;point[points-&gt;number].hash = hash;</span><br><span class="line">         points-&gt;point[points-&gt;number].server = server;</span><br><span class="line">         points-&gt;number++;</span><br><span class="line">         prev_hash.value = hash;</span><br><span class="line">     &#125;</span><br></pre></td></tr></table></figure>
+<p>当用户请求到达时，会首先基于Nginx变量生成CRC32哈希值，接着采用二分查找法，在O(logN)时间复杂度下找到对应的真实server：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">ngx_http_upstream_chash_point_t</span>  * point = &amp;points-&gt;point[<span class="number">0</span>]; <span class="comment">//环上第1个虚拟节点</span></span><br><span class="line"><span class="keyword">ngx_uint_t</span> i = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">ngx_uint_t</span> j = points-&gt;number;</span><br><span class="line"><span class="keyword">while</span> (i &lt; j) &#123;    <span class="comment">//以二分法检索虚拟节点</span></span><br><span class="line">    <span class="keyword">ngx_uint_t</span> k = (i + j) / <span class="number">2</span>;   </span><br><span class="line">    <span class="keyword">if</span> (hash &gt; point[k].hash) &#123;</span><br><span class="line">        i = k + <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (hash &lt; point[k].hash) &#123;</span><br><span class="line">        j = k;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> k;	<span class="comment">//返回哈希环中对应虚拟节点的下标</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> i;</span><br></pre></td></tr></table></figure>
+<p>如果选出的server由于失败次数、并发连接数达到限制后，将会采用闭散列函数的方案，尝试选择相邻哈希桶上的server。另外，<strong>如果连续选出的20个server都不能使用，一致性哈希算法将会回退到RoundRobin算法</strong>。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>最后对本文内容做个总结。</p>
+<p>为异构服务器设置Weight权重后，Nginx还为转发失败提供了动态权重功能。其中，每失败1次，动态权重会下降weight/max_fails，在fail_timeout时间窗口内失败次数达到max_fails后，server将会冷却fail_timeout秒，之后权重会缓慢恢复。动态权重对于RoundRobin、一致性哈希、最少连接数算法都有效。</p>
+<p>当哈希、随机选择算法连续20次计算出的server都不可用，它们会退化为RoundRobin算法。当一致性哈希算法计算出的server不可用时，则会顺序向后寻找相邻哈希桶上的server。同样连续20次失败后，也会退化为RoundRobin算法。因此，理解Nginx框架自带的RoundRobin算法，对于学习负载均衡算法至关重要。</p>
+<p>Nginx为一致性哈希算法上的每个权重分配了160个虚拟节点，这个数字既照顾到了分布均衡性及流量压力的分散，也照顾到了算法的执行效率，毕竟二分查找法的时间复杂度是O(logN)。 </p>
+<p>下一篇，我们将讨论Nginx如何向客户端隐藏应用层错误。</p>
+]]></content>
+      <categories>
+        <category>nginx</category>
+      </categories>
+      <tags>
+        <tag>nginx</tag>
+        <tag>AKF</tag>
+        <tag>负载均衡</tag>
+        <tag>RoundRobin</tag>
+        <tag>最少连接数</tag>
+        <tag>一致性哈希算法</tag>
       </tags>
   </entry>
   <entry>

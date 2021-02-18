@@ -20,7 +20,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="django是一套开发成本低、迭代周期快的python web框架，而如mysql等关系数据库则是网站的必备组件，django通过设计一套python对象与数据库表的映射系统ORM，使得开发者不用写一行SQL语句就能实现极其复杂的关系数据库操作，特别是关联多张表的SQL操作。这让开发者的精力可以放在业务的迭代实现中，忽略SQL细节，同时提供了还不错的SQL语句性能。本文主要分析该ORM系统的实现原">
@@ -32,7 +32,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://www.taohui.tech/2017/12/django-ORM%E7%B1%BB%E5%9B%BE-1.jpg">
 <meta property="article:published_time" content="2017-12-23T07:35:05.000Z">
-<meta property="article:modified_time" content="2021-01-28T09:05:29.595Z">
+<meta property="article:modified_time" content="2021-02-15T13:10:30.035Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="django">
 <meta property="article:tag" content="model">
@@ -243,7 +243,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 17:05:29" itemprop="dateModified" datetime="2021-01-28T17:05:29+08:00">2021-01-28</time>
+                <time title="修改时间：2021-02-15 21:10:30" itemprop="dateModified" datetime="2021-02-15T21:10:30+08:00">2021-02-15</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -305,25 +305,25 @@
 <p>如果查看django源代码会发现上图中的红色类BaseManagerFromQuerySet并不存在，它是由type元类生成的，也就是由它将QuerySet类里的方法注入到Manager类中的，从而让objects对象拥有了操作表的方法。这套系统依赖于python元类才能实现，那么，什么是元类呢？ </p>
 <p>类是用于生成对象的，大部分编程语言都需要提前把类定义好才能编写基于“类”生成对象的代码。然而，python是个例外：一切皆对象，包括类也是对象，那么生成“类”这个对象的“类”称呼什么呢？元类！python允许开发者使用元类在运行时更改生成“类”的方式。 </p>
 <p>就像object是所有类的基类，而type是所有元类的基类。任何类都是由type生成的，哪怕我们显式定义的类也会由type默认的生成。所以，我们自然也可以由type隐式得生成类，type生成类的方式如下： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cls &#x3D; type(name, base, attrs) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cls = <span class="built_in">type</span>(name, base, attrs) </span><br></pre></td></tr></table></figure>
 <p>name也就是类名，base是基类，而attrs就是属性，所有的成员和方法都在其中。type返回的则是类。而上图中的BaseManagerFromQuerySet类就是这么生成的，如下所示： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">def from\_queryset(cls, queryset\_class, class\_name&#x3D;None): </span><br><span class="line">if class\_name is None: </span><br><span class="line">class\_name &#x3D; &#39;%sFrom%s&#39; % (cls.\_\_name\_\_, queryset\_class.\_\_name\_\_) </span><br><span class="line">class\_dict &#x3D; &#123; &#39;\_queryset\_class&#39;: queryset\_class, &#125; </span><br><span class="line">class\_dict.update(cls.\_get\_queryset\_methods(queryset\_class)) </span><br><span class="line">return type(class\_name, (cls,), class\_dict) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">from</span>\<span class="title">_queryset</span>(<span class="params">cls, queryset\_class, <span class="keyword">class</span>\_name=<span class="literal">None</span></span>):</span> </span><br><span class="line"><span class="keyword">if</span> <span class="class"><span class="keyword">class</span>\<span class="title">_name</span> <span class="title">is</span> <span class="title">None</span>:</span> </span><br><span class="line">class\_name = &#x27;%sFrom%s&#x27; % (cls.\_\_name\_\_, queryset\_class.\_\_name\_\_) </span><br><span class="line">class\_dict = &#123; &#x27;\_queryset\_class&#x27;: queryset\_class, &#125; </span><br><span class="line"><span class="class"><span class="keyword">class</span>\<span class="title">_dict</span>.<span class="title">update</span>(<span class="params">cls.\_get\_queryset\_methods(<span class="params">queryset\_class</span>)</span>) </span></span><br><span class="line"><span class="class"><span class="title">return</span> <span class="title">type</span>(<span class="params"><span class="keyword">class</span>\_name, (<span class="params">cls,</span>), <span class="keyword">class</span>\_dict</span>) </span></span><br></pre></td></tr></table></figure>
 <p>所以，这里通常queryset_class就是QuerySet类，而cls就是BaseManager类。BaseManager的_get_queryset_methods方法负责把QuerySet中的方法注入到class_dict属性中，进而让BaseManagerFromQuerySet类具备了SQL操作方法。而Manager类就是继承上面构造出的类，如下所示： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class Manager(BaseManager.from\_queryset(QuerySet)): pass </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Manager</span>(<span class="params">BaseManager.<span class="keyword">from</span>\_queryset(<span class="params">QuerySet</span>)</span>):</span> <span class="keyword">pass</span> </span><br></pre></td></tr></table></figure>
 <p>python中的类生成对象时，都是先由__new__方法生成对象，再通过__init__方法初始化对象。由于python并不需要用户管理内存，所以我们定义类时往往只重载__init__方法。元类生成类时也一样，只不过类不需要__init__方法初始化，所以我们通常定义元类时需要重载__new__方法。 </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class ModelBase(type): &quot;&quot;&quot; Metaclass for all models. &quot;&quot;&quot; def \_\_new\_\_(cls, name, bases, attrs): super\_new &#x3D; super(ModelBase, cls).\_\_new\_\_ new\_attrs &#x3D; &#123;...&#125; new\_class &#x3D; super\_new(cls, name, bases, new\_attrs)   ...   manager &#x3D; Manager() manager.auto\_created &#x3D; True cls.add\_to\_class(&#39;objects&#39;, manager)   return new\_class </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ModelBase</span>(<span class="params"><span class="built_in">type</span></span>):</span> <span class="string">&quot;&quot;&quot; Metaclass for all models. &quot;&quot;&quot;</span> </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_new</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">cls, name, bases, attrs</span>):</span> </span><br><span class="line">    <span class="built_in">super</span>\_new = <span class="built_in">super</span>(ModelBase, cls).\_\_new\_\_ new\_attrs = &#123;...&#125; new\_class = <span class="built_in">super</span>\_new(cls, name, bases, new\_attrs)   ...   manager = Manager() manager.auto\_created = <span class="literal">True</span> cls.add\_to\_class(<span class="string">&#x27;objects&#x27;</span>, manager)   <span class="keyword">return</span> new\_class </span><br></pre></td></tr></table></figure>
 <p>上面的ModelBase方法就是生成所有Model类的方法。同时，objects也是在生成类的时候就自动插入的。这里要插一句：python使用meta元类的规则是首先在当前类中查找是否使用元类，如果没有，再依次去父类中查看是否使用元类，若查找到显式指定的元类，则直接使用该元类创建类，若未找到，则使用默认的type元类生成类。所以，虽然用户描述表的Model类并没有使用元类，但仍然隐式得通过基类django.db.models.base.Model类使用了上面的ModelBase元类。而Model使用元类的方法也不太一样： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class Model(six.with\_metaclass(ModelBase)): </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Model</span>(<span class="params">six.<span class="keyword">with</span>\_metaclass(<span class="params">ModelBase</span>)</span>):</span> </span><br></pre></td></tr></table></figure>
 <p>而通常我们可能是这么使用的： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class Model(object, metaclass&#x3D;ModelBase): </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Model</span>(<span class="params"><span class="built_in">object</span>, metaclass=ModelBase</span>):</span> </span><br></pre></td></tr></table></figure>
 <p>这是因为，six这个库又基于上面的<strong>查找元类也会从父类找一遍</strong>规则套了一层： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">def with\_metaclass(meta, \*bases): class metaclass(meta): </span><br><span class="line">def \_\_new\_\_(cls, name, this\_bases, d): return meta(name, bases, d) </span><br><span class="line">return type.\_\_new\_\_(metaclass, &#39;temporary\_class&#39;, (), &#123;&#125;) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">with</span>\<span class="title">_metaclass</span>(<span class="params">meta, \*bases</span>):</span> <span class="class"><span class="keyword">class</span> <span class="title">metaclass</span>(<span class="params">meta</span>):</span> </span><br><span class="line"><span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_new</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">cls, name, this\_bases, d</span>):</span> <span class="keyword">return</span> meta(name, bases, d) </span><br><span class="line"><span class="keyword">return</span> <span class="built_in">type</span>.\_\_new\_\_(metaclass, <span class="string">&#x27;temporary\_class&#x27;</span>, (), &#123;&#125;) </span><br></pre></td></tr></table></figure>
 <p>Model是继承自动生成的父类temporary_class，而temporary_class，则使用了元类ModelBase生成。而上文的add_to_class实际调用了setattr方法，它可以向一个python object添加一个属性或者方法，如下 ： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">def setattr(p\_object, name, value) </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">setattr</span>(<span class="params">p\_object, name, value</span>) </span></span><br></pre></td></tr></table></figure>
 <p>这里name就是目标属性的变量名，value是其值。实际上，类成员中代表的是列，而代表行的Model实例是在Model父类的__init__方法中设置的，如下： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fields\_iter &#x3D; iter(opts.fields) for val, field in zip(args, fields\_iter): if val is \_DEFERRED: continue setattr(self, field.attname, val) kwargs.pop(field.name, None)   </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fields\_iter = <span class="built_in">iter</span>(opts.fields) <span class="keyword">for</span> val, field <span class="keyword">in</span> <span class="built_in">zip</span>(args, fields\_iter): <span class="keyword">if</span> val <span class="keyword">is</span> \_DEFERRED: <span class="keyword">continue</span> <span class="built_in">setattr</span>(self, field.attname, val) kwargs.pop(field.name, <span class="literal">None</span>)   </span><br></pre></td></tr></table></figure>
 <p>还需要注意的是objects其实是由ManagerDescripter作为descripter包装了Manager对象，如下所示： </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class ManagerDescriptor(object): def \_\_init\_\_(self, manager): self.manager &#x3D; manager   def \_\_get\_\_(self, instance, cls&#x3D;None): if instance is not None: raise AttributeError(&quot;Manager isn&#39;t accessible via %s instances&quot; % cls.\_\_name\_\_)   if cls.\_meta.abstract: raise AttributeError(&quot;Manager isn&#39;t available; %s is abstract&quot; % ( cls.\_meta.object\_name, ))   return cls.\_meta.managers\_map\[self.manager.name\] </span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ManagerDescriptor</span>(<span class="params"><span class="built_in">object</span></span>):</span> </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_init</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">self, manager</span>):</span> </span><br><span class="line">    self.manager = manager   </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_get</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">self, instance, cls=<span class="literal">None</span></span>):</span> </span><br><span class="line">    <span class="keyword">if</span> instance <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>: </span><br><span class="line">      <span class="keyword">raise</span> AttributeError(<span class="string">&quot;Manager isn&#x27;t accessible via %s instances&quot;</span> % cls.\_\_name\_\_)   </span><br><span class="line">    <span class="keyword">if</span> cls.\_meta.abstract: </span><br><span class="line">      <span class="keyword">raise</span> AttributeError(<span class="string">&quot;Manager isn&#x27;t available; %s is abstract&quot;</span> % ( cls.\_meta.<span class="built_in">object</span>\_name, ))   </span><br><span class="line">    <span class="keyword">return</span> cls.\_meta.managers\_map\[self.manager.name\] </span><br></pre></td></tr></table></figure>
 <p>因为__get__方法的instance其实是调用objects的对象，如果通过类调用，例如Article.objects时，则instance参数为None。所以，这个descripter就是起到只允许非abstract类调用的目的。 以上就是ORM整体架构，下一篇我们再详述QuerySet是如何支持复杂查询的。</p>
 
     </div>
@@ -354,7 +354,7 @@
     <a href="https://www.taohui.tech/2017/12/23/419/" title="详解python django面向关系数据库的ORM对象映射系统（1）">https://www.taohui.tech/2017/12/23/419/</a>
   </li>
   <li class="post-copyright-license">
-    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
   </li>
 </ul>
 </div>
@@ -459,7 +459,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-count">65</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -472,7 +472,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">259</span>
+        <span class="site-state-item-count">271</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -498,6 +498,12 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" title="2021&#x2F;02&#x2F;15&#x2F;从wordpress迁移到hexo静态站点&#x2F;">从wordpress迁移到hexo静态站点</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/" title="2021&#x2F;02&#x2F;08&#x2F;nginx&#x2F;深入剖析Nginx负载均衡算法&#x2F;">深入剖析Nginx负载均衡算法</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" title="2021&#x2F;02&#x2F;04&#x2F;网络协议&#x2F;深入剖析HTTP3协议&#x2F;">深入剖析HTTP3协议</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -505,12 +511,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/" title="2020&#x2F;12&#x2F;22&#x2F;十分钟搭建好k8s集群&#x2F;">十分钟搭建好K8S集群</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/" title="2020&#x2F;12&#x2F;22&#x2F;nginx&#x2F;如何configure定制出属于你的nginx？&#x2F;">如何configure定制出属于你的Nginx？</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/" title="2020&#x2F;12&#x2F;17&#x2F;nginx&#x2F;10分钟快速认识nginx&#x2F;">10分钟快速认识Nginx</a>
         </li>
     </ul>
   </div>
@@ -546,13 +546,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">279k</span>
+    <span title="站点总字数">298k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:14</span>
+    <span title="站点阅读时长">4:31</span>
 </div>
   <div class="addthis_inline_share_toolbox">
     <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-601bb94e759f4bbd" async="async"></script>
