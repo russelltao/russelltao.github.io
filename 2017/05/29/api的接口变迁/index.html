@@ -20,7 +20,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="最近前端团队越发觉得目前API接口有些不好用，所以我也借此重新理一下我们的API接口。 API没有什么完美的设计理念和原则，只有最适合当下的设计。这个最适合包括：当前使用的技术架构、团队规模、团队成员技术特点、开发时间、人力成本、未来业务与技术的预期等。我先来回顾下我们产品的API变迁过程。">
@@ -299,7 +299,7 @@
 <p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
 <p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
 <p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
-<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#64;&#x7a;&#108;&#x64;&#100;&#x61;&#116;&#97;&#46;&#99;&#x6e;">&#104;&#x72;&#64;&#x7a;&#108;&#x64;&#100;&#x61;&#116;&#97;&#46;&#99;&#x6e;</a>。</p>
+<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#64;&#x7a;&#108;&#100;&#100;&#x61;&#116;&#x61;&#x2e;&#x63;&#x6e;">&#104;&#x72;&#64;&#x7a;&#108;&#100;&#100;&#x61;&#116;&#x61;&#x2e;&#x63;&#x6e;</a>。</p>
 
     </div>
 
@@ -434,7 +434,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -447,7 +447,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">271</span>
+        <span class="site-state-item-count">274</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -473,6 +473,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" title="2021&#x2F;02&#x2F;22&#x2F;nginx&#x2F;Nginx怎样隐藏上游错误&#x2F;">Nginx怎样隐藏上游错误</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" title="2021&#x2F;02&#x2F;15&#x2F;从wordpress迁移到hexo静态站点&#x2F;">从wordpress迁移到hexo静态站点</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -483,9 +486,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="2020&#x2F;12&#x2F;23&#x2F;nginx&#x2F;从通用规则中学习nginx模块的定制指令&#x2F;">从通用规则中学习Nginx模块的定制指令</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/" title="2020&#x2F;12&#x2F;22&#x2F;十分钟搭建好k8s集群&#x2F;">十分钟搭建好K8S集群</a>
         </li>
     </ul>
   </div>
@@ -521,13 +521,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">298k</span>
+    <span title="站点总字数">305k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:31</span>
+    <span title="站点阅读时长">4:37</span>
 </div>
   <div class="addthis_inline_share_toolbox">
     <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-601bb94e759f4bbd" async="async"></script>

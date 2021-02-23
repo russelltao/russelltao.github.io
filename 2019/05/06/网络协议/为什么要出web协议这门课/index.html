@@ -20,7 +20,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="我们公司有定期的分享课，好几位开发部的同学–包括android原生、JS前端、python后端–要求我分享网络协议方面的知识，我做过两场培训，一个是讲TLS&#x2F;SSL协议，一个是讲HTTP协议的设计原则，结果培训完大家反馈有收获，但是太难了，收获又不是很大。我总结大家学习效果不好的原因后得出：   必须由浅入深，才能让团队中的新人快速成长；  必须系统化、体系化的讲解；  必须实时配合抓包讲解；">
@@ -36,6 +36,8 @@
 <meta property="article:modified_time" content="2021-01-28T08:04:42.008Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="tcp">
+<meta property="article:tag" content="tls">
+<meta property="article:tag" content="ssl">
 <meta property="article:tag" content="session">
 <meta property="article:tag" content="极客时间">
 <meta property="article:tag" content="cookie">
@@ -44,8 +46,6 @@
 <meta property="article:tag" content="ip">
 <meta property="article:tag" content="ipv6">
 <meta property="article:tag" content="rest">
-<meta property="article:tag" content="ssl">
-<meta property="article:tag" content="tls">
 <meta property="article:tag" content="web">
 <meta property="article:tag" content="wireshark">
 <meta property="article:tag" content="同源策略">
@@ -332,7 +332,7 @@
       <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="\2020\01\08\网络协议\http性能极限优化\" rel="bookmark">HTTP性能极限优化</a></div>
+      <div class="popular-posts-title"><a href="\2021\02\22\nginx\Nginx怎样隐藏上游错误\" rel="bookmark">Nginx怎样隐藏上游错误</a></div>
     </li>
   </ul>
 
@@ -357,6 +357,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/tls/" rel="tag"># tls</a>
+              <a href="/tags/ssl/" rel="tag"># ssl</a>
               <a href="/tags/session/" rel="tag"># session</a>
               <a href="/tags/%E6%9E%81%E5%AE%A2%E6%97%B6%E9%97%B4/" rel="tag"># 极客时间</a>
               <a href="/tags/cookie/" rel="tag"># cookie</a>
@@ -365,8 +367,6 @@
               <a href="/tags/ip/" rel="tag"># ip</a>
               <a href="/tags/ipv6/" rel="tag"># ipv6</a>
               <a href="/tags/rest/" rel="tag"># rest</a>
-              <a href="/tags/ssl/" rel="tag"># ssl</a>
-              <a href="/tags/tls/" rel="tag"># tls</a>
               <a href="/tags/web/" rel="tag"># web</a>
               <a href="/tags/wireshark/" rel="tag"># wireshark</a>
               <a href="/tags/%E5%90%8C%E6%BA%90%E7%AD%96%E7%95%A5/" rel="tag"># 同源策略</a>
@@ -468,7 +468,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -481,7 +481,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">271</span>
+        <span class="site-state-item-count">274</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -507,6 +507,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" title="2021&#x2F;02&#x2F;22&#x2F;nginx&#x2F;Nginx怎样隐藏上游错误&#x2F;">Nginx怎样隐藏上游错误</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" title="2021&#x2F;02&#x2F;15&#x2F;从wordpress迁移到hexo静态站点&#x2F;">从wordpress迁移到hexo静态站点</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -517,9 +520,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="2020&#x2F;12&#x2F;23&#x2F;nginx&#x2F;从通用规则中学习nginx模块的定制指令&#x2F;">从通用规则中学习Nginx模块的定制指令</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/" title="2020&#x2F;12&#x2F;22&#x2F;十分钟搭建好k8s集群&#x2F;">十分钟搭建好K8S集群</a>
         </li>
     </ul>
   </div>
@@ -555,13 +555,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">298k</span>
+    <span title="站点总字数">305k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:31</span>
+    <span title="站点阅读时长">4:37</span>
 </div>
   <div class="addthis_inline_share_toolbox">
     <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-601bb94e759f4bbd" async="async"></script>

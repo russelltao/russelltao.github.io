@@ -20,7 +20,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta property="og:type" content="website">
@@ -203,6 +203,107 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" class="post-title-link" itemprop="url">Nginx怎样隐藏上游错误</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-22 10:32:01" itemprop="dateCreated datePublished" datetime="2021-02-22T10:32:01+08:00">2021-02-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-02-23 10:02:08" itemprop="dateModified" datetime="2021-02-23T10:02:08+08:00">2021-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/nginx/next_upstream%E7%A4%BA%E6%84%8F%E5%9B%BE.png" itemprop="contentUrl">
+            <img src="/images/tcp/tcp_guide_%E8%B6%85%E6%97%B6%E9%87%8D%E4%BC%A0.png" itemprop="contentUrl">
+            <img src="/images/tls/TLS%E6%8F%A1%E6%89%8B.png" itemprop="contentUrl">
+        </div>
+          <p>当上游出错时，作为负载均衡的Nginx可以实时更换Server，在客户端无感知的情况下重新转发HTTP请求。这一功能在Nginx指令中称为next upstream，本文将详细介绍其用法及实现原理。</p>
+<p>在OSI网络模型中，传输层的TCP协议通过内核提供的<strong>系统调用</strong>向Nginx反馈错误，表示层的TLS/SSL协议通过<strong>openssl库</strong>向Nginx返回错误，而应用层的HTTP协议（或者uwsgi、gRPC、CGI、memcached等协议）通过Response的<strong>Decode解码流程</strong>返回错误。当Nginx能够通过重试解决这些错误时，<strong>我们可以使用next upstream机制对客户端隐藏个别上游Server由于宕机、网络异常产生的错误，这可以极大的提升整个分布式系统的可用性</strong>。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -234,7 +335,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-02-18 19:19:26" itemprop="dateModified" datetime="2021-02-18T19:19:26+08:00">2021-02-18</time>
+                <time title="修改时间：2021-02-23 09:31:33" itemprop="dateModified" datetime="2021-02-23T09:31:33+08:00">2021-02-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -252,7 +353,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>8.6k</span>
+              <span>8.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -271,10 +372,18 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见[这里]()）需要重构。干脆基于nodejs+hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。<img src="/images/建站/知识共享许可协议.JPG" class="full-image" /></p>
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/%E5%BB%BA%E7%AB%99/%E7%9F%A5%E8%AF%86%E5%85%B1%E4%BA%AB%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE.JPG" itemprop="contentUrl">
+            <img src="/images/%E5%BB%BA%E7%AB%99/hexo%E6%A0%87%E7%AD%BE%E9%A1%B5.JPG" itemprop="contentUrl">
+            <img src="/images/%E5%BB%BA%E7%AB%99/analytics-baidu-id.png" itemprop="contentUrl">
+        </div>
+          <blockquote>
+<p>接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见<a href="">这里</a>）需要重构。干脆基于hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。</p>
+</blockquote>
+<h1 id="wordpress与hexo静态站点的优劣比较"><a href="#wordpress与hexo静态站点的优劣比较" class="headerlink" title="wordpress与hexo静态站点的优劣比较"></a>wordpress与hexo静态站点的优劣比较</h1><p>静态站点的优点在于部署简单、性能优异，比如你可以将其部署在免费的github page上，甚至无须购买域名即可对外提供服务（你可以点击<a target="_blank" rel="noopener" href="https://russelltao.github.io/">russelltao.github.io</a>查看我的github页面）。再比如，公有云提供的静态站点服务，可以将其自动部署到CDN站点上（腾讯云的Hexo部署插件见<a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/1210/43365">这里</a>），用户体验非常好。文章、图片等资源的备份也很简单，可以直接连同代码一起存放在git仓库中。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/">
+              <a class="btn" href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -329,7 +438,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-02-19 15:49:46" itemprop="dateModified" datetime="2021-02-19T15:49:46+08:00">2021-02-19</time>
+                <time title="修改时间：2021-02-23 09:21:50" itemprop="dateModified" datetime="2021-02-23T09:21:50+08:00">2021-02-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -366,10 +475,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>负载均衡是Nginx的核心应用场景，本文将介绍官方提供的5种负载均衡算法及其实现细节。<img src="/images/nginx/Nginx负载均衡算法.png" /></p>
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/nginx/Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95.png" itemprop="contentUrl">
+            <img src="/images/nginx/%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C%E7%8E%AF.png" itemprop="contentUrl">
+            <img src="/images/nginx/LB%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0%E6%9C%AA%E5%8F%98%E5%8A%A8.png" itemprop="contentUrl">
+        </div>
+          <p>负载均衡是Nginx的核心应用场景，本文将介绍官方提供的5种负载均衡算法及其实现细节。</p>
+<p>Nginx提供的Scalability，主要由复制扩展（AKF X轴）和用户数据扩展（AKF Z轴）组成。所谓复制扩展，是指上游Server进程是完全相同的，因此可以采用最少连接数、Round Robin轮询、随机选择等算法来分发流量。所谓用户数据扩展，是指每个上游Server只处理特定用户的请求，对这种场景Nginx提供了支持权重的哈希算法，以及支持虚拟节点的一致性哈希算法。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/">
+              <a class="btn" href="/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -579,619 +694,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/" class="post-title-link" itemprop="url">十分钟搭建好K8S集群</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-12-22 14:14:32" itemprop="dateCreated datePublished" datetime="2020-12-22T14:14:32+08:00">2020-12-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-29 11:20:32" itemprop="dateModified" datetime="2021-01-29T11:20:32+08:00">2021-01-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" itemprop="url" rel="index"><span itemprop="name">微服务</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>16k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>15 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>虽然网上有大量从零搭建K8S的文章，但大都针对老版本，若直接照搬去安装最新的1.20版本会遇到一堆问题。故此将我的安装步骤记录下来，希望能为读者提供copy and paste式的集群搭建帮助。 我是在腾讯云CentOS的2台服务器上，在不翻墙的情况下使用kubeadm（最简单的部署工具）搭建K8S集群。其中，容器网络使用flannel，最终安装好可以外网访问的2.0.4版本的dashboard。不走弯路的话，4步即可完成：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/" class="post-title-link" itemprop="url">如何configure定制出属于你的Nginx？</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-12-22 10:02:19" itemprop="dateCreated datePublished" datetime="2020-12-22T10:02:19+08:00">2020-12-22</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-29 11:10:38" itemprop="dateModified" datetime="2021-01-29T11:10:38+08:00">2021-01-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.5k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上一篇<a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/17/10%e5%88%86%e9%92%9f%e5%bf%ab%e9%80%9f%e8%ae%a4%e8%af%86nginx/">文章</a>中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。 </p>
-<p>当你用yum或者apt-get命令安装、启动Nginx后，通过nginx -t命令你会发现，nginx.conf配置文件可能在/etc/目录中。而运行基于源码安装的Nginx时，nginx.conf文件又可能位于/usr/local/nginx/conf/目录，运行OpenResty时， nginx.conf又被放在了/usr/local/openresty/nginx/conf/目录。<strong>这些奇怪的现象都源于编译Nginx前，configure脚本设置的–prefix或者–conf-path选项</strong>。 </p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/" class="post-title-link" itemprop="url">10分钟快速认识Nginx</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-12-17 10:14:06" itemprop="dateCreated datePublished" datetime="2020-12-17T10:14:06+08:00">2020-12-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-29 11:08:18" itemprop="dateModified" datetime="2021-01-29T11:08:18+08:00">2021-01-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Nginx是当下最流行的Web服务器，通过官方以及第三方C模块，以及在Nginx上构建出的Openresty，或者在Openresty上构建出的Kong，你可以使用Nginx生态满足任何复杂Web场景下的需求。Nginx的性能也极其优秀，它可以轻松支持百万、千万级的并发连接，也可以高效的处理磁盘IO，因而通过静态资源或者缓存，能够为Tomcat、Django等性能不佳的Web应用扛住绝大部分外部流量。   但是，很多刚接触Nginx的同学，对它的理解往往失之偏颇，不太清楚Nginx的能力范围。比如：</p>
-<ul>
-<li>  你可能清楚Nginx对上游应用支持Google的gRPC协议，但对下游的客户端是否支持gRPC协议呢？</li>
-<li>  Openresty中的Nginx版本是单号的，而Nginx官网中的stable稳定版本则是双号的，我们到底该选择哪个版本的Nginx呢？</li>
-<li>  安装Nginx时，下载Nginx docker镜像，或者用yum/apt-get安装，都比下载源代码再编译出可执行文件要简单许多，那到底有必要基于源码安装Nginx吗？</li>
-<li>  当你下载完Nginx源码后，你清楚每个目录与文件的意义吗？</li>
-</ul>
-<p>  本文是《从头搭建1个静态资源服务器》系列文章中的第1篇，也是我在6月4日晚直播内容的文字总结，在这篇文章中我将向你演示：Nginx有什么特点，它的能力上限在哪，该如何获取Nginx，Nginx源代码中各目录的意义又是什么。  </p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/" class="post-title-link" itemprop="url">都是事件驱动，为什么Nginx的性能远高于Redis？</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-12-14 09:45:52" itemprop="dateCreated datePublished" datetime="2020-12-14T09:45:52+08:00">2020-12-14</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-29 11:10:22" itemprop="dateModified" datetime="2021-01-29T11:10:22+08:00">2021-01-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>谈到Redis缓存，我们描述其性能时会这么说：支持1万并发连接，几万QPS。而我们描述Nginx的高性能时，则会宣示：支持C10M（1千万并发连接），百万级QPS。Redis与Nginx同样使用了事件驱动、异步调用、Epoll这些机制，为什么Nginx的并发连接会高出那么多呢？（本文不讨论Redis分布式集群） 这其实是由<strong>进程架构</strong>决定的。为了让进程占用CPU的全部计算力，Nginx充分利用了分时操作系统的特点，比如增加CPU时间片、提高CPU二级缓存命中率、用异步IO和线程池的方式回避磁盘的阻塞读操作等等，只有清楚了Nginx的这些招数，你才能将Nginx的性能最大化发挥出来。 为了维持Worker进程间的负载均衡，在1.9.1版本前Nginx使用互斥锁，基于八分之七这个阈值维持了简单、高效的基本均衡。而在此之后，使用操作系统提供的多ACCEPT队列，Nginx可以获得更高的吞吐量。 本文将会沿着高性能这条主线介绍Nginx的Master/Worker进程架构，包括进程间是如何分担流量的，以及默认关闭的多线程模式又是如何工作的。同时，本文也是Nginx开源社区基础培训系列课程第一季，即6月18日晚第3次直播课的部分文字总结。  </p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/" class="post-title-link" itemprop="url">在这里，NGINX 创始人 Igor Sysoev 将亲述 NGINX 的诞生史</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-30 08:42:13" itemprop="dateCreated datePublished" datetime="2020-04-30T08:42:13+08:00">2020-04-30</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 16:31:28" itemprop="dateModified" datetime="2021-01-28T16:31:28+08:00">2021-01-28</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>2020 年 5 月 20 日，一场 NGINX 在国内的盛会、一个所有 NGINX 用户 &amp; 爱好者朝圣的最佳场所，F5 线上技术峰会 - NGINX 专场将以线上直播的形式面向所有开发者召开。届时各位 NGINX 开发者心目中的偶像 NGINX 创始人 Igor Sysoev 以及国内 NGINX 技术专家陶辉老师将空降大会现场，从 NGXIN 创始人的成长经历出发，帮助每一位开发者来重新理解 NGINX 的前世今生。  </p>
-</blockquote>
-<p>如果想让产品在支持高并发请求的同时保持高效的服务，NGINX 可能是最好的选择。这并非一句玩笑话，而是经过全球技术人多年来技术实践后所得出的结论。NGINX 就像一个万能药，在任何存在性能需求的场合都能找到它的身影，它可以在百万并发链接中实现高吞吐量的 Web 服务。然而即便是这样，NGINX 却至今缺少一个能够将所有 NGINX 用户聚集起来的官方场所，这对于像这样一个如此受欢迎的开源产品来说是很不常见的，而这也是此次大会之下的重头戏之一。扫描下图二维码或点击阅读原文链接即可免费报名！</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/" class="post-title-link" itemprop="url">这16年来我是如何做系统性能优化的</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-27 18:47:58" itemprop="dateCreated datePublished" datetime="2020-04-27T18:47:58+08:00">2020-04-27</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-27 11:13:22" itemprop="dateModified" datetime="2021-01-27T11:13:22+08:00">2021-01-27</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>2019年下半年，极客时间总编辑郭蕾从北京飞来杭州，问我有什么特别想分享给大家的技术。我回顾了下自己这16年来的工作经历，发现无论在华为、腾讯、思科、阿里，我都在与海量数据打交道，这个过程中对性能优化有许多思考，但一直没有系统的写下来。于是我就跟郭蕾说，那就针对分布式系统，讲讲我心中的性能优化方法论吧。这就是《系统性能调优必知必会》这门课的诞生过程。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1259,7 +765,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1272,7 +778,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">271</span>
+        <span class="site-state-item-count">274</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1298,6 +804,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" title="2021&#x2F;02&#x2F;22&#x2F;nginx&#x2F;Nginx怎样隐藏上游错误&#x2F;">Nginx怎样隐藏上游错误</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" title="2021&#x2F;02&#x2F;15&#x2F;从wordpress迁移到hexo静态站点&#x2F;">从wordpress迁移到hexo静态站点</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -1308,9 +817,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="2020&#x2F;12&#x2F;23&#x2F;nginx&#x2F;从通用规则中学习nginx模块的定制指令&#x2F;">从通用规则中学习Nginx模块的定制指令</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2020/12/22/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/" title="2020&#x2F;12&#x2F;22&#x2F;十分钟搭建好k8s集群&#x2F;">十分钟搭建好K8S集群</a>
         </li>
     </ul>
   </div>
@@ -1346,13 +852,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">298k</span>
+    <span title="站点总字数">305k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:31</span>
+    <span title="站点阅读时长">4:37</span>
 </div>
   <div class="addthis_inline_share_toolbox">
     <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-601bb94e759f4bbd" async="async"></script>
