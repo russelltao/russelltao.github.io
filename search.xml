@@ -69,7 +69,7 @@
 <p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
 <p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
 <p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
-<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#64;&#x7a;&#108;&#100;&#100;&#x61;&#116;&#x61;&#x2e;&#x63;&#x6e;">&#104;&#x72;&#64;&#x7a;&#108;&#100;&#100;&#x61;&#116;&#x61;&#x2e;&#x63;&#x6e;</a>。</p>
+<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#64;&#122;&#108;&#x64;&#100;&#x61;&#116;&#x61;&#46;&#x63;&#x6e;">&#104;&#x72;&#64;&#122;&#108;&#x64;&#100;&#x61;&#116;&#x61;&#46;&#x63;&#x6e;</a>。</p>
 ]]></content>
       <categories>
         <category>web</category>
@@ -574,6 +574,70 @@
       </tags>
   </entry>
   <entry>
+    <title>阿里云搭建wordpress生产级CMS网站实践</title>
+    <url>/2017/01/27/%E9%98%BF%E9%87%8C%E4%BA%91%E6%90%AD%E5%BB%BAwordpress%E7%94%9F%E4%BA%A7%E7%BA%A7cms%E7%BD%91%E7%AB%99%E5%AE%9E%E8%B7%B5/</url>
+    <content><![CDATA[<p>搭建cms内容站点时，wordpress是一个很好的选择，不用做任何开发就可以通过配置、插件获得丰富的功能。用<a href="http://lib.csdn.net/base/docker" title="Docker知识库">Docker</a>容器技术部署运维都非常简单，特别是对于wordpress这种我们无需做任何开发的组件。而出于低成本考虑，公有云都是一个最佳选择，这里我选择阿里云。为了提速，wordpress前会有一个nginx作为负载均衡和web加速服务器，将静态内容都由nginx处理。出于高可靠性，我选用阿里云的容器服务（目前免费），由它来管理所有容器。而多容器间的磁盘目录共享，阿里云提供了oss映射和nas盘，oss盘的速度太慢，而nas盘IO与云盘相当，可以作为第一选择。<a href="http://lib.csdn.net/base/mysql" title="MySQL知识库">数据库</a>为了可靠性，如果没有独立的DB运维人员，就选择rds <a href="http://lib.csdn.net/base/mysql" title="MySQL知识库">MySQL</a>好了（目前单机版RDS刚上线，相比双机mysql便宜很多）。 </p>
+<a id="more"></a>
+<h1 id="搭建基本站点"><a href="#搭建基本站点" class="headerlink" title="搭建基本站点"></a>搭建基本站点</h1><p>一、最初我们验证方案时，总是先从最简单的做起，功能满足要求即可。 </p>
+<h2 id="购买ECS"><a href="#购买ECS" class="headerlink" title="购买ECS"></a>购买ECS</h2><p>我们购买好ECS（如果是经典网络一定要含公网带宽，否则接下来用到阿里云容器服务时你会悲催的发现，目前阿里云容器要求集群内的经典网络节点必须含有公网带宽， 否则该ECS无法加入集群中。VPC网络就没有这个问题。在可见的一段时间内，阿里云可能都不会修复这个问题。），<a href="http://lib.csdn.net/base/operatingsystem" title="操作系统知识库">操作系统</a>如果是centos7.0或者7.2，高内核版本支持docker就更简单了。 </p>
+<h2 id="创建数据库配置文件"><a href="#创建数据库配置文件" class="headerlink" title="创建数据库配置文件"></a>创建数据库配置文件</h2><p>数据库在centos7.0以上版本时，mariadb比较方便（出于性能考虑，docker容器的db不推荐为生产环境下的数据库）。yum install这个数据库，修改/etc/my.cnf，使其支持utf-8，例如：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">init_connect=<span class="string">&#x27;SET collation_connection = utf8_unicode_ci&#x27;</span></span><br><span class="line">init_connect=<span class="string">&#x27;SET NAMES utf8&#x27;</span></span><br><span class="line">character-set-server=utf8</span><br><span class="line">collation-server=utf8_unicode_ci</span><br><span class="line">skip-character-set-client-handshake</span><br><span class="line">[client]</span><br><span class="line">default-character-set=utf8</span><br><span class="line">[mysql]</span><br><span class="line">default-character-set=utf8</span><br></pre></td></tr></table></figure>
+<p>用service mariadb start启动数据库。</p>
+<h2 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h2><p>用create user命令创建好用户，create database创建好db，grant命令赋予权限，例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">create</span> database yourdb;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> youruser IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;yourpass&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> PRIVILEGES <span class="keyword">ON</span> yourdb.<span class="operator">*</span> <span class="keyword">TO</span> youruser;</span><br><span class="line">flush privileges;</span><br></pre></td></tr></table></figure>
+<h2 id="用docker运行数据库"><a href="#用docker运行数据库" class="headerlink" title="用docker运行数据库"></a>用docker运行数据库</h2><p>用docker pull wordpress命令拉下官方最新版本的image，然后用docker run将其启动。-p端口映射到主机的80端口上。注意，很多image都会通过提供环境变量来修改配置，而wordpress也是如此，这里我们主要是修改其连接哪个数据库，通常这四个环境变量配置好即可。</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">-e WORDPRESS_DB_HOST=...</span><br><span class="line">-e WORDPRESS_DB_USER=...</span><br><span class="line">-e WORDPRESS_DB_PASSWORD=...</span><br><span class="line">-e WORDPRESS_DB_NAME=...</span><br></pre></td></tr></table></figure>
+<h2 id="解析域名"><a href="#解析域名" class="headerlink" title="解析域名"></a>解析域名</h2><p>接下来我们将购买的域名在阿里云的云解析页面上，配置到该公网IP上。（wordpress里需要配置域名，直接使用域名比IP方便）。</p>
+<h2 id="在浏览器上安装wordpress"><a href="#在浏览器上安装wordpress" class="headerlink" title="在浏览器上安装wordpress"></a>在浏览器上安装wordpress</h2><p>在页面上打开域名，显示wordpress的安装站点页面。根据提示傻瓜化的安装这个wordpress，接下来我们就可以体验下wordpress强大的CMS功能了。 </p>
+<h1 id="优化站点"><a href="#优化站点" class="headerlink" title="优化站点"></a>优化站点</h1><p>二、接下来，我们需要一个更美观的站点，而wordpress提供主题自定义功能。我们可以在google上找到很多免费或者收费的主题。接下来美化这个站点，使之符合功能需求。 </p>
+<ol>
+<li>首先找到符合要求的主题，下载后一般是一个zip文件。 </li>
+<li>在wordpress的/wp-admin页面下进入管理界面，由外观-&gt;主题-&gt;添加-&gt;上传主题页面里，点击选择文件，将zip主题包上传。 </li>
+</ol>
+<p>通常在这个步骤中，我们可能会看到上传失败的结果。提示上传文件过大（特别是你下载的zip主题包达到几十M的时候）。这是<a href="http://lib.csdn.net/base/php" title="PHP知识库">PHP</a>服务默认允许的上传文件过小所致。要想解决，首先得改image的配置。此时，我们首先要重新运行docker，把容器的/var/www/html目录映射到主机目录中（用-v 主机目录：容器目录，这个volumes命令可以把容器的磁盘内容映射到主机目录中供我们修改）。我们在映射目录下创建.htaccess文件，在此文件中输入以下配置项：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">php_value upload_max_filesize 64M</span><br><span class="line">php_value post_max_size 64M</span><br><span class="line">php_value max_execution_time 300</span><br><span class="line">php_value max_input_time 300</span><br></pre></td></tr></table></figure>
+<p>这里把上传文件的大小增加到64M。再启动docker容器，上传并安装新主题即可。</p>
+<h1 id="提升性能"><a href="#提升性能" class="headerlink" title="提升性能"></a>提升性能</h1><p>三、接着，多半会发现这个站点太慢了，体验很差，我们希望网站速度更快一点。 </p>
+<ol>
+<li>去除头像拉取<br>用浏览器的debug模式可以发现，最慢的请求从url看都是获取gravatar头像，请求之所以慢与墙有关（提供头像服务的机器网络不稳定）。最简单的解决办法是在wp-content/themes/your-theme-using目录下，在functions.php文件的结尾加上以下几行（参见<a href="http://www.dmeng.net/wordpress-replace-gravatar-host.html">http://www.dmeng.net/wordpress-replace-gravatar-host.html</a>）：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">function dmeng_get_https_avatar($avatar)&#123;</span><br><span class="line">    $avatar &#x3D; str_replace(array(&quot;www.gravatar.com&quot;, &quot;0.gravatar.com&quot;, &quot;1.gravatar.com&quot;, &quot;2.gravatar.com&quot;), &quot;secure.gravatar.com&quot;, $avatar);</span><br><span class="line">    return $avatar;</span><br><span class="line">&#125;</span><br><span class="line">add_filter(&#39;get_avatar&#39;, &#39;dmeng_get_https_avatar&#39;);</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>用Nginx处理静态资源<br>增加一台nginx，域名直接指向nginx所在的机器，由nginx将动态请求反向代理给wordpress容器。而静态内容由nginx处理。</li>
+</ol>
+<p>此时我们可能会遇到网站无法访问的情况，在nginx的日志里可以看到是301重定向过多导致。解决办法还是在上面的functions.php文件的结尾加上一行：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">remove_filter(&#39;template_redirect&#39;, &#39;redirect_canonical&#39;);</span><br></pre></td></tr></table></figure>
+<p>我们还可能遇到上传新的主题文件时得到413错误，这是nginx拒绝所致，记得在nginx.conf里加上client_max_body_size 60M; 3、nginx还可以配成http2，但后面得用阿里云的slb防单点。 </p>
+<h1 id="提升可用性"><a href="#提升可用性" class="headerlink" title="提升可用性"></a>提升可用性</h1><p>四、一台访问速度和功能都满足我们需求的CMS站点出现了，接下来，我们开始解决可靠性问题。首先，我们需要把单点数据库改为RDS数据库（如果你的数据库有人全职维护那就不需要）。购买一个rds实例，建议与你的ECS在同一个可用区（同一机房内，带宽高又稳定）。目前RDS单实例对于使用wordpress作为站点的公司来说应该够了吧？ </p>
+<ol>
+<li>在web站点上初始化root用户密码（注意，阿里云的RDS用户权限比自建的小了很多!）。 </li>
+<li>加上访问白名单。通常我们是ECS内网访问数据库（便宜安全），所以将ECS内网IP加入白名单。 </li>
+<li>迁移数据。<br>这里我悲催了，阿里云RDS提供的迁移工具只能是mysql对mysql迁移，而我之前用的是相似的mariadb，迁移工具执行失败，提工单后售后反馈暂时不支持。 </li>
+</ol>
+<p>不同种类数据库的迁移这种情况下，用sql导入肯定是可行的。于是准备用mysqldump把mariadb中数据库的数据导出sql文件，出现错误： mysqldump: Error: Binlogging on server not active 在my.cnf上加入</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">log_bin=mysql-bin</span><br></pre></td></tr></table></figure>
+<p>再执行：</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">mysqldump --databases yourdb --user=youruser -hyourhost --password --master-data &gt; transfer.sql</span><br></pre></td></tr></table></figure>
+<p>先用root登上RDS，建数据库建用户。再导入时发现还是不行：ERROR 1227 (42000) at line 22: Access denied; you need (at least one of) the SUPER privilege(s) for this operation 这是生成的sql文件里有RDS不支持的操作。将其中最上面的两行删掉：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">CHANGE MASTER <span class="keyword">TO</span> MASTER_LOG_FILE<span class="operator">=</span><span class="string">&#x27;mysql-bin.000001&#x27;</span>, MASTER_LOG_POS<span class="operator">=</span><span class="number">191500</span>;</span><br><span class="line"><span class="keyword">CREATE</span> DATABASE <span class="comment">/*!32312 IF NOT EXISTS*/</span> `yourdb` <span class="comment">/*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */</span>;</span><br></pre></td></tr></table></figure>
+<p>再执行：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">mysql <span class="operator">-</span>u youruser <span class="operator">-</span>h yourhost yourdb <span class="operator">-</span>p <span class="operator">&lt;</span> transfer.sql</span><br></pre></td></tr></table></figure>
+<p>即完成数据库的迁移。<br>4、最后将docker wordpress容器通过环境变量指向RDS数据库。 </p>
+<h1 id="搭建wordpress集群"><a href="#搭建wordpress集群" class="headerlink" title="搭建wordpress集群"></a>搭建wordpress集群</h1><p>五、数据库单点解决掉后，再来解决wordpress <a href="http://lib.csdn.net/base/docker" title="Docker知识库">Container</a>容器的单点与运维。这里有个待解决的问题是wordpress容器如果有多个实例，且跨ECS主机，那么就需要共享磁盘去映射容器中的/var/www/html目录（特别是其中包括uploads上传文件的目录）。 </p>
+<p>1、首先，我们要利用阿里云容器将dockoer容器运维起来的优势，将wordpress放在容器服务里运行。 </p>
+<p>2、其次，阿里云容器支持OSS或者NAS盘映射到集群内每一台ECS机器上某个目录。即，如果我们配置数据卷支持OSS和NAS（当然需要先购买这两种服务），集群内每个ECS都将自动的多出/mnt/acs_mnt/nas和/mnt/acs_mnt/ossfs目录，方便我们每个contain容器进行映射。 这里需要注意，如果是oss映射为磁盘，必须在其他参数里增加“-o umask=000”，否则docker容器每次新生成的文件其权限是有问题的，无法访问，这个BUG阿里云可能以后会解决吧。 另外，大家会强烈的感受到用oss去映射/var/www/html目录网站就会非常慢，这是因为oss本身的时延就高，而改成nas盘就会好多了。（但oss盘比nas盘便宜很多） </p>
+<p>当然，用oss可以非常方便的使用cdn，nas就没有这么便利了。 <img src="/2017/01/unnamed-file.jpg"> 最终<a href="http://lib.csdn.net/base/architecture" title="大型网站架构知识库">架构</a>如上所示。</p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>高可用</tag>
+        <tag>docker</tag>
+        <tag>wordpress</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>10分钟快速认识Nginx</title>
     <url>/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/</url>
     <content><![CDATA[<p>Nginx是当下最流行的Web服务器，通过官方以及第三方C模块，以及在Nginx上构建出的Openresty，或者在Openresty上构建出的Kong，你可以使用Nginx生态满足任何复杂Web场景下的需求。Nginx的性能也极其优秀，它可以轻松支持百万、千万级的并发连接，也可以高效的处理磁盘IO，因而通过静态资源或者缓存，能够为Tomcat、Django等性能不佳的Web应用扛住绝大部分外部流量。   但是，很多刚接触Nginx的同学，对它的理解往往失之偏颇，不太清楚Nginx的能力范围。比如：</p>
@@ -902,70 +966,6 @@
         <tag>tls</tag>
         <tag>三次握手</tag>
         <tag>ssl</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>阿里云搭建wordpress生产级CMS网站实践</title>
-    <url>/2017/01/27/%E9%98%BF%E9%87%8C%E4%BA%91%E6%90%AD%E5%BB%BAwordpress%E7%94%9F%E4%BA%A7%E7%BA%A7cms%E7%BD%91%E7%AB%99%E5%AE%9E%E8%B7%B5/</url>
-    <content><![CDATA[<p>搭建cms内容站点时，wordpress是一个很好的选择，不用做任何开发就可以通过配置、插件获得丰富的功能。用<a href="http://lib.csdn.net/base/docker" title="Docker知识库">Docker</a>容器技术部署运维都非常简单，特别是对于wordpress这种我们无需做任何开发的组件。而出于低成本考虑，公有云都是一个最佳选择，这里我选择阿里云。为了提速，wordpress前会有一个nginx作为负载均衡和web加速服务器，将静态内容都由nginx处理。出于高可靠性，我选用阿里云的容器服务（目前免费），由它来管理所有容器。而多容器间的磁盘目录共享，阿里云提供了oss映射和nas盘，oss盘的速度太慢，而nas盘IO与云盘相当，可以作为第一选择。<a href="http://lib.csdn.net/base/mysql" title="MySQL知识库">数据库</a>为了可靠性，如果没有独立的DB运维人员，就选择rds <a href="http://lib.csdn.net/base/mysql" title="MySQL知识库">MySQL</a>好了（目前单机版RDS刚上线，相比双机mysql便宜很多）。 </p>
-<a id="more"></a>
-<h1 id="搭建基本站点"><a href="#搭建基本站点" class="headerlink" title="搭建基本站点"></a>搭建基本站点</h1><p>一、最初我们验证方案时，总是先从最简单的做起，功能满足要求即可。 </p>
-<h2 id="购买ECS"><a href="#购买ECS" class="headerlink" title="购买ECS"></a>购买ECS</h2><p>我们购买好ECS（如果是经典网络一定要含公网带宽，否则接下来用到阿里云容器服务时你会悲催的发现，目前阿里云容器要求集群内的经典网络节点必须含有公网带宽， 否则该ECS无法加入集群中。VPC网络就没有这个问题。在可见的一段时间内，阿里云可能都不会修复这个问题。），<a href="http://lib.csdn.net/base/operatingsystem" title="操作系统知识库">操作系统</a>如果是centos7.0或者7.2，高内核版本支持docker就更简单了。 </p>
-<h2 id="创建数据库配置文件"><a href="#创建数据库配置文件" class="headerlink" title="创建数据库配置文件"></a>创建数据库配置文件</h2><p>数据库在centos7.0以上版本时，mariadb比较方便（出于性能考虑，docker容器的db不推荐为生产环境下的数据库）。yum install这个数据库，修改/etc/my.cnf，使其支持utf-8，例如：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">init_connect=<span class="string">&#x27;SET collation_connection = utf8_unicode_ci&#x27;</span></span><br><span class="line">init_connect=<span class="string">&#x27;SET NAMES utf8&#x27;</span></span><br><span class="line">character-set-server=utf8</span><br><span class="line">collation-server=utf8_unicode_ci</span><br><span class="line">skip-character-set-client-handshake</span><br><span class="line">[client]</span><br><span class="line">default-character-set=utf8</span><br><span class="line">[mysql]</span><br><span class="line">default-character-set=utf8</span><br></pre></td></tr></table></figure>
-<p>用service mariadb start启动数据库。</p>
-<h2 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h2><p>用create user命令创建好用户，create database创建好db，grant命令赋予权限，例如：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">create</span> database yourdb;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> youruser IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;yourpass&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> PRIVILEGES <span class="keyword">ON</span> yourdb.<span class="operator">*</span> <span class="keyword">TO</span> youruser;</span><br><span class="line">flush privileges;</span><br></pre></td></tr></table></figure>
-<h2 id="用docker运行数据库"><a href="#用docker运行数据库" class="headerlink" title="用docker运行数据库"></a>用docker运行数据库</h2><p>用docker pull wordpress命令拉下官方最新版本的image，然后用docker run将其启动。-p端口映射到主机的80端口上。注意，很多image都会通过提供环境变量来修改配置，而wordpress也是如此，这里我们主要是修改其连接哪个数据库，通常这四个环境变量配置好即可。</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">-e WORDPRESS_DB_HOST=...</span><br><span class="line">-e WORDPRESS_DB_USER=...</span><br><span class="line">-e WORDPRESS_DB_PASSWORD=...</span><br><span class="line">-e WORDPRESS_DB_NAME=...</span><br></pre></td></tr></table></figure>
-<h2 id="解析域名"><a href="#解析域名" class="headerlink" title="解析域名"></a>解析域名</h2><p>接下来我们将购买的域名在阿里云的云解析页面上，配置到该公网IP上。（wordpress里需要配置域名，直接使用域名比IP方便）。</p>
-<h2 id="在浏览器上安装wordpress"><a href="#在浏览器上安装wordpress" class="headerlink" title="在浏览器上安装wordpress"></a>在浏览器上安装wordpress</h2><p>在页面上打开域名，显示wordpress的安装站点页面。根据提示傻瓜化的安装这个wordpress，接下来我们就可以体验下wordpress强大的CMS功能了。 </p>
-<h1 id="优化站点"><a href="#优化站点" class="headerlink" title="优化站点"></a>优化站点</h1><p>二、接下来，我们需要一个更美观的站点，而wordpress提供主题自定义功能。我们可以在google上找到很多免费或者收费的主题。接下来美化这个站点，使之符合功能需求。 </p>
-<ol>
-<li>首先找到符合要求的主题，下载后一般是一个zip文件。 </li>
-<li>在wordpress的/wp-admin页面下进入管理界面，由外观-&gt;主题-&gt;添加-&gt;上传主题页面里，点击选择文件，将zip主题包上传。 </li>
-</ol>
-<p>通常在这个步骤中，我们可能会看到上传失败的结果。提示上传文件过大（特别是你下载的zip主题包达到几十M的时候）。这是<a href="http://lib.csdn.net/base/php" title="PHP知识库">PHP</a>服务默认允许的上传文件过小所致。要想解决，首先得改image的配置。此时，我们首先要重新运行docker，把容器的/var/www/html目录映射到主机目录中（用-v 主机目录：容器目录，这个volumes命令可以把容器的磁盘内容映射到主机目录中供我们修改）。我们在映射目录下创建.htaccess文件，在此文件中输入以下配置项：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">php_value upload_max_filesize 64M</span><br><span class="line">php_value post_max_size 64M</span><br><span class="line">php_value max_execution_time 300</span><br><span class="line">php_value max_input_time 300</span><br></pre></td></tr></table></figure>
-<p>这里把上传文件的大小增加到64M。再启动docker容器，上传并安装新主题即可。</p>
-<h1 id="提升性能"><a href="#提升性能" class="headerlink" title="提升性能"></a>提升性能</h1><p>三、接着，多半会发现这个站点太慢了，体验很差，我们希望网站速度更快一点。 </p>
-<ol>
-<li>去除头像拉取<br>用浏览器的debug模式可以发现，最慢的请求从url看都是获取gravatar头像，请求之所以慢与墙有关（提供头像服务的机器网络不稳定）。最简单的解决办法是在wp-content/themes/your-theme-using目录下，在functions.php文件的结尾加上以下几行（参见<a href="http://www.dmeng.net/wordpress-replace-gravatar-host.html">http://www.dmeng.net/wordpress-replace-gravatar-host.html</a>）：</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">function dmeng_get_https_avatar($avatar)&#123;</span><br><span class="line">    $avatar &#x3D; str_replace(array(&quot;www.gravatar.com&quot;, &quot;0.gravatar.com&quot;, &quot;1.gravatar.com&quot;, &quot;2.gravatar.com&quot;), &quot;secure.gravatar.com&quot;, $avatar);</span><br><span class="line">    return $avatar;</span><br><span class="line">&#125;</span><br><span class="line">add_filter(&#39;get_avatar&#39;, &#39;dmeng_get_https_avatar&#39;);</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>用Nginx处理静态资源<br>增加一台nginx，域名直接指向nginx所在的机器，由nginx将动态请求反向代理给wordpress容器。而静态内容由nginx处理。</li>
-</ol>
-<p>此时我们可能会遇到网站无法访问的情况，在nginx的日志里可以看到是301重定向过多导致。解决办法还是在上面的functions.php文件的结尾加上一行：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">remove_filter(&#39;template_redirect&#39;, &#39;redirect_canonical&#39;);</span><br></pre></td></tr></table></figure>
-<p>我们还可能遇到上传新的主题文件时得到413错误，这是nginx拒绝所致，记得在nginx.conf里加上client_max_body_size 60M; 3、nginx还可以配成http2，但后面得用阿里云的slb防单点。 </p>
-<h1 id="提升可用性"><a href="#提升可用性" class="headerlink" title="提升可用性"></a>提升可用性</h1><p>四、一台访问速度和功能都满足我们需求的CMS站点出现了，接下来，我们开始解决可靠性问题。首先，我们需要把单点数据库改为RDS数据库（如果你的数据库有人全职维护那就不需要）。购买一个rds实例，建议与你的ECS在同一个可用区（同一机房内，带宽高又稳定）。目前RDS单实例对于使用wordpress作为站点的公司来说应该够了吧？ </p>
-<ol>
-<li>在web站点上初始化root用户密码（注意，阿里云的RDS用户权限比自建的小了很多!）。 </li>
-<li>加上访问白名单。通常我们是ECS内网访问数据库（便宜安全），所以将ECS内网IP加入白名单。 </li>
-<li>迁移数据。<br>这里我悲催了，阿里云RDS提供的迁移工具只能是mysql对mysql迁移，而我之前用的是相似的mariadb，迁移工具执行失败，提工单后售后反馈暂时不支持。 </li>
-</ol>
-<p>不同种类数据库的迁移这种情况下，用sql导入肯定是可行的。于是准备用mysqldump把mariadb中数据库的数据导出sql文件，出现错误： mysqldump: Error: Binlogging on server not active 在my.cnf上加入</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">log_bin=mysql-bin</span><br></pre></td></tr></table></figure>
-<p>再执行：</p>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">mysqldump --databases yourdb --user=youruser -hyourhost --password --master-data &gt; transfer.sql</span><br></pre></td></tr></table></figure>
-<p>先用root登上RDS，建数据库建用户。再导入时发现还是不行：ERROR 1227 (42000) at line 22: Access denied; you need (at least one of) the SUPER privilege(s) for this operation 这是生成的sql文件里有RDS不支持的操作。将其中最上面的两行删掉：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">CHANGE MASTER <span class="keyword">TO</span> MASTER_LOG_FILE<span class="operator">=</span><span class="string">&#x27;mysql-bin.000001&#x27;</span>, MASTER_LOG_POS<span class="operator">=</span><span class="number">191500</span>;</span><br><span class="line"><span class="keyword">CREATE</span> DATABASE <span class="comment">/*!32312 IF NOT EXISTS*/</span> `yourdb` <span class="comment">/*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */</span>;</span><br></pre></td></tr></table></figure>
-<p>再执行：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">mysql <span class="operator">-</span>u youruser <span class="operator">-</span>h yourhost yourdb <span class="operator">-</span>p <span class="operator">&lt;</span> transfer.sql</span><br></pre></td></tr></table></figure>
-<p>即完成数据库的迁移。<br>4、最后将docker wordpress容器通过环境变量指向RDS数据库。 </p>
-<h1 id="搭建wordpress集群"><a href="#搭建wordpress集群" class="headerlink" title="搭建wordpress集群"></a>搭建wordpress集群</h1><p>五、数据库单点解决掉后，再来解决wordpress <a href="http://lib.csdn.net/base/docker" title="Docker知识库">Container</a>容器的单点与运维。这里有个待解决的问题是wordpress容器如果有多个实例，且跨ECS主机，那么就需要共享磁盘去映射容器中的/var/www/html目录（特别是其中包括uploads上传文件的目录）。 </p>
-<p>1、首先，我们要利用阿里云容器将dockoer容器运维起来的优势，将wordpress放在容器服务里运行。 </p>
-<p>2、其次，阿里云容器支持OSS或者NAS盘映射到集群内每一台ECS机器上某个目录。即，如果我们配置数据卷支持OSS和NAS（当然需要先购买这两种服务），集群内每个ECS都将自动的多出/mnt/acs_mnt/nas和/mnt/acs_mnt/ossfs目录，方便我们每个contain容器进行映射。 这里需要注意，如果是oss映射为磁盘，必须在其他参数里增加“-o umask=000”，否则docker容器每次新生成的文件其权限是有问题的，无法访问，这个BUG阿里云可能以后会解决吧。 另外，大家会强烈的感受到用oss去映射/var/www/html目录网站就会非常慢，这是因为oss本身的时延就高，而改成nas盘就会好多了。（但oss盘比nas盘便宜很多） </p>
-<p>当然，用oss可以非常方便的使用cdn，nas就没有这么便利了。 <img src="/2017/01/unnamed-file.jpg"> 最终<a href="http://lib.csdn.net/base/architecture" title="大型网站架构知识库">架构</a>如上所示。</p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>高可用</tag>
-        <tag>docker</tag>
-        <tag>wordpress</tag>
       </tags>
   </entry>
   <entry>
@@ -1489,17 +1489,6 @@
       </tags>
   </entry>
   <entry>
-    <title>《见识》读书笔记：大家智慧</title>
-    <url>/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/</url>
-    <content><![CDATA[<p>周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？</p>
-<a id="more"></a>
-<p>产品的商业价值在影响着这一点，百度的竞价排名里认为你需要综合考虑百度的利益，所以结果展示不会以对你有用的信息传达给你为首要价值。说到这里，对当年google离开中国又多了一些理解，因为中国监管对搜索结果展示的要求确实违背了google的核心价值。当然，展示有用的信息也需要高超的技术才能实现。 有用的信息不一定要属于你，但是只要你能把它送达用户，这就是核心的价值。因为你把信息与用户连接在了一起。我们团队正在做的产品就是在试图连接物联网与人，其实本质上也是把最有用的信息送达用户。如果用户觉得不好用，或者这个信息没有价值，哪怕通过其他手段强制用户使用产品，就像一个小伙在追求姑娘不断献殷勤但姑娘很反感一样，用户都会有一种强买强卖的感觉。坚持送达最有用的信息给用户，是需要做为第一准则的，因为有太多的其他因素在诱惑你的团队：技术难度、推广速度都会影响我们的决断，而互联网产品本来就不是静态的，它需要反复迭代，在迭代过程中的疲惫里，如果不能坚持这一点，很难想象产品可以做大。我们公司的名字是“智链达”，其意义就在于用智能的技术把有用的信息送达用户。 何谓有用的信息呢？其实这个并不容易判断，我们基于自己的常识判断某类信息是对用户有用的，可是，如果我们与用户是一类人，那么可以通过站在对方的角度思考这类信息，但是中国社会在几十年内的快速变化，虽然貌似大家通过免费的互联网可以获取到同等的信息，实则受制于见识与格局，中国人在见识层面上的分层还是比较明显的。每个人都有过这种感觉吧：非常明显的道理跟某些人却怎么也讲不通。如果我们的用户与我们不是一类人，那么如何知道信息是对用户有用的呢？深入用户中调研吧。可是，并不是什么人都能做到，只有见识和经历达到一定阶段的人才能做得好。所以，好的企业掌舵人都是产品、销售、运营出身，就在于他能更准确的判断。 拉里佩奇还有个智慧是“把产品做成牙刷”，就是让用户每天都会用那么一小会。所以，你的app其实需要的是，用户每天打开都能发现价值。如果不能做到每天，用户就会遗忘，可能会好几天才想起来用一下，这样效果就差了很多。宝洁的产品这么成功，还在经常打广告，google这么常用，也时不时冒出个新的应用点，许多app都会有社区在运营且经常搞点引爆话题类的线上线下活动，这都是因为：牙刷经常在用，但需要用爆点吸引用户的注意力。否则，用户还是容易遗忘的。比如intel虽然其x86 cpu架构不如其他公司，但它是18个月更新一次产品，其竞争对手们在产品性能上并不输入intel但却是36个月更新一次产品，虽然intel因为迭代速度快团队规模更大管理要求更高，但它始终能引起用户的关注，所以intel成功了。 吴军老师分享了其好友与巴菲特一餐饭中的所得，最重要的就是不做自己不懂的事。其实能把这一点做得比较好的人是很少的，对于企业或者个来看似乎都意味着放弃了许多唾手可得的利润。仿佛这个产品不需要采购，完全可以自研；好像成立一个部门做这件事，能大大提高效率，提升公司的价值，还能节约运营成本；似乎这支股票在这波涨势下买来是十拿九稳的赚钱。吴军好友在拿下央视标王对其公司下属纷纷要求成立广告公司时说：<strong>我确实不知道为什么我们不可能办好，但是我知道一定会是一个失败的结果。因为如果你们的逻辑成立的话，今天世界上最大的广告公司应该是可口可乐广告公司或者宝洁广告公司，但是结果却不是，这里面必然有它的原因。</strong>对个人来说，少花点时间在自己不擅长的事上，多花点时间在自己的职业生涯里，做自己最擅长的事，这才是收益最大的选择。 吴军举了他的好友摩拜单车CEO王晓峰的例子。王晓峰在创业前就是金牌销售，他有3个智慧分享： 1、销售的本质是把钱收回来，而不是把东西卖出去。之前做技术专家时我就从未想过，在中国的传统行业里其实把钱收回来是非常困难的。因为互联网产品其实对这一点相对容易些，特别是如果我们在设计产品时就能考虑到这一点，其销售方式、技术手段、运营模式都在最初就考虑如何把钱收回来。 2、一定要用户把买的东西最快的用掉。比如许多理发店就通过充值赠送、办会员卡打折的方式来吸引用户，但用户花钱买的卡却大都需要很久才能用掉。这样产品设计就有问题了。现在如阿里云、腾讯云、华为云等也有类似的活动，但他们一直在不断的推出更多的PAAS产品，在业务上总是能解决更多的痛点，总在吸引用户把充值卡里的钱尽快的用掉。 3、商品和服务要让消费者有面子。其实现在许多高端手机其设计上都是为了让用户拿出来感觉有面子。罗胖在2018年跨年演讲时就说过，他们不敢做让“得到”用户感觉没面子的事。以前自行车总给人低端的印象，而共享单车们为了让用户感觉有面子，才会把共享单车都设计得挺酷。我们运营总监这点也跟我强调过，一定要让用户感觉用了我们的产品倍有面子，而不是一听名字一看界面就感觉很乡土。当然，有面子并不是说就不接地气，这两点并不矛盾。能把这两点结合好，才能变成一个优秀的产品。</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
-  </entry>
-  <entry>
     <title>都是事件驱动，为什么Nginx的性能远高于Redis？</title>
     <url>/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/</url>
     <content><![CDATA[<p>谈到Redis缓存，我们描述其性能时会这么说：支持1万并发连接，几万QPS。而我们描述Nginx的高性能时，则会宣示：支持C10M（1千万并发连接），百万级QPS。Redis与Nginx同样使用了事件驱动、异步调用、Epoll这些机制，为什么Nginx的并发连接会高出那么多呢？（本文不讨论Redis分布式集群） 这其实是由<strong>进程架构</strong>决定的。为了让进程占用CPU的全部计算力，Nginx充分利用了分时操作系统的特点，比如增加CPU时间片、提高CPU二级缓存命中率、用异步IO和线程池的方式回避磁盘的阻塞读操作等等，只有清楚了Nginx的这些招数，你才能将Nginx的性能最大化发挥出来。 为了维持Worker进程间的负载均衡，在1.9.1版本前Nginx使用互斥锁，基于八分之七这个阈值维持了简单、高效的基本均衡。而在此之后，使用操作系统提供的多ACCEPT队列，Nginx可以获得更高的吞吐量。 本文将会沿着高性能这条主线介绍Nginx的Master/Worker进程架构，包括进程间是如何分担流量的，以及默认关闭的多线程模式又是如何工作的。同时，本文也是Nginx开源社区基础培训系列课程第一季，即6月18日晚第3次直播课的部分文字总结。  </p>
@@ -1556,6 +1545,17 @@
         <tag>redis</tag>
         <tag>reuseport</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>《见识》读书笔记：大家智慧</title>
+    <url>/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/</url>
+    <content><![CDATA[<p>周末抽空在读吴军老师的《见识》，今天在读“大家智慧”章节时对商业的一些看法有所感，在此记录一二。 吴军提到拉里佩奇的商业智慧是从本质中寻找商业模式。这个本质就是将有用的信息带给用户，想做到这一点其实挺难的。比如百度，你想搜索对你有用的信息，比起google来需要更多的技巧，添加更多的关键字。为什么呢？</p>
+<a id="more"></a>
+<p>产品的商业价值在影响着这一点，百度的竞价排名里认为你需要综合考虑百度的利益，所以结果展示不会以对你有用的信息传达给你为首要价值。说到这里，对当年google离开中国又多了一些理解，因为中国监管对搜索结果展示的要求确实违背了google的核心价值。当然，展示有用的信息也需要高超的技术才能实现。 有用的信息不一定要属于你，但是只要你能把它送达用户，这就是核心的价值。因为你把信息与用户连接在了一起。我们团队正在做的产品就是在试图连接物联网与人，其实本质上也是把最有用的信息送达用户。如果用户觉得不好用，或者这个信息没有价值，哪怕通过其他手段强制用户使用产品，就像一个小伙在追求姑娘不断献殷勤但姑娘很反感一样，用户都会有一种强买强卖的感觉。坚持送达最有用的信息给用户，是需要做为第一准则的，因为有太多的其他因素在诱惑你的团队：技术难度、推广速度都会影响我们的决断，而互联网产品本来就不是静态的，它需要反复迭代，在迭代过程中的疲惫里，如果不能坚持这一点，很难想象产品可以做大。我们公司的名字是“智链达”，其意义就在于用智能的技术把有用的信息送达用户。 何谓有用的信息呢？其实这个并不容易判断，我们基于自己的常识判断某类信息是对用户有用的，可是，如果我们与用户是一类人，那么可以通过站在对方的角度思考这类信息，但是中国社会在几十年内的快速变化，虽然貌似大家通过免费的互联网可以获取到同等的信息，实则受制于见识与格局，中国人在见识层面上的分层还是比较明显的。每个人都有过这种感觉吧：非常明显的道理跟某些人却怎么也讲不通。如果我们的用户与我们不是一类人，那么如何知道信息是对用户有用的呢？深入用户中调研吧。可是，并不是什么人都能做到，只有见识和经历达到一定阶段的人才能做得好。所以，好的企业掌舵人都是产品、销售、运营出身，就在于他能更准确的判断。 拉里佩奇还有个智慧是“把产品做成牙刷”，就是让用户每天都会用那么一小会。所以，你的app其实需要的是，用户每天打开都能发现价值。如果不能做到每天，用户就会遗忘，可能会好几天才想起来用一下，这样效果就差了很多。宝洁的产品这么成功，还在经常打广告，google这么常用，也时不时冒出个新的应用点，许多app都会有社区在运营且经常搞点引爆话题类的线上线下活动，这都是因为：牙刷经常在用，但需要用爆点吸引用户的注意力。否则，用户还是容易遗忘的。比如intel虽然其x86 cpu架构不如其他公司，但它是18个月更新一次产品，其竞争对手们在产品性能上并不输入intel但却是36个月更新一次产品，虽然intel因为迭代速度快团队规模更大管理要求更高，但它始终能引起用户的关注，所以intel成功了。 吴军老师分享了其好友与巴菲特一餐饭中的所得，最重要的就是不做自己不懂的事。其实能把这一点做得比较好的人是很少的，对于企业或者个来看似乎都意味着放弃了许多唾手可得的利润。仿佛这个产品不需要采购，完全可以自研；好像成立一个部门做这件事，能大大提高效率，提升公司的价值，还能节约运营成本；似乎这支股票在这波涨势下买来是十拿九稳的赚钱。吴军好友在拿下央视标王对其公司下属纷纷要求成立广告公司时说：<strong>我确实不知道为什么我们不可能办好，但是我知道一定会是一个失败的结果。因为如果你们的逻辑成立的话，今天世界上最大的广告公司应该是可口可乐广告公司或者宝洁广告公司，但是结果却不是，这里面必然有它的原因。</strong>对个人来说，少花点时间在自己不擅长的事上，多花点时间在自己的职业生涯里，做自己最擅长的事，这才是收益最大的选择。 吴军举了他的好友摩拜单车CEO王晓峰的例子。王晓峰在创业前就是金牌销售，他有3个智慧分享： 1、销售的本质是把钱收回来，而不是把东西卖出去。之前做技术专家时我就从未想过，在中国的传统行业里其实把钱收回来是非常困难的。因为互联网产品其实对这一点相对容易些，特别是如果我们在设计产品时就能考虑到这一点，其销售方式、技术手段、运营模式都在最初就考虑如何把钱收回来。 2、一定要用户把买的东西最快的用掉。比如许多理发店就通过充值赠送、办会员卡打折的方式来吸引用户，但用户花钱买的卡却大都需要很久才能用掉。这样产品设计就有问题了。现在如阿里云、腾讯云、华为云等也有类似的活动，但他们一直在不断的推出更多的PAAS产品，在业务上总是能解决更多的痛点，总在吸引用户把充值卡里的钱尽快的用掉。 3、商品和服务要让消费者有面子。其实现在许多高端手机其设计上都是为了让用户拿出来感觉有面子。罗胖在2018年跨年演讲时就说过，他们不敢做让“得到”用户感觉没面子的事。以前自行车总给人低端的印象，而共享单车们为了让用户感觉有面子，才会把共享单车都设计得挺酷。我们运营总监这点也跟我强调过，一定要让用户感觉用了我们的产品倍有面子，而不是一听名字一看界面就感觉很乡土。当然，有面子并不是说就不接地气，这两点并不矛盾。能把这两点结合好，才能变成一个优秀的产品。</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
   </entry>
   <entry>
     <title>《风起陇西》：杰出的三国谍战小说</title>
@@ -1741,6 +1741,48 @@
       <categories>
         <category>技术人生</category>
       </categories>
+  </entry>
+  <entry>
+    <title>linux内核调度算法（2）--CPU时间片如何分配</title>
+    <url>/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/</url>
+    <content><![CDATA[<p>内核在微观上，把CPU的运行时间分成许多分，然后安排给各个进程轮流运行，造成宏观上所有的进程仿佛同时在执行。双核CPU，实际上最多只能有两个进程在同时运行，大家在top、vmstat命令里看到的正在运行的进程，并不是真的在占有着CPU哈。<br>所以，一些设计良好的高性能进程，比如nginx，都是实际上有几颗CPU，就配几个工作进程，道理就在这。比如你的服务器有8颗CPU，那么nginx worker应当只有8个，当你多于8个时，内核可能会放超过多个nginx worker进程到1个runqueue里，会发生什么呢？就是在这颗CPU上，会比较均匀的把时间分配给这几个nginx worker，每个worker进程运行完一个时间片后，内核需要做进程切换，把正在运行的进程上下文保存下来。假设内核分配的时间片是100ms，做进程切换的时间是5ms，那么进程性能下降还是很明显的，跟你配置的worker有关，越多下降得越厉害。 </p>
+<a id="more"></a>
+<p>当然，这是跟nginx的设计有关的。nginx是事件驱动的全异步进程，本身设计上就几乎不存在阻塞和中断，nginx的设计者就希望每一个nginx worker可以独占CPU的几乎全部时间片，这点就是nginx worker数量配置的依据所在。 </p>
+<p>当然，实际的运行进程里，大部分并不是nginx这种希望独占CPU全部时间片的进程，许多进程，比如vi，它在很多时间是在等待用户输入，这时vi在等待IO中断，是不占用时间片的，内核面对多样化的进程，就需要技巧性的分配CPU时间片了。 </p>
+<p>内核分配时间片是有策略和倾向性的。换句话说，内核是偏心的，它喜欢的是IO消耗型进程，因为这类进程如果不能及时响应，用户就会很不爽，所以它总会下意识的多分配CPU运行时间给这类进程。而CPU消耗进程内核就不太关心了。这有道理吗？太有了，CPU消耗型慢一点用户感知不出来，电信号和生物信号运转速度差距巨大。虽然内核尽量多的分配时间片给IO消耗型进程，但IO消耗进程常常在睡觉，给它的时间片根本用不掉。很合理吧？ </p>
+<p>那么内核具体是怎么实现这种偏心呢？通过动态调整进程的优先级，以及分配不同长短的CPU时间处来实现。先说内核如何决定时间片的长度。 对每一个进程，有一个整型static_prio表示用户设置的静态优先级，内核里它与nice值是对应的。看看进程描述结构里的static_prio成员。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">struct task_struct &#123;  </span><br><span class="line">    int prio, static_prio;  </span><br><span class="line">......&#125;  </span><br></pre></td></tr></table></figure>
+<p>nice值是什么？其实就是优先级针对用户进程的另一种表示法，nice的取值范围是-20到+19，-20优先级最高，+19最低。上篇曾经说过，内核优先级共有140，而用户能够设置的NICE优先级如何与这140个优先级对应起来呢？看代码：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define MAX_USER_RT_PRIO    100  </span><br><span class="line">#define MAX_RT_PRIO     MAX_USER_RT_PRIO  </span><br><span class="line">#define MAX_PRIO        (MAX_RT_PRIO + 40)  </span><br></pre></td></tr></table></figure>
+<p>可以看到，MAX_PRIO就是140，也就是内核定义的最大优先级了。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define USER_PRIO(p)        ((p)-MAX_RT_PRIO)  </span><br><span class="line">#define MAX_USER_PRIO       (USER_PRIO(MAX_PRIO))  </span><br></pre></td></tr></table></figure>
+<p>而MAX_USER_PRIO就是40，意指，普通进程指定的优先级别最多40，就像前面我们讲的那样-20到+19。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define NICE_TO_PRIO(nice)  (MAX_RT_PRIO + (nice) + 20)  </span><br></pre></td></tr></table></figure>
+<p>nice值是-20表示最高，对应着static_prio是多少呢？NICE_TO_PRIO(0)就是120，NICE_TO_PRIO(-20)就是100。 当该进程刚被其父进程fork出来时，是平分其父进程的剩余时间片的。这个时间片执行完后，就会根据它的初始优先级来重新分配时间片，优先级为+19时最低，只分配最小时间片5ms，优先级为0时是100ms，优先级是-20时是最大时间片800ms。我们看看内核是如何计算时间片长度的，大家先看下task_timeslice时间片计算函数：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define SCALE_PRIO(x, prio) \  </span><br><span class="line">    max(x * (MAX_PRIO - prio) &#x2F; (MAX_USER_PRIO&#x2F;2), MIN_TIMESLICE)  </span><br><span class="line">  </span><br><span class="line">static unsigned int task_timeslice(task_t *p)  </span><br><span class="line">&#123;  </span><br><span class="line">    if (p-&gt;static_prio &lt; NICE_TO_PRIO(0))  </span><br><span class="line">        return SCALE_PRIO(DEF_TIMESLICE*4, p-&gt;static_prio);  </span><br><span class="line">    else  </span><br><span class="line">        return SCALE_PRIO(DEF_TIMESLICE, p-&gt;static_prio);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<p>这里有一堆宏，我们把宏依次列出看看它们的值：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># define HZ     1000      </span><br><span class="line">#define DEF_TIMESLICE       (100 * HZ &#x2F; 1000)  </span><br></pre></td></tr></table></figure>
+<p>所以，DEF_TIMESLICE是100。假设nice值是-20，那么static_prio就是100，那么SCALE_PRIO(100*4, 100)就等于800，意味着最高优先级-20情形下，可以分到时间片是800ms，如果nice值是+19，则只能分到最小时间片5ms，nice值是默认的0则能分到100ms。</p>
+<p>貌似时间片只与nice值有关系。实际上，内核会对初始的nice值有一个-5到+5的动态调整。这个动态调整的依据是什么呢？很简单，如果CPU用得多的进程，就把nice值调高点，等价于优先级调低点。CPU用得少的进程，认为它是交互性为主的进程，则会把nice值调低点，也就是优先级调高点。这样的好处很明显，因为</p>
+<ol>
+<li>一个进程的初始优先值的设定未必是准确的，内核根据该进程的实时表现来调整它的执行情况。</li>
+<li>进程的表现不是始终如一的，比如一开始只是监听80端口，此时进程大部分时间在sleep，时间片用得少，于是nice值动态降低来提高优先级。这时有client接入80端口后，进程开始大量使用CPU，这以后nice值会动态增加来降低优先级。 </li>
+</ol>
+<p>思想明白了，代码实现上，优先级的动态补偿到底依据什么呢？effective_prio返回动态补偿后的优先级，注释非常详细，大家先看下。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;* </span><br><span class="line"> * effective_prio - return the priority that is based on the static </span><br><span class="line"> * priority but is modified by bonuses&#x2F;penalties. </span><br><span class="line"> * </span><br><span class="line"> * We scale the actual sleep average [0 .... MAX_SLEEP_AVG] </span><br><span class="line"> * into the -5 ... 0 ... +5 bonus&#x2F;penalty range. </span><br><span class="line"> * </span><br><span class="line"> * We use 25% of the full 0...39 priority range so that: </span><br><span class="line"> * </span><br><span class="line"> * 1) nice +19 interactive tasks do not preempt nice 0 CPU hogs. </span><br><span class="line"> * 2) nice -20 CPU hogs do not get preempted by nice 0 tasks. </span><br><span class="line"> * </span><br><span class="line"> * Both properties are important to certain workloads. </span><br><span class="line"> *&#x2F;  </span><br><span class="line">static int effective_prio(task_t *p)  </span><br><span class="line">&#123;  </span><br><span class="line">    int bonus, prio;  </span><br><span class="line">  </span><br><span class="line">    if (rt_task(p))  </span><br><span class="line">        return p-&gt;prio;  </span><br><span class="line">  </span><br><span class="line">    bonus &#x3D; CURRENT_BONUS(p) - MAX_BONUS &#x2F; 2;  </span><br><span class="line">  </span><br><span class="line">    prio &#x3D; p-&gt;static_prio - bonus;  </span><br><span class="line">    if (prio &lt; MAX_RT_PRIO)  </span><br><span class="line">        prio &#x3D; MAX_RT_PRIO;  </span><br><span class="line">    if (prio &gt; MAX_PRIO-1)  </span><br><span class="line">        prio &#x3D; MAX_PRIO-1;  </span><br><span class="line">    return prio;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+<p>  可以看到bonus会对初始优先级做补偿。怎么计算出这个BONUS的呢？</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define CURRENT_BONUS(p) \  </span><br><span class="line">    (NS_TO_JIFFIES((p)-&gt;sleep_avg) * MAX_BONUS &#x2F; \  </span><br><span class="line">        MAX_SLEEP_AVG)  </span><br></pre></td></tr></table></figure>
+<p>可以看到，进程描述符里还有个sleep_avg，动态补偿完全是根据它的值来运作的。sleep_avg就是关键了，它表示进程睡眠和运行的时间，当进程由休眠转到运行时，sleep_avg会加上这次休眠用的时间。在运行时，每运行一个时钟节拍sleep_avg就递减直到0为止。所以，sleep_avg越大，那么就会给到越大的动态优先级补偿，达到MAX_SLEEP_AVG时会有nice值-5的补偿。 </p>
+<p>内核就是这么偏爱交互型进程，从上面的优先级和时间片分配上都能看出来。实际上，内核还有方法对交互型进程搞优待。上篇说过，runqueue里的active和expired队列，一般的进程时间片用完后进expired队列，而对IO消耗的交互型进程来说，则会直接进入active队列中，保证高灵敏的响应，可见什么叫万千宠爱于一身了。</p>
+]]></content>
+      <categories>
+        <category>算法</category>
+      </categories>
+      <tags>
+        <tag>cpu</tag>
+        <tag>kernel</tag>
+        <tag>nice</tag>
+      </tags>
   </entry>
   <entry>
     <title>linux内核调度算法（3）--多核系统的负载均衡</title>
@@ -2363,48 +2405,6 @@
       <tags>
         <tag>tcp</tag>
         <tag>协议栈</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>linux内核调度算法（2）--CPU时间片如何分配</title>
-    <url>/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/</url>
-    <content><![CDATA[<p>内核在微观上，把CPU的运行时间分成许多分，然后安排给各个进程轮流运行，造成宏观上所有的进程仿佛同时在执行。双核CPU，实际上最多只能有两个进程在同时运行，大家在top、vmstat命令里看到的正在运行的进程，并不是真的在占有着CPU哈。<br>所以，一些设计良好的高性能进程，比如nginx，都是实际上有几颗CPU，就配几个工作进程，道理就在这。比如你的服务器有8颗CPU，那么nginx worker应当只有8个，当你多于8个时，内核可能会放超过多个nginx worker进程到1个runqueue里，会发生什么呢？就是在这颗CPU上，会比较均匀的把时间分配给这几个nginx worker，每个worker进程运行完一个时间片后，内核需要做进程切换，把正在运行的进程上下文保存下来。假设内核分配的时间片是100ms，做进程切换的时间是5ms，那么进程性能下降还是很明显的，跟你配置的worker有关，越多下降得越厉害。 </p>
-<a id="more"></a>
-<p>当然，这是跟nginx的设计有关的。nginx是事件驱动的全异步进程，本身设计上就几乎不存在阻塞和中断，nginx的设计者就希望每一个nginx worker可以独占CPU的几乎全部时间片，这点就是nginx worker数量配置的依据所在。 </p>
-<p>当然，实际的运行进程里，大部分并不是nginx这种希望独占CPU全部时间片的进程，许多进程，比如vi，它在很多时间是在等待用户输入，这时vi在等待IO中断，是不占用时间片的，内核面对多样化的进程，就需要技巧性的分配CPU时间片了。 </p>
-<p>内核分配时间片是有策略和倾向性的。换句话说，内核是偏心的，它喜欢的是IO消耗型进程，因为这类进程如果不能及时响应，用户就会很不爽，所以它总会下意识的多分配CPU运行时间给这类进程。而CPU消耗进程内核就不太关心了。这有道理吗？太有了，CPU消耗型慢一点用户感知不出来，电信号和生物信号运转速度差距巨大。虽然内核尽量多的分配时间片给IO消耗型进程，但IO消耗进程常常在睡觉，给它的时间片根本用不掉。很合理吧？ </p>
-<p>那么内核具体是怎么实现这种偏心呢？通过动态调整进程的优先级，以及分配不同长短的CPU时间处来实现。先说内核如何决定时间片的长度。 对每一个进程，有一个整型static_prio表示用户设置的静态优先级，内核里它与nice值是对应的。看看进程描述结构里的static_prio成员。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">struct task_struct &#123;  </span><br><span class="line">    int prio, static_prio;  </span><br><span class="line">......&#125;  </span><br></pre></td></tr></table></figure>
-<p>nice值是什么？其实就是优先级针对用户进程的另一种表示法，nice的取值范围是-20到+19，-20优先级最高，+19最低。上篇曾经说过，内核优先级共有140，而用户能够设置的NICE优先级如何与这140个优先级对应起来呢？看代码：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define MAX_USER_RT_PRIO    100  </span><br><span class="line">#define MAX_RT_PRIO     MAX_USER_RT_PRIO  </span><br><span class="line">#define MAX_PRIO        (MAX_RT_PRIO + 40)  </span><br></pre></td></tr></table></figure>
-<p>可以看到，MAX_PRIO就是140，也就是内核定义的最大优先级了。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define USER_PRIO(p)        ((p)-MAX_RT_PRIO)  </span><br><span class="line">#define MAX_USER_PRIO       (USER_PRIO(MAX_PRIO))  </span><br></pre></td></tr></table></figure>
-<p>而MAX_USER_PRIO就是40，意指，普通进程指定的优先级别最多40，就像前面我们讲的那样-20到+19。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define NICE_TO_PRIO(nice)  (MAX_RT_PRIO + (nice) + 20)  </span><br></pre></td></tr></table></figure>
-<p>nice值是-20表示最高，对应着static_prio是多少呢？NICE_TO_PRIO(0)就是120，NICE_TO_PRIO(-20)就是100。 当该进程刚被其父进程fork出来时，是平分其父进程的剩余时间片的。这个时间片执行完后，就会根据它的初始优先级来重新分配时间片，优先级为+19时最低，只分配最小时间片5ms，优先级为0时是100ms，优先级是-20时是最大时间片800ms。我们看看内核是如何计算时间片长度的，大家先看下task_timeslice时间片计算函数：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define SCALE_PRIO(x, prio) \  </span><br><span class="line">    max(x * (MAX_PRIO - prio) &#x2F; (MAX_USER_PRIO&#x2F;2), MIN_TIMESLICE)  </span><br><span class="line">  </span><br><span class="line">static unsigned int task_timeslice(task_t *p)  </span><br><span class="line">&#123;  </span><br><span class="line">    if (p-&gt;static_prio &lt; NICE_TO_PRIO(0))  </span><br><span class="line">        return SCALE_PRIO(DEF_TIMESLICE*4, p-&gt;static_prio);  </span><br><span class="line">    else  </span><br><span class="line">        return SCALE_PRIO(DEF_TIMESLICE, p-&gt;static_prio);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
-<p>这里有一堆宏，我们把宏依次列出看看它们的值：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># define HZ     1000      </span><br><span class="line">#define DEF_TIMESLICE       (100 * HZ &#x2F; 1000)  </span><br></pre></td></tr></table></figure>
-<p>所以，DEF_TIMESLICE是100。假设nice值是-20，那么static_prio就是100，那么SCALE_PRIO(100*4, 100)就等于800，意味着最高优先级-20情形下，可以分到时间片是800ms，如果nice值是+19，则只能分到最小时间片5ms，nice值是默认的0则能分到100ms。</p>
-<p>貌似时间片只与nice值有关系。实际上，内核会对初始的nice值有一个-5到+5的动态调整。这个动态调整的依据是什么呢？很简单，如果CPU用得多的进程，就把nice值调高点，等价于优先级调低点。CPU用得少的进程，认为它是交互性为主的进程，则会把nice值调低点，也就是优先级调高点。这样的好处很明显，因为</p>
-<ol>
-<li>一个进程的初始优先值的设定未必是准确的，内核根据该进程的实时表现来调整它的执行情况。</li>
-<li>进程的表现不是始终如一的，比如一开始只是监听80端口，此时进程大部分时间在sleep，时间片用得少，于是nice值动态降低来提高优先级。这时有client接入80端口后，进程开始大量使用CPU，这以后nice值会动态增加来降低优先级。 </li>
-</ol>
-<p>思想明白了，代码实现上，优先级的动态补偿到底依据什么呢？effective_prio返回动态补偿后的优先级，注释非常详细，大家先看下。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;* </span><br><span class="line"> * effective_prio - return the priority that is based on the static </span><br><span class="line"> * priority but is modified by bonuses&#x2F;penalties. </span><br><span class="line"> * </span><br><span class="line"> * We scale the actual sleep average [0 .... MAX_SLEEP_AVG] </span><br><span class="line"> * into the -5 ... 0 ... +5 bonus&#x2F;penalty range. </span><br><span class="line"> * </span><br><span class="line"> * We use 25% of the full 0...39 priority range so that: </span><br><span class="line"> * </span><br><span class="line"> * 1) nice +19 interactive tasks do not preempt nice 0 CPU hogs. </span><br><span class="line"> * 2) nice -20 CPU hogs do not get preempted by nice 0 tasks. </span><br><span class="line"> * </span><br><span class="line"> * Both properties are important to certain workloads. </span><br><span class="line"> *&#x2F;  </span><br><span class="line">static int effective_prio(task_t *p)  </span><br><span class="line">&#123;  </span><br><span class="line">    int bonus, prio;  </span><br><span class="line">  </span><br><span class="line">    if (rt_task(p))  </span><br><span class="line">        return p-&gt;prio;  </span><br><span class="line">  </span><br><span class="line">    bonus &#x3D; CURRENT_BONUS(p) - MAX_BONUS &#x2F; 2;  </span><br><span class="line">  </span><br><span class="line">    prio &#x3D; p-&gt;static_prio - bonus;  </span><br><span class="line">    if (prio &lt; MAX_RT_PRIO)  </span><br><span class="line">        prio &#x3D; MAX_RT_PRIO;  </span><br><span class="line">    if (prio &gt; MAX_PRIO-1)  </span><br><span class="line">        prio &#x3D; MAX_PRIO-1;  </span><br><span class="line">    return prio;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
-<p>  可以看到bonus会对初始优先级做补偿。怎么计算出这个BONUS的呢？</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#define CURRENT_BONUS(p) \  </span><br><span class="line">    (NS_TO_JIFFIES((p)-&gt;sleep_avg) * MAX_BONUS &#x2F; \  </span><br><span class="line">        MAX_SLEEP_AVG)  </span><br></pre></td></tr></table></figure>
-<p>可以看到，进程描述符里还有个sleep_avg，动态补偿完全是根据它的值来运作的。sleep_avg就是关键了，它表示进程睡眠和运行的时间，当进程由休眠转到运行时，sleep_avg会加上这次休眠用的时间。在运行时，每运行一个时钟节拍sleep_avg就递减直到0为止。所以，sleep_avg越大，那么就会给到越大的动态优先级补偿，达到MAX_SLEEP_AVG时会有nice值-5的补偿。 </p>
-<p>内核就是这么偏爱交互型进程，从上面的优先级和时间片分配上都能看出来。实际上，内核还有方法对交互型进程搞优待。上篇说过，runqueue里的active和expired队列，一般的进程时间片用完后进expired队列，而对IO消耗的交互型进程来说，则会直接进入active队列中，保证高灵敏的响应，可见什么叫万千宠爱于一身了。</p>
-]]></content>
-      <categories>
-        <category>算法</category>
-      </categories>
-      <tags>
-        <tag>cpu</tag>
-        <tag>kernel</tag>
-        <tag>nice</tag>
       </tags>
   </entry>
   <entry>
