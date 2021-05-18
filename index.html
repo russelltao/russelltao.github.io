@@ -212,6 +212,104 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/" class="post-title-link" itemprop="url">在线课程：K8S Ingress Controller技术细节探讨</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-17 21:23:25" itemprop="dateCreated datePublished" datetime="2021-05-17T21:23:25+08:00">2021-05-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-18 08:10:49" itemprop="dateModified" datetime="2021-05-18T08:10:49+08:00">2021-05-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>511</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>对于许多企业来说，将生产环境转移到Kubernetes集群上，会让应用程序的流量管理变得复杂且具有挑战性。</p>
+<p>而Ingress Controller允许通过Yaml编排脚本提供高可用的七层负载均衡、Waf防火墙或者API Gateway，它是Kubernetes集群对外服务的核心组件。</p>
+<p>Ingress-nginx是Kubernetes Ingress Controller开源版本中的一种，它使用了NGINX作为反向代理和负载均衡器，生态完善、功能丰富，性能与稳定性也是极优秀的。</p>
+<p>这是Nginx开源论坛上的第10季课程，这里我会详细介绍基于Nginx开发的Ingress Controller，包括Kubernetes社区及Nginx官方提供的2种开源Controller，对比它们各自的优缺点。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -603,106 +701,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" class="post-title-link" itemprop="url">从通用规则中学习Nginx模块的定制指令</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-12-23 15:14:21" itemprop="dateCreated datePublished" datetime="2020-12-23T15:14:21+08:00">2020-12-23</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-29 09:04:08" itemprop="dateModified" datetime="2021-01-29T09:04:08+08:00">2021-01-29</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/22/%e5%a6%82%e4%bd%95configure%e5%ae%9a%e5%88%b6%e5%87%ba%e5%b1%9e%e4%ba%8e%e4%bd%a0%e7%9a%84nginx%ef%bc%9f/">上一篇文章</a>中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。</p>
-<p>每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，那么掌握了它，就能快速读懂生产环境复杂的nginx.conf文件。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -774,7 +772,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">66</span>
+          <span class="site-state-item-count">67</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -787,7 +785,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">274</span>
+        <span class="site-state-item-count">277</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -813,6 +811,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/" title="2021&#x2F;05&#x2F;17&#x2F;k8s&#x2F;在线课程：K8S-Ingress-Controller技术细节探讨&#x2F;">在线课程：K8S Ingress Controller技术细节探讨</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" title="2021&#x2F;02&#x2F;22&#x2F;nginx&#x2F;Nginx怎样隐藏上游错误&#x2F;">Nginx怎样隐藏上游错误</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -823,9 +824,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" title="2021&#x2F;02&#x2F;04&#x2F;网络协议&#x2F;深入剖析HTTP3协议&#x2F;">深入剖析HTTP3协议</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="2020&#x2F;12&#x2F;23&#x2F;nginx&#x2F;从通用规则中学习nginx模块的定制指令&#x2F;">从通用规则中学习Nginx模块的定制指令</a>
         </li>
     </ul>
   </div>
@@ -861,13 +859,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">305k</span>
+    <span title="站点总字数">306k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:37</span>
+    <span title="站点阅读时长">4:38</span>
 </div>
   <div class="addthis_inline_share_toolbox">
     <script src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-601bb94e759f4bbd" async="async"></script>
