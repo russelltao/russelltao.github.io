@@ -30,8 +30,9 @@
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="对于许多企业来说，将生产环境转移到Kubernetes集群上，会让应用程序的流量管理变得复杂且具有挑战性。 而Ingress Controller允许通过Yaml编排脚本提供高可用的七层负载均衡、Waf防火墙或者API Gateway，它是Kubernetes集群对外服务的核心组件。 Ingress-nginx是Kubernetes Ingress Controller开源版本中的一种，它使用了N">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/images/k8s/k8s%E7%A4%BE%E5%8C%BAController%E6%9E%B6%E6%9E%84.png">
 <meta property="article:published_time" content="2021-05-17T13:23:25.000Z">
-<meta property="article:modified_time" content="2021-05-18T00:10:49.055Z">
+<meta property="article:modified_time" content="2021-05-18T01:48:59.716Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="nginx">
 <meta property="article:tag" content="kubernates">
@@ -39,6 +40,7 @@
 <meta property="article:tag" content="ingress controller">
 <meta property="article:tag" content="client-go">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/images/k8s/k8s%E7%A4%BE%E5%8C%BAController%E6%9E%B6%E6%9E%84.png">
 
 <link rel="canonical" href="https://www.taohui.tech/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/">
 
@@ -251,7 +253,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-05-18 08:10:49" itemprop="dateModified" datetime="2021-05-18T08:10:49+08:00">2021-05-18</time>
+                <time title="修改时间：2021-05-18 09:48:59" itemprop="dateModified" datetime="2021-05-18T09:48:59+08:00">2021-05-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -259,7 +261,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                  <a href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" itemprop="url" rel="index"><span itemprop="name">微服务</span></a>
                 </span>
             </span>
 
@@ -298,7 +300,7 @@
         <p>对于许多企业来说，将生产环境转移到Kubernetes集群上，会让应用程序的流量管理变得复杂且具有挑战性。</p>
 <p>而Ingress Controller允许通过Yaml编排脚本提供高可用的七层负载均衡、Waf防火墙或者API Gateway，它是Kubernetes集群对外服务的核心组件。</p>
 <p>Ingress-nginx是Kubernetes Ingress Controller开源版本中的一种，它使用了NGINX作为反向代理和负载均衡器，生态完善、功能丰富，性能与稳定性也是极优秀的。</p>
-<p>这是Nginx开源论坛上的第10季课程，这里我会详细介绍基于Nginx开发的Ingress Controller，包括Kubernetes社区及Nginx官方提供的2种开源Controller，对比它们各自的优缺点。</p>
+<p>这是Nginx开源论坛上的第10季课程，这里我会详细介绍基于Nginx开发的Ingress Controller，包括Kubernetes社区及Nginx官方提供的2种开源Controller，对比它们各自的优缺点。<br><img src="/images/k8s/k8s%E7%A4%BE%E5%8C%BAController%E6%9E%B6%E6%9E%84.png"></p>
 <a id="more"></a>
 <p>这个主题同样包含4次课程，每次大约1个小时的视频课程，包括：</p>
 <h1 id="Ingress-Controller-的工作原理"><a href="#Ingress-Controller-的工作原理" class="headerlink" title="Ingress Controller 的工作原理"></a>Ingress Controller 的工作原理</h1>
@@ -393,7 +395,10 @@
     <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" rel="prev" title="Nginx怎样隐藏上游错误">
       <i class="fa fa-chevron-left"></i> Nginx怎样隐藏上游错误
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/" rel="next" title="在线课程：探索NGINX_UNIT">
+      在线课程：探索NGINX_UNIT <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -468,7 +473,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">67</span>
+          <span class="site-state-item-count">68</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -481,7 +486,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">277</span>
+        <span class="site-state-item-count">280</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -507,6 +512,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/" title="2021&#x2F;05&#x2F;18&#x2F;k8s&#x2F;在线课程：探索NGINX-UNIT&#x2F;">在线课程：探索NGINX_UNIT</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/" title="2021&#x2F;05&#x2F;17&#x2F;k8s&#x2F;在线课程：K8S-Ingress-Controller技术细节探讨&#x2F;">在线课程：K8S Ingress Controller技术细节探讨</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -517,9 +525,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/" title="2021&#x2F;02&#x2F;08&#x2F;nginx&#x2F;深入剖析Nginx负载均衡算法&#x2F;">深入剖析Nginx负载均衡算法</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" title="2021&#x2F;02&#x2F;04&#x2F;网络协议&#x2F;深入剖析HTTP3协议&#x2F;">深入剖析HTTP3协议</a>
         </li>
     </ul>
   </div>

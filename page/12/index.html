@@ -212,6 +212,104 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/" class="post-title-link" itemprop="url">高性能网络编程2----TCP消息的发送</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-25 11:14:12" itemprop="dateCreated datePublished" datetime="2016-01-25T11:14:12+08:00">2016-01-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-02-04 16:32:43" itemprop="dateModified" datetime="2021-02-04T16:32:43+08:00">2021-02-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在<a target="_blank" rel="noopener" href="http://blog.csdn.net/russell_tao/article/details/9111769">上一篇</a>中，我们已经建立好的TCP连接，对应着操作系统分配的1个套接字。操作TCP协议发送数据时，面对的是数据流。通常调用诸如send或者write方法来发送数据到另一台主机，那么，调用这样的方法时，在操作系统内核中发生了什么事情呢？我们带着以下3个问题来细细分析：发送方法成功返回时，能保证TCP另一端的主机接收到吗？能保证数据已经发送到网络上了吗？套接字为阻塞或者非阻塞时，发送方法做的事情有何不同？</p>
+<p>要回答上面3个问题涉及了不少知识点，我们先在TCP层面上看看，发送方法调用时内核做了哪些事。我不想去罗列内核中的数据结构、方法等，毕竟大部分应用程序开发者不需要了解这些，仅以一幅示意图粗略表示，如下：</p>
+<p> <img src="/2016/01/TCP%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B-1-2-1.jpg"></p>
+<p>图1 一种典型场景下发送TCP消息的流程</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89-accept%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -590,101 +688,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/" class="post-title-link" itemprop="url">linux内核调度算法（2）--CPU时间片如何分配</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2015-01-27 16:51:01" itemprop="dateCreated datePublished" datetime="2015-01-27T16:51:01+08:00">2015-01-27</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-01-28 21:17:08" itemprop="dateModified" datetime="2021-01-28T21:17:08+08:00">2021-01-28</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>内核在微观上，把CPU的运行时间分成许多分，然后安排给各个进程轮流运行，造成宏观上所有的进程仿佛同时在执行。双核CPU，实际上最多只能有两个进程在同时运行，大家在top、vmstat命令里看到的正在运行的进程，并不是真的在占有着CPU哈。<br>所以，一些设计良好的高性能进程，比如nginx，都是实际上有几颗CPU，就配几个工作进程，道理就在这。比如你的服务器有8颗CPU，那么nginx worker应当只有8个，当你多于8个时，内核可能会放超过多个nginx worker进程到1个runqueue里，会发生什么呢？就是在这颗CPU上，会比较均匀的把时间分配给这几个nginx worker，每个worker进程运行完一个时间片后，内核需要做进程切换，把正在运行的进程上下文保存下来。假设内核分配的时间片是100ms，做进程切换的时间是5ms，那么进程性能下降还是很明显的，跟你配置的worker有关，越多下降得越厉害。 </p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -756,7 +759,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">67</span>
+          <span class="site-state-item-count">68</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -769,7 +772,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">277</span>
+        <span class="site-state-item-count">280</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -795,6 +798,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/" title="2021&#x2F;05&#x2F;18&#x2F;k8s&#x2F;在线课程：探索NGINX-UNIT&#x2F;">在线课程：探索NGINX_UNIT</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/" title="2021&#x2F;05&#x2F;17&#x2F;k8s&#x2F;在线课程：K8S-Ingress-Controller技术细节探讨&#x2F;">在线课程：K8S Ingress Controller技术细节探讨</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -805,9 +811,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/" title="2021&#x2F;02&#x2F;08&#x2F;nginx&#x2F;深入剖析Nginx负载均衡算法&#x2F;">深入剖析Nginx负载均衡算法</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" title="2021&#x2F;02&#x2F;04&#x2F;网络协议&#x2F;深入剖析HTTP3协议&#x2F;">深入剖析HTTP3协议</a>
         </li>
     </ul>
   </div>

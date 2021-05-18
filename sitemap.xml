@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.taohui.tech/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/</loc>
+    
+    <lastmod>2021-05-18</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.taohui.tech/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/</loc>
     
     <lastmod>2021-05-18</lastmod>
@@ -523,6 +530,13 @@
   
   <url>
     <loc>https://www.taohui.tech/tags/%E5%85%83%E7%B1%BB/</loc>
+    <lastmod>2021-05-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/</loc>
     <lastmod>2021-05-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -2434,6 +2448,20 @@
   
   <url>
     <loc>https://www.taohui.tech/tags/%E9%98%BB%E5%A1%9E/</loc>
+    <lastmod>2021-05-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/unit/</loc>
+    <lastmod>2021-05-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cgroup/</loc>
     <lastmod>2021-05-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>

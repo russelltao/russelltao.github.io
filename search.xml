@@ -643,7 +643,7 @@
     <content><![CDATA[<p>对于许多企业来说，将生产环境转移到Kubernetes集群上，会让应用程序的流量管理变得复杂且具有挑战性。</p>
 <p>而Ingress Controller允许通过Yaml编排脚本提供高可用的七层负载均衡、Waf防火墙或者API Gateway，它是Kubernetes集群对外服务的核心组件。</p>
 <p>Ingress-nginx是Kubernetes Ingress Controller开源版本中的一种，它使用了NGINX作为反向代理和负载均衡器，生态完善、功能丰富，性能与稳定性也是极优秀的。</p>
-<p>这是Nginx开源论坛上的第10季课程，这里我会详细介绍基于Nginx开发的Ingress Controller，包括Kubernetes社区及Nginx官方提供的2种开源Controller，对比它们各自的优缺点。</p>
+<p>这是Nginx开源论坛上的第10季课程，这里我会详细介绍基于Nginx开发的Ingress Controller，包括Kubernetes社区及Nginx官方提供的2种开源Controller，对比它们各自的优缺点。<br><img src="/images/k8s/k8s%E7%A4%BE%E5%8C%BAController%E6%9E%B6%E6%9E%84.png"></p>
 <a id="more"></a>
 <p>这个主题同样包含4次课程，每次大约1个小时的视频课程，包括：</p>
 <h1 id="Ingress-Controller-的工作原理"><a href="#Ingress-Controller-的工作原理" class="headerlink" title="Ingress Controller 的工作原理"></a>Ingress Controller 的工作原理</h1>
@@ -679,7 +679,7 @@
 <h1 id="课件下载"><a href="#课件下载" class="headerlink" title="课件下载"></a>课件下载</h1><p>这四次课程的PPT在这里：<a href="/pdf/%E7%AC%AC%E5%8D%81%E5%AD%A3-K8S-IngressController%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8.pdf" title="第十季 - K8S Ingress Controller技术细节探讨">点击下载</a> 。</p>
 ]]></content>
       <categories>
-        <category>nginx</category>
+        <category>微服务</category>
       </categories>
       <tags>
         <tag>nginx</tag>
@@ -4145,6 +4145,53 @@
         <tag>SO_RCVTIMEO</tag>
         <tag>tcp_low_latency</tag>
         <tag>阻塞</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在线课程：探索NGINX_UNIT</title>
+    <url>/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/</url>
+    <content><![CDATA[<blockquote>
+<p>UNIT是NGINX于2017年推出的Web容器方案，它提供了REST JSON接口动态修改服务配置，目前为Python、Java、Ruby、Perl、NodeJS、GOLang、WebAssembly等语言提供了生产环境级别的高性能Web容器，适用于大规模分布式环境中的微服务管理。从3月11日到4月1日，我分享了关于UNIT的4次课程。</p>
+</blockquote>
+<p><img src="/images/%E5%BE%AE%E6%9C%8D%E5%8A%A1/nginx_unit/nginx-unit-1-0-architecture.png"><br>微服务架构中，由于开发语言多样化、服务实例数量多，这就需要一种统一的服务治理方法，将配置更改、服务启停、网络协议适配、日志搜集等通用功能低成本的管理起来。K8S是一种解决方案，而NGINX UNIT针对Web场景也提供了上述功能，而且由于它仅针对Web容器场景，所以性能也更高。这4次视频课程如下：</p>
+<a id="more"></a>
+<h1 id="3月11日-用Unit实现应用的动态配置"><a href="#3月11日-用Unit实现应用的动态配置" class="headerlink" title="3月11日 用Unit实现应用的动态配置"></a>3月11日 用Unit实现应用的动态配置</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=545033810&bvid=BV1Ni4y1A7xi&cid=323088993&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
+</div>
+
+
+
+<h1 id="3月18日-Unit的负载均衡配置"><a href="#3月18日-Unit的负载均衡配置" class="headerlink" title="3月18日 Unit的负载均衡配置"></a>3月18日 Unit的负载均衡配置</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=204792850&bvid=BV1mh411S77W&cid=317217863&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="3月25日-Unit架构设计"><a href="#3月25日-Unit架构设计" class="headerlink" title="3月25日 Unit架构设计"></a>3月25日 Unit架构设计</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=672288361&bvid=BV1rU4y1a7Pw&cid=317184368&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="4月01日-Unit源代码解读"><a href="#4月01日-Unit源代码解读" class="headerlink" title="4月01日 Unit源代码解读"></a>4月01日 Unit源代码解读</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=544887394&bvid=BV1Xi4y1P7Qu&cid=320481412&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
+</div>
+
+
+<h1 id="课件下载"><a href="#课件下载" class="headerlink" title="课件下载"></a>课件下载</h1><p>这四次课程的PPT在这里：<a href="/pdf/%E7%AC%AC%E4%B9%9D%E5%AD%A3-%E6%8E%A2%E7%B4%A2NGINX_UNIT.pdf" title="第九季-探索NGINX_UNIT">点击下载</a> 。</p>
+]]></content>
+      <categories>
+        <category>微服务</category>
+      </categories>
+      <tags>
+        <tag>微服务</tag>
+        <tag>nginx</tag>
+        <tag>unit</tag>
+        <tag>cgroup</tag>
       </tags>
   </entry>
 </search>
