@@ -69,7 +69,7 @@
 <p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
 <p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
 <p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
-<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#x68;&#x72;&#64;&#x7a;&#108;&#x64;&#100;&#x61;&#116;&#97;&#x2e;&#99;&#x6e;">&#x68;&#x72;&#64;&#x7a;&#108;&#x64;&#100;&#x61;&#116;&#97;&#x2e;&#99;&#x6e;</a>。</p>
+<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#x40;&#x7a;&#108;&#100;&#x64;&#97;&#x74;&#x61;&#46;&#99;&#110;">&#104;&#x72;&#x40;&#x7a;&#108;&#100;&#x64;&#97;&#x74;&#x61;&#46;&#99;&#110;</a>。</p>
 ]]></content>
       <categories>
         <category>web</category>
@@ -690,6 +690,53 @@
       </tags>
   </entry>
   <entry>
+    <title>在线课程：探索NGINX_UNIT</title>
+    <url>/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/</url>
+    <content><![CDATA[<blockquote>
+<p>UNIT是NGINX于2017年推出的Web容器方案，它提供了REST JSON接口动态修改服务配置，目前为Python、Java、Ruby、Perl、NodeJS、GOLang、WebAssembly等语言提供了生产环境级别的高性能Web容器，适用于大规模分布式环境中的微服务管理。从3月11日到4月1日，我分享了关于UNIT的4次课程。</p>
+</blockquote>
+<p><img src="/images/%E5%BE%AE%E6%9C%8D%E5%8A%A1/nginx_unit/nginx-unit-1-0-architecture.png"><br>微服务架构中，由于开发语言多样化、服务实例数量多，这就需要一种统一的服务治理方法，将配置更改、服务启停、网络协议适配、日志搜集等通用功能低成本的管理起来。K8S是一种解决方案，而NGINX UNIT针对Web场景也提供了上述功能，而且由于它仅针对Web容器场景，所以性能也更高。这4次视频课程如下：</p>
+<a id="more"></a>
+<h1 id="3月11日-用Unit实现应用的动态配置"><a href="#3月11日-用Unit实现应用的动态配置" class="headerlink" title="3月11日 用Unit实现应用的动态配置"></a>3月11日 用Unit实现应用的动态配置</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=545033810&bvid=BV1Ni4y1A7xi&cid=323088993&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
+</div>
+
+
+
+<h1 id="3月18日-Unit的负载均衡配置"><a href="#3月18日-Unit的负载均衡配置" class="headerlink" title="3月18日 Unit的负载均衡配置"></a>3月18日 Unit的负载均衡配置</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=204792850&bvid=BV1mh411S77W&cid=317217863&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="3月25日-Unit架构设计"><a href="#3月25日-Unit架构设计" class="headerlink" title="3月25日 Unit架构设计"></a>3月25日 Unit架构设计</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=672288361&bvid=BV1rU4y1a7Pw&cid=317184368&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="4月01日-Unit源代码解读"><a href="#4月01日-Unit源代码解读" class="headerlink" title="4月01日 Unit源代码解读"></a>4月01日 Unit源代码解读</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=544887394&bvid=BV1Xi4y1P7Qu&cid=320481412&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
+</div>
+
+
+<h1 id="课件下载"><a href="#课件下载" class="headerlink" title="课件下载"></a>课件下载</h1><p>这四次课程的PPT在这里：<a href="/pdf/%E7%AC%AC%E4%B9%9D%E5%AD%A3-%E6%8E%A2%E7%B4%A2NGINX_UNIT.pdf" title="第九季-探索NGINX_UNIT">点击下载</a> 。</p>
+]]></content>
+      <categories>
+        <category>微服务</category>
+      </categories>
+      <tags>
+        <tag>微服务</tag>
+        <tag>nginx</tag>
+        <tag>unit</tag>
+        <tag>cgroup</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>10分钟快速认识Nginx</title>
     <url>/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/</url>
     <content><![CDATA[<p>Nginx是当下最流行的Web服务器，通过官方以及第三方C模块，以及在Nginx上构建出的Openresty，或者在Openresty上构建出的Kong，你可以使用Nginx生态满足任何复杂Web场景下的需求。Nginx的性能也极其优秀，它可以轻松支持百万、千万级的并发连接，也可以高效的处理磁盘IO，因而通过静态资源或者缓存，能够为Tomcat、Django等性能不佳的Web应用扛住绝大部分外部流量。   但是，很多刚接触Nginx的同学，对它的理解往往失之偏颇，不太清楚Nginx的能力范围。比如：</p>
@@ -1306,8 +1353,8 @@
 <p><strong>由于每个Nginx模块都能定义独特的指令，这让nginx.conf变成了复杂的运维界面。在掌握了基本的配置语法，以及第三方模块定义指令时遵循的潜规则后，你就能游刃有余地编写Nginx配置文件。</strong></p>
 ]]></content>
       <categories>
-        <category>web</category>
         <category>nginx</category>
+        <category>web</category>
       </categories>
       <tags>
         <tag>nginx</tag>
@@ -1334,6 +1381,54 @@
         <tag>C10M</tag>
         <tag>GOPS</tag>
         <tag>高效运维</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>用nginx搭建waf防火墙的实践</title>
+    <url>/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/</url>
+    <content><![CDATA[<p>WAF全称为Web Application Firewall，因此作为七层负载均衡的Nginx很适合实现Web应用层防火墙。许多C、Lua模块都在rewrite、access等处理阶段截获HTTP请求，基于可配置的规则过滤内容并判断安全后，再放行给content阶段的反向代理模块转发到上游服务。本次4节课我将从Web攻击方式讲起，看看Nginx是如何用作反向代理型WAF的。<br><img src="/images/waf/WAF%E9%98%B2%E7%81%AB%E5%A2%99.png"></p>
+<a id="more"></a>
+
+
+<h1 id="12月03日：waf应用层攻击对抗详解"><a href="#12月03日：waf应用层攻击对抗详解" class="headerlink" title="12月03日：waf应用层攻击对抗详解"></a>12月03日：waf应用层攻击对抗详解</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=885856066&bvid=BV19K4y1V7mH&cid=272041997&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="12月10日：恶意http请求的甄别"><a href="#12月10日：恶意http请求的甄别" class="headerlink" title="12月10日：恶意http请求的甄别"></a>12月10日：恶意http请求的甄别</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=330753616&bvid=BV1rA411s76B&cid=272047326&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="12月17日：恶意客户端的防御控制"><a href="#12月17日：恶意客户端的防御控制" class="headerlink" title="12月17日：恶意客户端的防御控制"></a>12月17日：恶意客户端的防御控制</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=885781481&bvid=BV1AK4y1j7LY&cid=272047993&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="12月24日：降低waf防火墙的性能损耗"><a href="#12月24日：降低waf防火墙的性能损耗" class="headerlink" title="12月24日：降低waf防火墙的性能损耗"></a>12月24日：降低waf防火墙的性能损耗</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+<iframe src="//player.bilibili.com/player.html?aid=203273208&bvid=BV17h411f79U&cid=272053712&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+</div>
+
+
+<h1 id="课件下载"><a href="#课件下载" class="headerlink" title="课件下载"></a>课件下载</h1><p>这四次课程的PPT在这里：<a href="/pdf/%E7%AC%AC%E4%B8%83%E5%AD%A3.-%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5.pdf" title="第七季.-用nginx搭建waf防火墙的实践">点击下载</a> 。</p>
+]]></content>
+      <categories>
+        <category>nginx</category>
+      </categories>
+      <tags>
+        <tag>nginx</tag>
+        <tag>waf</tag>
+        <tag>ddos</tag>
+        <tag>限流限速</tag>
+        <tag>CSRF</tag>
+        <tag>XXE</tag>
+        <tag>XXS</tag>
+        <tag>点击劫持</tag>
+        <tag>CRLF攻击</tag>
       </tags>
   </entry>
   <entry>
@@ -1462,8 +1557,8 @@
 <p><a href="/2020/12/23/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">下一篇</a>将会介绍nginx.conf的配置语法，以及使用命令行或者免费的可视化工具分析access.log日志文件的方法</p>
 ]]></content>
       <categories>
-        <category>web</category>
         <category>nginx</category>
+        <category>web</category>
       </categories>
       <tags>
         <tag>nginx</tag>
@@ -1586,8 +1681,8 @@
 <p>为了榨干多核CPU的价值，Nginx无所不用其极：通过绑定CPU提升二级缓存的命中率，通过静态优先级扩大时间片，通过多种手段均衡Worker进程之间的负载，在独立线程池中隔离阻塞的IO操作，等等。可见，高性能既来自于架构，更来自于细节。</p>
 ]]></content>
       <categories>
-        <category>web</category>
         <category>nginx</category>
+        <category>web</category>
         <category>高并发</category>
       </categories>
       <tags>
@@ -1780,6 +1875,21 @@
       </tags>
   </entry>
   <entry>
+    <title>谈谈哲学和人性</title>
+    <url>/2011/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E8%B0%88%E8%B0%88%E5%93%B2%E5%AD%A6%E5%92%8C%E4%BA%BA%E6%80%A7/</url>
+    <content><![CDATA[<p>哲学是什么？学校里的哲学定义我不认同。哲学不是一种知识，是无法“学”到的，大学里的哲学专业和哲学课，只是去研究别人的某些抽象总结出的哲学观点，更象考古学，而我的理解不同：哲学一定是针对自己的，仅可以从别人那里了解一些观点事例，它们可能会较深程度的融入自己的思想中，形成自己的新的哲学思想。­</p>
+<a id="more"></a>
+<p>我的观点，哲学就是自己人生中所有阅历经验思想的总和。总和又是什么？总和包括两部分动作，整理和规则提取：把共性的人生经历模糊的归并，非重要经历丢到记忆死角，重要记忆加入大脑热点记忆中，每当共性归并记忆到达临界点后，就对这批相似的记忆提取出一些不同重要级别的规则。这种种不同级别的规则，各种不同重要级别的阅历记忆，就是哲学！哲学会指导自己的所有行为，任何新事态出现时，哲学会给出共有哪些选择项，规则和热点记忆会给出自己最可能做出的选择，当然，人类的进化规则和你的人性会做出此时是否需要突变的做出另类选择（任性一把？莫名其妙的做了奇怪的选择？情绪化？感性？或者这些都有吧。），总之，哲学最终指导你做出选择。­ </p>
+<p>人性是什么？我认为，就是人作为一种生物在进化过程中产生的属性。有种观点认为，一个人做的任何决定，都是他在当时的情形下，以他当时的信息量、当时的价值观中，做出的最好选择。我基本认同这个观点，但是这里忽略了生物在进化过程中的突变行为，突变行为一定不是当时的最优决定，但是根据DNA决定了此时有必要做出这种虽然不是最优决定，但可用于探索新的更优决定。就像遗传<a href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>中的基因突变，或者蚁群算法中少量蚂蚁的探索行为。所以，一个人的决定大都是当时他所能做出的最好决定，少量可能不是的最好的，但是依照其人性是有必要的探索性决定。­</p>
+<p>所以，人类作为群体进化到现阶段，宏观上个性上的差异并不明显，就是说，大家的人性差不太多。微观上，每个人之间的DNA不同，即使是新生婴儿，有的婴儿生来就更喜欢冒险，可能每五次或者每十次决定中，就有一次是非最优决定。有的婴儿可能生来保守，一百次决定中才有一次轻度的非常规试探。后天也会对人性产生影响。生来喜欢冒险的婴儿，如果每次冒险得到的结果都优于之前的结果，就会强化他的冒险精神，反之他会变得更保守。­同样，有人可能经历过一千次相似经历后才会去整理提取规则，有人可能一百次就会去做，如果提取出的规则总是有好的正效果，就会强化这一趋势。我发现最近两年到合肥闲了后，是越来越爱干这事了，当然是非被动式的整理。</p>
+<p>哲学形成中是靠着人性来指导的，当然哲学也会反过来影响人性。哲学形成中的归并，整理记忆，提取规则，都是人性在起作用。人性很复杂，所以机器人、<a href="http://lib.csdn.net/base/ai" title="人工智能知识库">人工智能</a>技术到现在与人相比还相差很远，毕竟是久远的进化。人性强调比较，没有什么绝对化的东西，一切因素都有权重，以及修正权重的规则。人的记忆在不停的通过五官来记录新东西，但人性在左右这些记忆，会删除一些，把一些记忆放到大箱子里，把相仿的放在一起，只记录有代表性的几个，把一些权重高的放到最容易访问的记忆里。使用记忆时，会自动的在速度和正确率上取最优解。在现实与自身不协调时，会适应现实，并在这个过程中缓慢的调整记忆和规则，所以，越不协调时越容易自我产生催眠效果。­ 哲学和人性，是唯一指导我们思想、决定的两个因素。­</p>
+<p>让我们从股市中去验证这个观点。哲学上人们大不同，因为哲学主要受制于阅历，但是人性差异却没有那么大，因为人性主要来自于亿万年的进化，进化过程中产生的自动趋利避害，自动获取最优，将导致人性害怕风险，在现实与自己的希望不同时，会通过强化希望来使自己坚持下去。这些在股市中都是庄家算计散户的惯用招，而且永不过时。骗子骗人时也是如此，利用人类进化过程中寻找最优解的惯性设套。所以有许多炒股高手说，如果你在后天没有克服人性中最共通的东西，就不要来炒股，譬如喜欢短期记忆的比较，忽视长期数据；短期风险出现时会忽略客观数据；希望与现实不符时用希望来催眠自己；天上掉馅饼时欣然接受等。­</p>
+]]></content>
+      <categories>
+        <category>技术人生</category>
+      </categories>
+  </entry>
+  <entry>
     <title>linux内核调度算法（2）--CPU时间片如何分配</title>
     <url>/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/</url>
     <content><![CDATA[<p>内核在微观上，把CPU的运行时间分成许多分，然后安排给各个进程轮流运行，造成宏观上所有的进程仿佛同时在执行。双核CPU，实际上最多只能有两个进程在同时运行，大家在top、vmstat命令里看到的正在运行的进程，并不是真的在占有着CPU哈。<br>所以，一些设计良好的高性能进程，比如nginx，都是实际上有几颗CPU，就配几个工作进程，道理就在这。比如你的服务器有8颗CPU，那么nginx worker应当只有8个，当你多于8个时，内核可能会放超过多个nginx worker进程到1个runqueue里，会发生什么呢？就是在这颗CPU上，会比较均匀的把时间分配给这几个nginx worker，每个worker进程运行完一个时间片后，内核需要做进程切换，把正在运行的进程上下文保存下来。假设内核分配的时间片是100ms，做进程切换的时间是5ms，那么进程性能下降还是很明显的，跟你配置的worker有关，越多下降得越厉害。 </p>
@@ -1820,21 +1930,6 @@
         <tag>kernel</tag>
         <tag>nice</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>谈谈哲学和人性</title>
-    <url>/2011/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E8%B0%88%E8%B0%88%E5%93%B2%E5%AD%A6%E5%92%8C%E4%BA%BA%E6%80%A7/</url>
-    <content><![CDATA[<p>哲学是什么？学校里的哲学定义我不认同。哲学不是一种知识，是无法“学”到的，大学里的哲学专业和哲学课，只是去研究别人的某些抽象总结出的哲学观点，更象考古学，而我的理解不同：哲学一定是针对自己的，仅可以从别人那里了解一些观点事例，它们可能会较深程度的融入自己的思想中，形成自己的新的哲学思想。­</p>
-<a id="more"></a>
-<p>我的观点，哲学就是自己人生中所有阅历经验思想的总和。总和又是什么？总和包括两部分动作，整理和规则提取：把共性的人生经历模糊的归并，非重要经历丢到记忆死角，重要记忆加入大脑热点记忆中，每当共性归并记忆到达临界点后，就对这批相似的记忆提取出一些不同重要级别的规则。这种种不同级别的规则，各种不同重要级别的阅历记忆，就是哲学！哲学会指导自己的所有行为，任何新事态出现时，哲学会给出共有哪些选择项，规则和热点记忆会给出自己最可能做出的选择，当然，人类的进化规则和你的人性会做出此时是否需要突变的做出另类选择（任性一把？莫名其妙的做了奇怪的选择？情绪化？感性？或者这些都有吧。），总之，哲学最终指导你做出选择。­ </p>
-<p>人性是什么？我认为，就是人作为一种生物在进化过程中产生的属性。有种观点认为，一个人做的任何决定，都是他在当时的情形下，以他当时的信息量、当时的价值观中，做出的最好选择。我基本认同这个观点，但是这里忽略了生物在进化过程中的突变行为，突变行为一定不是当时的最优决定，但是根据DNA决定了此时有必要做出这种虽然不是最优决定，但可用于探索新的更优决定。就像遗传<a href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>中的基因突变，或者蚁群算法中少量蚂蚁的探索行为。所以，一个人的决定大都是当时他所能做出的最好决定，少量可能不是的最好的，但是依照其人性是有必要的探索性决定。­</p>
-<p>所以，人类作为群体进化到现阶段，宏观上个性上的差异并不明显，就是说，大家的人性差不太多。微观上，每个人之间的DNA不同，即使是新生婴儿，有的婴儿生来就更喜欢冒险，可能每五次或者每十次决定中，就有一次是非最优决定。有的婴儿可能生来保守，一百次决定中才有一次轻度的非常规试探。后天也会对人性产生影响。生来喜欢冒险的婴儿，如果每次冒险得到的结果都优于之前的结果，就会强化他的冒险精神，反之他会变得更保守。­同样，有人可能经历过一千次相似经历后才会去整理提取规则，有人可能一百次就会去做，如果提取出的规则总是有好的正效果，就会强化这一趋势。我发现最近两年到合肥闲了后，是越来越爱干这事了，当然是非被动式的整理。</p>
-<p>哲学形成中是靠着人性来指导的，当然哲学也会反过来影响人性。哲学形成中的归并，整理记忆，提取规则，都是人性在起作用。人性很复杂，所以机器人、<a href="http://lib.csdn.net/base/ai" title="人工智能知识库">人工智能</a>技术到现在与人相比还相差很远，毕竟是久远的进化。人性强调比较，没有什么绝对化的东西，一切因素都有权重，以及修正权重的规则。人的记忆在不停的通过五官来记录新东西，但人性在左右这些记忆，会删除一些，把一些记忆放到大箱子里，把相仿的放在一起，只记录有代表性的几个，把一些权重高的放到最容易访问的记忆里。使用记忆时，会自动的在速度和正确率上取最优解。在现实与自身不协调时，会适应现实，并在这个过程中缓慢的调整记忆和规则，所以，越不协调时越容易自我产生催眠效果。­ 哲学和人性，是唯一指导我们思想、决定的两个因素。­</p>
-<p>让我们从股市中去验证这个观点。哲学上人们大不同，因为哲学主要受制于阅历，但是人性差异却没有那么大，因为人性主要来自于亿万年的进化，进化过程中产生的自动趋利避害，自动获取最优，将导致人性害怕风险，在现实与自己的希望不同时，会通过强化希望来使自己坚持下去。这些在股市中都是庄家算计散户的惯用招，而且永不过时。骗子骗人时也是如此，利用人类进化过程中寻找最优解的惯性设套。所以有许多炒股高手说，如果你在后天没有克服人性中最共通的东西，就不要来炒股，譬如喜欢短期记忆的比较，忽视长期数据；短期风险出现时会忽略客观数据；希望与现实不符时用希望来催眠自己；天上掉馅饼时欣然接受等。­</p>
-]]></content>
-      <categories>
-        <category>技术人生</category>
-      </categories>
   </entry>
   <entry>
     <title>linux内核调度算法（3）--多核系统的负载均衡</title>
@@ -2017,48 +2112,6 @@
       </tags>
   </entry>
   <entry>
-    <title>为什么要出web协议这门课</title>
-    <url>/2019/05/06/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%BAweb%E5%8D%8F%E8%AE%AE%E8%BF%99%E9%97%A8%E8%AF%BE/</url>
-    <content><![CDATA[<p>我们公司有定期的分享课，好几位开发部的同学–包括android原生、JS前端、python后端–要求我分享网络协议方面的知识，我做过两场培训，一个是讲TLS/SSL协议，一个是讲HTTP协议的设计原则，结果培训完大家反馈有收获，但是太难了，收获又不是很大。我总结大家学习效果不好的原因后得出： </p>
-<ol>
-<li>必须由浅入深，才能让团队中的新人快速成长； </li>
-<li>必须系统化、体系化的讲解； </li>
-<li>必须实时配合抓包讲解； </li>
-<li>想要讲清楚，绝不是2、3个小时能做到的，至少要有10或者20个学时以上； <a id="more"></a>
-而与极客时间团队合作了《Nginx核心知识100讲》后，我的编辑张浩老师也跟我说，订阅了课程的同学反映非常好，也希望我能再出一门课，好好讲一下在Nginx课程里简单介绍过的Web协议。因此便萌生了制作《Web协议详解与抓包实践》这门课的想法。 </li>
-</ol>
-<p>研发部一位前端同学跟我说：实在<strong>学不动</strong>了，框架又更新了！我对他说：你必须搞清楚框架为什么更新，框架想解决什么问题，它又是怎么解决这些问题的！互联网变化确实非常快，但是，它的设计原则却没什么变化。我们必须先去理解它的<strong>设计原则</strong>，再来看实现细节。这也是这门Web协议课的另一个制作思路。 </p>
-<p>现在编程课已经从小学就开始了，而我上学那会，高中才有象征性的几节计算机课。在我看来，编程是拓展人脑计算能力的基础技能，所以，未来软件开发一定会成为全社会岗位的必备能力！这样的话，大家的学习负担就会非常重，怎么解决呢？我们需要理解，编程技术是为了解决实际问题的，而问题的本质并不经常变化，所以，<strong>我们要先学习那些不怎么变化的内容</strong>！像数据结构、算法、操作系统原理、Web协议等就是这些不怎么变化的知识点，值得我们首先花精力彻底搞懂它。这也是为什么我要出这门课的一个原因！ </p>
-<p>我经常感慨，为什么中国唐宋时期如此辉煌，可是近代却饱受挫折，发展缓慢？从吴军老师那里，我了解到，这是因为中国迟迟没有诞生大学！大学的必要性在于，可以让学生系统化的学习知识，只有体系化的知识，才能在我们的大脑中建立起结构化的树状认识，便于我们记忆、输出、使用！所以，我认为碎片化学习是一种新的学习方式，它能充分利用我们的时间，但碎片化必须搭配系统化学习才能有效的达到我们的学习目的！所以，这门课的另一个制作思路，便是<strong>体系化</strong>、一步一步的向下进行，而不要有跳跃式的讲解。 </p>
-<p>我现在所在的智链达还是一个典型的创业期公司，这与我之前所在的成熟期互联网公司都很不同，团队底子薄尤其需要快速成长，必须优先学习那些<strong>见效快</strong>、<strong>门槛低</strong>、可以利用<strong>碎片化</strong>时间学习的知识。所以，制作这门课程时，我特别放低了门槛，宁肯多讲些基础知识，再进入到协议的深层应用，也是出于此目的！ </p>
-<p>最后，附上这门课程的目录，我希望能帮Web协议的常用知识点都覆盖到： <a href="/2019/05/06/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%BAweb%E5%8D%8F%E8%AE%AE%E8%BF%99%E9%97%A8%E8%AF%BE/catalog/"><img src="/2019/05/catalog.jpg"></a> 最后，订阅课程的二维码在这里： <a href="/2019/05/06/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%BAweb%E5%8D%8F%E8%AE%AE%E8%BF%99%E9%97%A8%E8%AF%BE/poster-2/"><img src="/2019/05/poster.jpg"></a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>tcp</tag>
-        <tag>tls</tag>
-        <tag>ssl</tag>
-        <tag>session</tag>
-        <tag>极客时间</tag>
-        <tag>cookie</tag>
-        <tag>http</tag>
-        <tag>http/2.0</tag>
-        <tag>ip</tag>
-        <tag>ipv6</tag>
-        <tag>rest</tag>
-        <tag>web</tag>
-        <tag>wireshark</tag>
-        <tag>同源策略</tag>
-        <tag>架构</tag>
-        <tag>物联网</tag>
-        <tag>编程</tag>
-        <tag>网络协议</tag>
-        <tag>跨域</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>一文解释清楚Google BBR拥塞控制算法原理</title>
     <url>/2019/08/07/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E4%B8%80%E6%96%87%E8%A7%A3%E9%87%8A%E6%B8%85%E6%A5%9Agoogle-bbr%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E5%8E%9F%E7%90%86/</url>
     <content><![CDATA[<p>BBR对TCP性能的提升是巨大的，它能更有效的使用当下网络环境，Youtube应用后在吞吐量上有平均4%提升（对于日本这样的网络环境有14%以上的提升）： <a href="/2019/08/07/%E4%B8%80%E6%96%87%E8%A7%A3%E9%87%8A%E6%B8%85%E6%A5%9Agoogle-bbr%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E5%8E%9F%E7%90%86/youtube-bbs-vs-cubic-throughput-2/"><img src="/2019/07/Youtube-BBS-vs-CUBIC-Throughput-1.png"></a> 报文的往返时延RTT降低了33%，这样如视频这样的大文件传输更快，用户体验更好：</p>
@@ -2101,6 +2154,48 @@
         <tag>拥塞避免</tag>
         <tag>滑动窗口</tag>
         <tag>路由器</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>为什么要出web协议这门课</title>
+    <url>/2019/05/06/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%BAweb%E5%8D%8F%E8%AE%AE%E8%BF%99%E9%97%A8%E8%AF%BE/</url>
+    <content><![CDATA[<p>我们公司有定期的分享课，好几位开发部的同学–包括android原生、JS前端、python后端–要求我分享网络协议方面的知识，我做过两场培训，一个是讲TLS/SSL协议，一个是讲HTTP协议的设计原则，结果培训完大家反馈有收获，但是太难了，收获又不是很大。我总结大家学习效果不好的原因后得出： </p>
+<ol>
+<li>必须由浅入深，才能让团队中的新人快速成长； </li>
+<li>必须系统化、体系化的讲解； </li>
+<li>必须实时配合抓包讲解； </li>
+<li>想要讲清楚，绝不是2、3个小时能做到的，至少要有10或者20个学时以上； <a id="more"></a>
+而与极客时间团队合作了《Nginx核心知识100讲》后，我的编辑张浩老师也跟我说，订阅了课程的同学反映非常好，也希望我能再出一门课，好好讲一下在Nginx课程里简单介绍过的Web协议。因此便萌生了制作《Web协议详解与抓包实践》这门课的想法。 </li>
+</ol>
+<p>研发部一位前端同学跟我说：实在<strong>学不动</strong>了，框架又更新了！我对他说：你必须搞清楚框架为什么更新，框架想解决什么问题，它又是怎么解决这些问题的！互联网变化确实非常快，但是，它的设计原则却没什么变化。我们必须先去理解它的<strong>设计原则</strong>，再来看实现细节。这也是这门Web协议课的另一个制作思路。 </p>
+<p>现在编程课已经从小学就开始了，而我上学那会，高中才有象征性的几节计算机课。在我看来，编程是拓展人脑计算能力的基础技能，所以，未来软件开发一定会成为全社会岗位的必备能力！这样的话，大家的学习负担就会非常重，怎么解决呢？我们需要理解，编程技术是为了解决实际问题的，而问题的本质并不经常变化，所以，<strong>我们要先学习那些不怎么变化的内容</strong>！像数据结构、算法、操作系统原理、Web协议等就是这些不怎么变化的知识点，值得我们首先花精力彻底搞懂它。这也是为什么我要出这门课的一个原因！ </p>
+<p>我经常感慨，为什么中国唐宋时期如此辉煌，可是近代却饱受挫折，发展缓慢？从吴军老师那里，我了解到，这是因为中国迟迟没有诞生大学！大学的必要性在于，可以让学生系统化的学习知识，只有体系化的知识，才能在我们的大脑中建立起结构化的树状认识，便于我们记忆、输出、使用！所以，我认为碎片化学习是一种新的学习方式，它能充分利用我们的时间，但碎片化必须搭配系统化学习才能有效的达到我们的学习目的！所以，这门课的另一个制作思路，便是<strong>体系化</strong>、一步一步的向下进行，而不要有跳跃式的讲解。 </p>
+<p>我现在所在的智链达还是一个典型的创业期公司，这与我之前所在的成熟期互联网公司都很不同，团队底子薄尤其需要快速成长，必须优先学习那些<strong>见效快</strong>、<strong>门槛低</strong>、可以利用<strong>碎片化</strong>时间学习的知识。所以，制作这门课程时，我特别放低了门槛，宁肯多讲些基础知识，再进入到协议的深层应用，也是出于此目的！ </p>
+<p>最后，附上这门课程的目录，我希望能帮Web协议的常用知识点都覆盖到： <a href="/2019/05/06/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%BAweb%E5%8D%8F%E8%AE%AE%E8%BF%99%E9%97%A8%E8%AF%BE/catalog/"><img src="/2019/05/catalog.jpg"></a> 最后，订阅课程的二维码在这里： <a href="/2019/05/06/%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%BAweb%E5%8D%8F%E8%AE%AE%E8%BF%99%E9%97%A8%E8%AF%BE/poster-2/"><img src="/2019/05/poster.jpg"></a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>tcp</tag>
+        <tag>tls</tag>
+        <tag>ssl</tag>
+        <tag>session</tag>
+        <tag>极客时间</tag>
+        <tag>cookie</tag>
+        <tag>http</tag>
+        <tag>http/2.0</tag>
+        <tag>ip</tag>
+        <tag>ipv6</tag>
+        <tag>rest</tag>
+        <tag>web</tag>
+        <tag>wireshark</tag>
+        <tag>同源策略</tag>
+        <tag>架构</tag>
+        <tag>物联网</tag>
+        <tag>编程</tag>
+        <tag>网络协议</tag>
+        <tag>跨域</tag>
       </tags>
   </entry>
   <entry>
@@ -3122,8 +3217,8 @@
 <p>最后做个总结。在恰当的时间做恰当的事，听起来很美好，但需要我们有大局观。我们要清楚大规模分布式网络通常存在哪些问题，也要清楚分布式网络的常用解决方案，然后才能谈如何用Nginx解决上述问题。而用好Nginx，必须系统的掌握Nginx的架构与设计原理，理解模块化设计、阶段式设计，清楚Nginx的核心流程，这样我们才能恰到好处地用Nginx解决掉问题。</p>
 ]]></content>
       <categories>
-        <category>web</category>
         <category>nginx</category>
+        <category>web</category>
         <category>高并发</category>
       </categories>
       <tags>
@@ -3645,17 +3740,17 @@
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>HTTP的性能优化手段众多，从这四个维度出发，可以建立起树状的知识体系，囊括绝大部分的HTTP优化点。 编码效率优化包括http header和body ，它可以使传输的数据更短小紧凑，从而获得更低的时延和更高的并发。同时，好的编码算法也可以减少编解码时的CPU消耗。 信道利用率的优化，可以从多路复用、错误发现及恢复、资源分配这3个角度出发，让快速的底层信道，有效的承载慢速的应用层信道。 传输路径的优化，包括各级缓存、慢启动、消息传送模式等，它能够让消息更及时的发给浏览器，提升用户体验。 当下互联网中的信息安全，主要还是建立在TLS协议之上的。TLS1.3从安全性、性能上都有很大的提升，我们应当及时的升级。 希望这些知识能够帮助你全面、高效地优化HTTP协议！ </p>
 ]]></content>
       <categories>
-        <category>web</category>
         <category>nginx</category>
+        <category>web</category>
         <category>高并发</category>
       </categories>
       <tags>
         <tag>nginx</tag>
         <tag>tls</tag>
-        <tag>http</tag>
         <tag>BBR</tag>
         <tag>CUBIC</tag>
         <tag>拥塞控制</tag>
+        <tag>http</tag>
         <tag>缓存</tag>
         <tag>CDN</tag>
         <tag>brotli</tag>
@@ -4145,53 +4240,6 @@
         <tag>SO_RCVTIMEO</tag>
         <tag>tcp_low_latency</tag>
         <tag>阻塞</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在线课程：探索NGINX_UNIT</title>
-    <url>/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/</url>
-    <content><![CDATA[<blockquote>
-<p>UNIT是NGINX于2017年推出的Web容器方案，它提供了REST JSON接口动态修改服务配置，目前为Python、Java、Ruby、Perl、NodeJS、GOLang、WebAssembly等语言提供了生产环境级别的高性能Web容器，适用于大规模分布式环境中的微服务管理。从3月11日到4月1日，我分享了关于UNIT的4次课程。</p>
-</blockquote>
-<p><img src="/images/%E5%BE%AE%E6%9C%8D%E5%8A%A1/nginx_unit/nginx-unit-1-0-architecture.png"><br>微服务架构中，由于开发语言多样化、服务实例数量多，这就需要一种统一的服务治理方法，将配置更改、服务启停、网络协议适配、日志搜集等通用功能低成本的管理起来。K8S是一种解决方案，而NGINX UNIT针对Web场景也提供了上述功能，而且由于它仅针对Web容器场景，所以性能也更高。这4次视频课程如下：</p>
-<a id="more"></a>
-<h1 id="3月11日-用Unit实现应用的动态配置"><a href="#3月11日-用Unit实现应用的动态配置" class="headerlink" title="3月11日 用Unit实现应用的动态配置"></a>3月11日 用Unit实现应用的动态配置</h1>
-<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
-<iframe src="//player.bilibili.com/player.html?aid=545033810&bvid=BV1Ni4y1A7xi&cid=323088993&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
-
-</div>
-
-
-
-<h1 id="3月18日-Unit的负载均衡配置"><a href="#3月18日-Unit的负载均衡配置" class="headerlink" title="3月18日 Unit的负载均衡配置"></a>3月18日 Unit的负载均衡配置</h1>
-<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
-<iframe src="//player.bilibili.com/player.html?aid=204792850&bvid=BV1mh411S77W&cid=317217863&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
-</div>
-
-
-<h1 id="3月25日-Unit架构设计"><a href="#3月25日-Unit架构设计" class="headerlink" title="3月25日 Unit架构设计"></a>3月25日 Unit架构设计</h1>
-<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
-<iframe src="//player.bilibili.com/player.html?aid=672288361&bvid=BV1rU4y1a7Pw&cid=317184368&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
-</div>
-
-
-<h1 id="4月01日-Unit源代码解读"><a href="#4月01日-Unit源代码解读" class="headerlink" title="4月01日 Unit源代码解读"></a>4月01日 Unit源代码解读</h1>
-<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
-<iframe src="//player.bilibili.com/player.html?aid=544887394&bvid=BV1Xi4y1P7Qu&cid=320481412&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
-
-</div>
-
-
-<h1 id="课件下载"><a href="#课件下载" class="headerlink" title="课件下载"></a>课件下载</h1><p>这四次课程的PPT在这里：<a href="/pdf/%E7%AC%AC%E4%B9%9D%E5%AD%A3-%E6%8E%A2%E7%B4%A2NGINX_UNIT.pdf" title="第九季-探索NGINX_UNIT">点击下载</a> 。</p>
-]]></content>
-      <categories>
-        <category>微服务</category>
-      </categories>
-      <tags>
-        <tag>微服务</tag>
-        <tag>nginx</tag>
-        <tag>unit</tag>
-        <tag>cgroup</tag>
       </tags>
   </entry>
 </search>
