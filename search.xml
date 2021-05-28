@@ -638,7 +638,7 @@
       </tags>
   </entry>
   <entry>
-    <title>在线课程：K8S Ingress Controller技术细节探讨</title>
+    <title>公开课：K8S Ingress Controller技术细节探讨</title>
     <url>/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/</url>
     <content><![CDATA[<p>对于许多企业来说，将生产环境转移到Kubernetes集群上，会让应用程序的流量管理变得复杂且具有挑战性。</p>
 <p>而Ingress Controller允许通过Yaml编排脚本提供高可用的七层负载均衡、Waf防火墙或者API Gateway，它是Kubernetes集群对外服务的核心组件。</p>
@@ -675,7 +675,15 @@
 </div>
 
 
-<h1 id="Nginx官方Controller开源版的核心特性"><a href="#Nginx官方Controller开源版的核心特性" class="headerlink" title="Nginx官方Controller开源版的核心特性"></a>Nginx官方Controller开源版的核心特性</h1><p>最后一次课还未开始哦</p>
+<h1 id="Nginx官方Controller开源版的核心特性"><a href="#Nginx官方Controller开源版的核心特性" class="headerlink" title="Nginx官方Controller开源版的核心特性"></a>Nginx官方Controller开源版的核心特性</h1>
+
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;">
+
+<iframe src="//player.bilibili.com/player.html?aid=758257982&bvid=BV1K64y1o7ey&cid=345131476&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
+</div>
+
+
 <h1 id="课件下载"><a href="#课件下载" class="headerlink" title="课件下载"></a>课件下载</h1><p>这四次课程的PPT在这里：<a href="/pdf/%E7%AC%AC%E5%8D%81%E5%AD%A3-K8S-IngressController%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8.pdf" title="第十季 - K8S Ingress Controller技术细节探讨">点击下载</a> 。</p>
 ]]></content>
       <categories>
@@ -690,7 +698,7 @@
       </tags>
   </entry>
   <entry>
-    <title>在线课程：探索NGINX_UNIT</title>
+    <title>公开课：探索NGINX_UNIT</title>
     <url>/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/</url>
     <content><![CDATA[<blockquote>
 <p>UNIT是NGINX于2017年推出的Web容器方案，它提供了REST JSON接口动态修改服务配置，目前为Python、Java、Ruby、Perl、NodeJS、GOLang、WebAssembly等语言提供了生产环境级别的高性能Web容器，适用于大规模分布式环境中的微服务管理。从3月11日到4月1日，我分享了关于UNIT的4次课程。</p>
@@ -1384,7 +1392,7 @@
       </tags>
   </entry>
   <entry>
-    <title>用nginx搭建waf防火墙的实践</title>
+    <title>公开课：用nginx搭建waf防火墙的实践</title>
     <url>/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/</url>
     <content><![CDATA[<p>WAF全称为Web Application Firewall，因此作为七层负载均衡的Nginx很适合实现Web应用层防火墙。许多C、Lua模块都在rewrite、access等处理阶段截获HTTP请求，基于可配置的规则过滤内容并判断安全后，再放行给content阶段的反向代理模块转发到上游服务。本次4节课我将从Web攻击方式讲起，看看Nginx是如何用作反向代理型WAF的。<br><img src="/images/waf/WAF%E9%98%B2%E7%81%AB%E5%A2%99.png"></p>
 <a id="more"></a>
