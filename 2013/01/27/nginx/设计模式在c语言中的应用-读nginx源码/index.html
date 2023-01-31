@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="市面上的“设计模式“书籍文章，皆针对Java&#x2F;C++&#x2F;C#等面向对象语言，似乎离开了面向对象的种种特性，设计模式就无法实现，没有用武之地了。  是这样吗？设计模式的概念是从建筑领域引入的，本身从没歧视过面向过程编程语言，它只是对一类问题的普遍解决方案而已。面向对象语言因为有类、多态等特点，使得开发者们容易达到：隐藏细节、封装变化，而这与设计模式的目的比较一致，所以大师们爱把设计模式与面向对象语言二">
+<meta property="og:type" content="article">
+<meta property="og:title" content="设计模式在C语言中的应用--读nginx源码">
+<meta property="og:url" content="https://www.taohui.tech/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="市面上的“设计模式“书籍文章，皆针对Java&#x2F;C++&#x2F;C#等面向对象语言，似乎离开了面向对象的种种特性，设计模式就无法实现，没有用武之地了。  是这样吗？设计模式的概念是从建筑领域引入的，本身从没歧视过面向过程编程语言，它只是对一类问题的普遍解决方案而已。面向对象语言因为有类、多态等特点，使得开发者们容易达到：隐藏细节、封装变化，而这与设计模式的目的比较一致，所以大师们爱把设计模式与面向对象语言二">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/0_1328087269KWms-1-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2013/01/adapter.png">
+<meta property="og:image" content="https://www.taohui.tech/2013/01/bridge%E6%A8%A1%E5%BC%8F.png">
+<meta property="og:image" content="https://www.taohui.tech/2013/01/bridge2.png">
+<meta property="article:published_time" content="2013-01-27T08:28:19.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.862Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="adapter模式">
+<meta property="article:tag" content="strategy模式">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/01/0_1328087269KWms-1-1.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>设计模式在C语言中的应用--读nginx源码 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          设计模式在C语言中的应用--读nginx源码
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2013-01-27 16:28:19" itemprop="dateCreated datePublished" datetime="2013-01-27T16:28:19+08:00">2013-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>市面上的“设计模式“书籍文章，皆针对<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/javase" title="Java SE知识库">Java</a>/C++/C#等面向对象语言，似乎离开了面向对象的种种特性，设计模式就无法实现，没有用武之地了。 </p>
+<p>是这样吗？设计模式的概念是从建筑领域引入的，本身从没歧视过面向过程编程语言，它只是对一类问题的普遍解决方案而已。面向对象语言因为有类、多态等特点，使得开发者们容易达到：隐藏细节、封装变化，而这与设计模式的目的比较一致，所以大师们爱把设计模式与面向对象语言二位一体的使用。然而，存在即合理，<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/c" title="C语言知识库">C语言</a>直到今日仍然在大型软件工程中担纲主角，其种种设计方法其实与我们通常见到的设计模式本质是相同的。例如nginx这个纯C语言写就的的高性能WEB服务器，就有许多地方使用到了市面书籍提到的设计模式。下面通过nginx源码来看看C语言是怎么做的。当然，UML图都是我根据代码意图所画，并不准确（C语言真没法画UML），只用于方便理解，呵呵。 </p>
+<span id="more"></span>
+<h1 id="strategy模式："><a href="#strategy模式：" class="headerlink" title="strategy模式："></a>strategy模式：</h1><p>该模式用于客户代码在“无知”状态下，可以使用种种不同的实现。下面我们以nginx对网络IO操作的封装部分来看看C语言的实现吧。 </p>
+<p>设计模式就是通过封装变化来解耦，所以，我们先要找出网络IO操作的变化点来。nginx是跨平台的，它会支持<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/linux" title="Linux知识库">Linux</a>、freebsd、solaris等<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/operatingsystem" title="操作系统知识库">操作系统</a>，而每个操作系统的网络IO操作是不同的，这就是变化点了。 </p>
+<p>所以，nginx首先定义了ngx_os_io_t来封装这些变化。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span>  </span><br><span class="line">    ngx_recv_pt        recv;  </span><br><span class="line">    ngx_recv_chain_pt  recv_chain;  </span><br><span class="line">    ngx_recv_pt        udp_recv;  </span><br><span class="line">    ngx_send_pt        send;  </span><br><span class="line">    ngx_send_chain_pt  send_chain;  </span><br><span class="line">    <span class="keyword">ngx_uint_t</span>         flags;  </span><br><span class="line">&#125; <span class="keyword">ngx_os_io_t</span>;  </span><br></pre></td></tr></table></figure>
+
+<p>这里有五个函数指针（*_pt都是函数指针）和一个变量，用于收发网络数据，我把它理解为OO中的abstract class（每个ngx_os_io_t定义的变量都会重新实现这五个函数）。 </p>
+<p>拥有函数指针的struct，我通常认为它们是OO中的abstract class，实现它们的文件（一堆函数）要对应到OO上，我则喜欢把它们当做子类来看。对于void*这样的成员，要根据意图来看了，通常我会转换成聚合加继承的关系。 <img src="/2017/01/0_1328087269KWms-1-1.png"> ngx_io会在相应的ngx_os_specific_init方法中，来策略性的选择到底使用哪个实现。客户代码只需要简单的调用ngx_io中的方法即可。 </p>
+<h1 id="adapter模式："><a href="#adapter模式：" class="headerlink" title="adapter模式："></a>adapter模式：</h1><p>这个模式用以适配接口，通常都是我们已经定义好一种接口了，有一个新的实现却有着不同的接口，接下来adapter就开始发力了。下面我们仍然以nginx对网络IO操作的封装部分来看。 </p>
+<p>linux平台下可能存在普通的IO或者异步IO方式。我们在最初已经封装好ngx_os_io_t接口了，客户代码都是这么直接使用的。现在linux实现了异步IO，而它的调用方式与普通的读写IO接口完全不同，所以，如果要支持aoi就需要一层adapter来适配ngx_os_io_t，这就是adapter方式了。 <img src="/2013/01/adapter.png"> </p>
+<p>上图中，ngx_os_aio适配了原生的异步IO接口，这样，用户代码仍然像以前一样，只要直接使用ngx_io中的五个接口方法，当nginx的IO部分支持linux aio后，用户代码不需要修改。 </p>
+<h1 id="bridge桥模式："><a href="#bridge桥模式：" class="headerlink" title="bridge桥模式："></a>bridge桥模式：</h1><p>桥模式用于将抽象和实现分离，各自都能独立的变化。下面以nginx的核心概念module举例，虽然有些牵强，因为nginx的代码从来没这么用过：通常都是一个抽象module context只对应着一个实现module来用，但是，毕竟这种结构下还是可以达到抽象与实现分离的目的，桥模式只好对应到这上面了。 </p>
+<p>nginx是以module的概念贯穿始终的。它有一个基本的抽象层ngx_core_module_t（从意图上判断，context有抽象接口的功能，虽然简单从语法上看不出）。然后，nginx module有三个基本类型，分别是event（处理各种事件模型，如epoll/select等），http（处理各种http协议的事件），mail（处理mail相关的事件）。针对每种类型的module，都有许多个实现，比如event module就有9个实现，这里的每个实现其实也是个子类。 </p>
+<p>但是，在我们理解桥模式时，这些子类暂时要被看成是event module的实例。代码中看，像ngx_epoll_module这样的子类中，还是把一些通用的细节隐藏给ngx_event_core_module来做（管理这个词更合适）了。从这个角度可以认为，通过context接口，把三个基本module实现分开了。来看看类图： <img src="/2013/01/bridge%E6%A8%A1%E5%BC%8F.png"> </p>
+<p>nginx自己用时，是以ngx_module_t中的type成员来决定使用哪个实现的。目前的nginx代码中，如果用了一种接口就一定会指定相应的type。可是实际上，这也可以用来展示桥模式。以事件module为例来看看： <img src="/2013/01/bridge2.png"> </p>
+<p>由于UML本就是针对OO语言的，所以以上我画的类图都比较牵强，什么是继承？什么是聚合？在C语言中，往往都是通过几个函数指针，或者void*指针实现各种封装和多态。没有什么语法上的关联，我就只能从代码意图中来判断了。而代码意图这个比较虚，因为不同的角度理解出来都不一样，所以这个确实不好画。太灵活了点，我只能从一个便于说明的角度来看，例如：上面的ngx_devpoll_module其实就是一个ngx_module_t，呵呵，但是，实际上它最关心的是ngx_event_actions_t的实现，如果完全根据语法来看，根本说不通的。但从代码意图中看，这些module并不关心ngx_module_t，所以我认为，它们只是在实现ngx_event_module_t了。 </p>
+<p>当然以上只是一家之言，不必当真，如果对nginx源码有研究的话，欢迎各位拍砖。<br>客观的说，C语言确实在封装上很差，就像nginx，如果我们要开发一个处理http协议的module嵌入进nginx进程，必须了解ngx_http_module里到底做了什么，真没隐藏啥细节，module开发者们表示很郁闷。上面的这些设计模式，只是做到了代码上的解藕。如果nginx用C++写的话，我相信，现在第三方module都能数以万计了。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2021\05\17\k8s\在线课程：K8S-Ingress-Controller技术细节探讨\" rel="bookmark">公开课：K8S Ingress Controller技术细节探讨</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/" title="设计模式在C语言中的应用--读nginx源码">https://www.taohui.tech/2013/01/27/nginx/设计模式在c语言中的应用-读nginx源码/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/adapter%E6%A8%A1%E5%BC%8F/" rel="tag"># adapter模式</a>
+              <a href="/tags/strategy%E6%A8%A1%E5%BC%8F/" rel="tag"># strategy模式</a>
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag"># 设计模式</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2012/01/27/%E5%A6%82%E4%BD%95%E7%94%A8googletest%E5%86%99%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/" rel="prev" title="如何用googletest写单元测试">
+      <i class="fa fa-chevron-left"></i> 如何用googletest写单元测试
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/" rel="next" title="详解rsync算法--如何减少同步文件时的网络传输量">
+      详解rsync算法--如何减少同步文件时的网络传输量 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#strategy%E6%A8%A1%E5%BC%8F%EF%BC%9A"><span class="nav-number">1.</span> <span class="nav-text">strategy模式：</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#adapter%E6%A8%A1%E5%BC%8F%EF%BC%9A"><span class="nav-number">2.</span> <span class="nav-text">adapter模式：</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#bridge%E6%A1%A5%E6%A8%A1%E5%BC%8F%EF%BC%9A"><span class="nav-number">3.</span> <span class="nav-text">bridge桥模式：</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

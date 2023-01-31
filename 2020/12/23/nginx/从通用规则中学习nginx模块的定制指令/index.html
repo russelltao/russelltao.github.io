@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="上一篇文章中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。 每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从通用规则中学习Nginx模块的定制指令">
+<meta property="og:url" content="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="上一篇文章中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。 每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
+<meta property="article:published_time" content="2020-12-23T07:14:21.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.853Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="时间单位">
+<meta property="article:tag" content="空间单位">
+<meta property="article:tag" content="配置语法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从通用规则中学习Nginx模块的定制指令 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从通用规则中学习Nginx模块的定制指令
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-23 15:14:21" itemprop="dateCreated datePublished" datetime="2020-12-23T15:14:21+08:00">2020-12-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/22/%e5%a6%82%e4%bd%95configure%e5%ae%9a%e5%88%b6%e5%87%ba%e5%b1%9e%e4%ba%8e%e4%bd%a0%e7%9a%84nginx%ef%bc%9f/">上一篇文章</a>中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。</p>
+<p>每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，那么掌握了它，就能快速读懂生产环境复杂的nginx.conf文件。</p>
+<span id="more"></span>
+<p>其次，我们又该如何学习个性化十足的模块指令呢？其实，所有Nginx模块在介绍它的配置指令时，都遵循着相同的格式：Syntax、Default、Context、Description，这能降低我们的学习门槛。如果你还不清楚这一套路，那就只能学习其他文章翻译过的二手知识，效率很低。</p>
+<p>比如搭建静态资源服务用到的root、alias指令，该如何找到、阅读它的帮助文档？为什么官方更推荐使用root指令？alias指令又适合在哪些场景中使用呢？</p>
+<p>nginx.conf配置文件中的语法就像是一门脚本语言，你既可以定义变量（set指令），也可以控制条件分支（if指令），还有作用域的概念（server{}块、location{}块等）。所以，为复杂的业务场景写出正确的配置文件，并不是一件很容易的事。为此，<strong>Nginx特意针对vim编辑器提供了语法高亮功能</strong>，但这需要你手动打开，尤其是include文件散落在磁盘各处时。</p>
+<p>本文将会系统地介绍nginx.conf配置文件的用法，并以搭建静态资源服务时用到的root、alias指令为例，看看如何阅读Nginx模块的指令介绍。同时，本文也是Nginx开源社区基础培训系列课程第一季，即6月11日晚第2次视频直播的部分文字总结。</p>
+<h2 id="快速掌握Nginx配置文件的语法格式"><a href="#快速掌握Nginx配置文件的语法格式" class="headerlink" title="快速掌握Nginx配置文件的语法格式"></a>快速掌握Nginx配置文件的语法格式</h2><p>Nginx是由少量框架代码、大量模块构成的，其中，Nginx框架会按照特定的语法，将配置指令读取出来，再交由模块处理。<strong>因此，Nginx框架定义了通用的语法规则，而Nginx模块则定义了每条指令的语法规则，</strong>作为初学者，如果将学习目标定为掌握所有的配置指令，方向就完全错了，而且这是不可能完成的任务。</p>
+<p>比如，ngx_http_lua_module模块定义了content_by_lua_block指令，只要它符合框架定义的{}块语法规则，哪怕大括号内是一大串Lua语言代码，框架也会把它交由ngx_http_lua_module模块处理。因此，下面这行指令就是合法的：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">content_by_lua_block &#123;ngx.say(&quot;Hello World &quot;)&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再比如，ngx_http_limit_req_module模块定义了limit_req_zone指令，只要它符合指令行语法（以分号;结尾），框架就会将指令后的选项将由模块处理。所以，即使下面这行指令出现了r/s（每秒处理请求数）这样新定义的单位，仍然是合法的：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">limit_req_zone</span> $binary_remote_addr zone=one:<span class="number">10m</span> rate=1r/s;</span><br></pre></td></tr></table></figure>
+
+<p>所以，在我看来，只要弄清楚了以下2点，就能快速掌握Nginx配置文件，：</p>
+<h3 id="1-配置基本格式"><a href="#1-配置基本格式" class="headerlink" title="1. 配置基本格式"></a>1. 配置基本格式</h3><p><strong>Nginx框架定义了每条指令的基本格式，这是所有模块必须遵守的规则</strong>，这包括以下5条语法：</p>
+<ul>
+<li>  通过{}大括号作为分隔符的配置块语法。比如http{ }、location{ }、upstream{ }等等，至于配置块中究竟是放置Javascript语言、Lua语言还是字符串、数字，这完全由定义配置块的Nginx模块而定。</li>
+<li>  通过;分号作为分隔符的指令语法。比如root html;就打开了静态资源服务。</li>
+<li>  以#作为关键字的注释语法。比如#pid logs/nginx.pid;指令就是不会生效的。</li>
+<li>  以$作为关键字的变量语法。变量是Nginx模块之间能够互相配合的核心要素，也是Nginx与管理员之间的重要接口，通过$变量名的形式，就可以灵活控制Nginx模块的行为。下一篇文章我会详细介绍Nginx变量。</li>
+<li>  include指令可以将其他配置文件载入到nginx.conf中，这样可以提升配置的可维护性。例如includemime.types;语句，就将Content-Type与文件后缀名的映射关系，放在了独立的mime.types文件中，降低了耦合性。</li>
+</ul>
+<h3 id="2-数值单位"><a href="#2-数值单位" class="headerlink" title="2. 数值单位"></a>2. 数值单位</h3><p><strong>Nginx框架为了提高模块解析指令选项的效率，提供了一系列通用的工具函数，绝大多数模块都会使用它们</strong>，毕竟这降低了模块开发的难度以及用户的学习成本。比如，当配置文件中包含字节数时，Nginx框架提供了ngx_conf_set_size_slot函数， 各模块通过它就可以解析以下单位：</p>
+<table>
+<thead>
+<tr>
+<th>空间单位</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>k/K</td>
+<td>KB</td>
+</tr>
+<tr>
+<td>m/M</td>
+<td>MB</td>
+</tr>
+<tr>
+<td>g/G</td>
+<td>GB</td>
+</tr>
+</tbody></table>
+<p>因此，limit_req_zone指令中zone=one:10m中就定义10MB的共享内存，这替代了很不好理解的10485760字节。</p>
+<p>再比如，读取时间可以使用以下单位：</p>
+<table>
+<thead>
+<tr>
+<th>时间单位</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ms</td>
+<td>毫秒</td>
+</tr>
+<tr>
+<td>s</td>
+<td>秒</td>
+</tr>
+<tr>
+<td>m</td>
+<td>分钟</td>
+</tr>
+<tr>
+<td>h</td>
+<td>小时</td>
+</tr>
+<tr>
+<td>d</td>
+<td>天</td>
+</tr>
+<tr>
+<td>w</td>
+<td>周</td>
+</tr>
+<tr>
+<td>M</td>
+<td>月</td>
+</tr>
+<tr>
+<td>y</td>
+<td>年</td>
+</tr>
+</tbody></table>
+<p>这样，ssl_session_cache shared:SSL:2h;指令就设置TLS会话信息缓存2小时后过期。</p>
+<p>除以上规则外，如果编译了pcre开发库后，你还可以在nginx.conf中使用正则表达式，它们通常以~符号打头。</p>
+<h2 id="如何使用Nginx配置文件？"><a href="#如何使用Nginx配置文件？" class="headerlink" title="如何使用Nginx配置文件？"></a>如何使用Nginx配置文件？</h2><p>掌握了语法规则后，nginx.conf配置文件究竟是放在哪里的呢？</p>
+<p>编译Nginx时，configure脚本的–prefix选项可以设置Nginx的运行路径，比如：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./configure –prefix=/home/nginx</span><br></pre></td></tr></table></figure>
+
+<p>此时，安装后的Nginx将会放在/home/nginx目录，而配置文件就会在/home/nginx/conf目录下。</p>
+<p>如果你没有显式的指–prefix选项，默认路径就是/usr/local/nginx。由于OpenResty修改了configure文件，因此它的默认路径是/usr/local/openresty/nginx。在默认路径确定后，nginx.conf配置文件就会放在conf子目录中。当然，通过–conf-path选项，你可以分离它们。</p>
+<p>另外在运行Nginx时，你还可以通过nginx -c PATH/nginx.conf选项，指定任意路径作为Nginx的配置文件。</p>
+<p>由于配置语法比较复杂，因此Nginx为<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/zh-hans/Vim">vim编辑器</a>准备了语法高亮功能。在Nginx源代码中，你可以看到contrib目录，其中vim子目录提高了语法高亮功能：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[contrib]<span class="comment"># tree vim</span></span><br><span class="line">vim</span><br><span class="line">-- ftdetect</span><br><span class="line"> `-- nginx.vim</span><br><span class="line">-- ftplugin</span><br><span class="line"> `-- nginx.vim</span><br><span class="line">-- indent</span><br><span class="line"> `-- nginx.vim</span><br><span class="line">`-- syntax</span><br><span class="line">`-- nginx.vim</span><br></pre></td></tr></table></figure>
+
+<p>当你将contrib/vim/* 复制到<del>/.vim/目录时（</del>表示你当前用户的默认路径，如果.vim目录不存在时，请先用mkdir创建），再打开nginx.conf你就会发现指令已经高亮显示了：</p>
+<p><a href="/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png"><img src="/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png"></a></p>
+<p>出于可读性考虑，你或许会将include文件放在其他路径下，此时再用vim打开这些子配置文件，可能没有语法高亮效果。这是因为contrib/vim/ftdetect/nginx.vim文件定义了仅对4类配置文件使用语法高亮规则：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">//对所有.nginx后缀的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile *.nginx <span class="built_in">set</span> ft=nginx</span><br><span class="line"></span><br><span class="line">//对/etc/nginx/目录下的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile */etc/nginx/* <span class="built_in">set</span> ft=nginx</span><br><span class="line"></span><br><span class="line">//对/usr/<span class="built_in">local</span>/nginx/conf/目录下的配置文件语法高亮</span><br><span class="line">au BufRead,BufNewFile */usr/<span class="built_in">local</span>/nginx/conf/* <span class="built_in">set</span> ft=nginx</span><br><span class="line"></span><br><span class="line">//对任意路径下，名为nginx.conf的文件语法高亮</span><br><span class="line">au BufRead,BufNewFile nginx.conf <span class="built_in">set</span> ft=nginx</span><br></pre></td></tr></table></figure>
+
+<p>因此，你可以将这类文件的后缀名改为.nginx，或者将它们移入/etc/nginx/、/usr/local/nginx/conf/目录即可。当然，你也可以向ftdetect/nginx.vim添加新的识别目录。</p>
+<p>即使拥有语法高亮功能，对于生产环境中长达数百、上千行的nginx.conf，仍然难以避免出现配置错误。这时可以通过nginx -t或者nginx -T命令，检查配置语法是否正确。出现错误时，<strong>Nginx会在屏幕上给出错误级别、原因描述以及到底是哪一行配置出现了错误</strong>。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># nginx -t</span></span><br><span class="line">nginx: [emerg] directive <span class="string">&quot;location&quot;</span> has no opening <span class="string">&quot;&#123;&quot;</span> <span class="keyword">in</span> /usr/<span class="built_in">local</span>/nginx/conf/notflowlocation.conf:1281</span><br><span class="line">nginx: configuration file /usr/<span class="built_in">local</span>/nginx/conf/nginx.conf <span class="built_in">test</span> failed</span><br></pre></td></tr></table></figure>
+
+<p>从上面的错误信息中，我们知道Nginx解析配置文件失败，错误发生在include的子配置文件/usr/local/nginx/conf/notflowlocation.conf的第1281行，从描述上推断是location块的配置出现了错误，可能是缺失了大括号，或者未转义的字符导致无法识别出大括号。</p>
+<p>当你修改完配置文件后，可以通过nginx -s reload命令重新载入指令。这一过程不会影响正在服务的TCP连接，在描述Nginx进程架构的文章中，我会详细解释其原因。</p>
+<h2 id="搭建静态资源服务，root与alias有何不同？"><a href="#搭建静态资源服务，root与alias有何不同？" class="headerlink" title="搭建静态资源服务，root与alias有何不同？"></a>搭建静态资源服务，root与alias有何不同？</h2><p>接下来我们以root和alias指令为例，看看如何掌握配置指令的使用方法。</p>
+<p><strong>配置指令的说明，被放置在它所属Nginx模块的帮助文档中</strong>。因此，如果你对某个指令不熟悉，要先找到所属模块的说明文档。对于官方模块，你可以进入nginx.org站点查找。搭建静态资源服务的root/alias指令是由ngx_http_core_module模块实现的，因此，我们可以进入<a target="_blank" rel="noopener" href="http://nginx.org/en/docs/http/ngx_http_core_module.html">http://nginx.org/en/docs/http/ngx_http_core_module.html</a>页面寻找指令介绍，比如root指令的介绍如下所示：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:root path;</span><br><span class="line">Default: root html;</span><br><span class="line">Context:http, server, location, if in location</span><br></pre></td></tr></table></figure>
+
+<p>这里Syntax、Default、Context 3个关键信息，是所有Nginx配置指令共有的，下面解释下其含义：</p>
+<ul>
+<li>  Syntax：表示指令语法，包括可以跟几个选项，每个选项的单位、分隔符等。root path指令，可以将URL映射为磁盘访问路径path+URI，比如URL为/img/a.jpg时，磁盘访问路径就是html/img/a.jpg。</li>
+</ul>
+<p>注意，这里path既可以是相对路径，也可以是绝对路径。作为相对路径，path的前缀路径是由configure –prefix指定，也可以在运行时由nginx -p path指定。</p>
+<ul>
+<li>  Default：表示选项的默认值，也就是说，即使你没有在nginx.conf中写入root指令，也相当于配置了root html;</li>
+<li>  Context：表示指令允许出现在哪些配置块中。比如root可以出现在server{}中，而alias则只能出现在location{}中。为什么root指令的Context，允许其出现在http{ }、server{ }、location { }、if { }等多个配置块中呢?</li>
+</ul>
+<p>这是因为，Nginx允许多个配置块互相嵌套时，相同指令可以向上继承选项值。例如下面两个配置文件是完全等价的：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">server&#123;</span><br><span class="line">  <span class="attribute">root</span> html;</span><br><span class="line">    <span class="attribute">location</span> / &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server&#123;</span><br><span class="line">  <span class="attribute">root</span> html;</span><br><span class="line">  <span class="attribute">location</span> / &#123;</span><br><span class="line">    <span class="attribute">root</span> html;</span><br><span class="line">  &#125;</span><br><span class="line">｝</span><br></pre></td></tr></table></figure>
+
+<p>这种向上承继机制，可以简化Nginx配置文件。因此，使用root指令后，不用为每个location块重复写入root指令。相反，alias指令仅能放置在location块中，这与它的使用方式有关：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:alias path;</span><br><span class="line">Default:—</span><br><span class="line">Context:location</span><br></pre></td></tr></table></figure>
+
+<p>alias的映射关系与其所属的location中匹配的URI前缀有关，比如当HTTP请求的URI为/a/b/c.html时，在如下配置中，实际访问的磁盘路径为/d/b/c.html：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">location</span> /a &#123;</span><br><span class="line">  <span class="attribute">alias</span> /d;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因此，<strong>当URI中含有磁盘路径以外的前缀时，适合使用alias指令。反之，若完整的URI都是磁盘路径的一部分时，则不妨使用root指令</strong>。学习其他指令时，如果你不清楚它属于哪一个模块，还可以<strong>查看以字母表排序的指令索引</strong><a target="_blank" rel="noopener" href="http://nginx.org/en/docs/dirindex.html">http://nginx.org/en/docs/dirindex.html</a>页面，点击后会进入所属模块的指令介绍页面。</p>
+<p>如果是第三方模块，通常在README文件中会有相应的指令介绍。比如OpenResty模块的指令会放在GitHub项目首页的README文件中：</p>
+<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/12/23/%e4%bb%8e%e9%80%9a%e7%94%a8%e8%a7%84%e5%88%99%e4%b8%ad%e5%ad%a6%e4%b9%a0nginx%e6%a8%a1%e5%9d%97%e7%9a%84%e5%ae%9a%e5%88%b6%e6%8c%87%e4%bb%a4/%e7%ac%ac%e4%b8%89%e6%96%b9%e6%a8%a1%e5%9d%97%e8%af%b4%e6%98%8e%e6%96%87%e6%a1%a3/"><img src="/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"></a></p>
+<p>而TEngine模块的指令介绍则会放在tengine.taobao.org网站上：</p>
+<p><a href="/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"><img src="/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"></a></p>
+<p>从这两张截图中可以看到，第三方模块在解释指令的用法时，同样遵循着上文介绍过的方式。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文介绍了Nginx配置文件的使用方法。</p>
+<p>学习Nginx的通用语法时，要先掌握Nginx框架解析配置文件的5条基本规则，这样就能读懂nginx.conf的整体结构。其次，当模块指令包含时间、空间单位时，会使用Nginx框架提供的通用解析工具，熟悉这些时、空单位会降低你学习新指令的成本。</p>
+<p>配置文件的位置，可以由编译期configure脚本的—prefix、–conf-path选项指定，也可以由运行时的-p选项指定。复杂的配置文件很容易出错，通过nginx -t/T命令可以检测出错误，同时屏幕上会显示出错的文件、行号以及原因，方便你修复Bug。</p>
+<p>用vim工具编辑配置文件时，将Nginx源码中contrib/vim/目录复制到~/.vim/目录，就可以打开语法高亮功能。对于子配置文件，只有放置在/etc/nginx或者/usr/local/nginx/conf目录中，或者后缀为.nginx时，才会高亮显示语法。当然，你可以通过ftdetect/nginx.vim文件修改这一规则。</p>
+<p>学习模块指令时，要从它的帮助文档中找到指令的语法、默认值、上下文和描述信息。比如，root和alias的语法相似，但alias没有默认值，仅允许出现在location上下文中，这实际上与它必须结合URI前缀来映射磁盘路径有关。</p>
+<p><strong>由于每个Nginx模块都能定义独特的指令，这让nginx.conf变成了复杂的运维界面。在掌握了基本的配置语法，以及第三方模块定义指令时遵循的潜规则后，你就能游刃有余地编写Nginx配置文件。</strong></p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2021\05\17\k8s\在线课程：K8S-Ingress-Controller技术细节探讨\" rel="bookmark">公开课：K8S Ingress Controller技术细节探讨</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="从通用规则中学习Nginx模块的定制指令">https://www.taohui.tech/2020/12/23/nginx/从通用规则中学习nginx模块的定制指令/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/%E6%97%B6%E9%97%B4%E5%8D%95%E4%BD%8D/" rel="tag"># 时间单位</a>
+              <a href="/tags/%E7%A9%BA%E9%97%B4%E5%8D%95%E4%BD%8D/" rel="tag"># 空间单位</a>
+              <a href="/tags/%E9%85%8D%E7%BD%AE%E8%AF%AD%E6%B3%95/" rel="tag"># 配置语法</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/12/22/k8s/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/" rel="prev" title="十分钟搭建好K8S集群">
+      <i class="fa fa-chevron-left"></i> 十分钟搭建好K8S集群
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" rel="next" title="深入剖析HTTP3协议">
+      深入剖析HTTP3协议 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BF%AB%E9%80%9F%E6%8E%8C%E6%8F%A1Nginx%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%9A%84%E8%AF%AD%E6%B3%95%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">快速掌握Nginx配置文件的语法格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E9%85%8D%E7%BD%AE%E5%9F%BA%E6%9C%AC%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.1.</span> <span class="nav-text">1. 配置基本格式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%95%B0%E5%80%BC%E5%8D%95%E4%BD%8D"><span class="nav-number">1.2.</span> <span class="nav-text">2. 数值单位</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8Nginx%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">如何使用Nginx配置文件？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E6%9C%8D%E5%8A%A1%EF%BC%8Croot%E4%B8%8Ealias%E6%9C%89%E4%BD%95%E4%B8%8D%E5%90%8C%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">搭建静态资源服务，root与alias有何不同？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

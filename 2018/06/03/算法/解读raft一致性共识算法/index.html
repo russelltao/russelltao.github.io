@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Raft是分布式环境下的一致性算法，它通过少数服从多数的选举来维持集群内数据的一致性。它与RBFT算法名称有点像，然而Raft算法里不能存在拜占庭节点，而RBFT则能容忍BFT节点的存在。Raft非常类似于paxos协议（参见我的这篇文章《paxos算法如何容错的–讲述五虎将的实践》），然而它比paxos协议好理解许多（因为paxos协议难以具体实现，所以zookeeper参考paxos实现了它自">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式环境Raft一致性共识算法解读">
+<meta property="og:url" content="https://www.taohui.tech/2018/06/03/%E7%AE%97%E6%B3%95/%E8%A7%A3%E8%AF%BBraft%E4%B8%80%E8%87%B4%E6%80%A7%E5%85%B1%E8%AF%86%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="Raft是分布式环境下的一致性算法，它通过少数服从多数的选举来维持集群内数据的一致性。它与RBFT算法名称有点像，然而Raft算法里不能存在拜占庭节点，而RBFT则能容忍BFT节点的存在。Raft非常类似于paxos协议（参见我的这篇文章《paxos算法如何容错的–讲述五虎将的实践》），然而它比paxos协议好理解许多（因为paxos协议难以具体实现，所以zookeeper参考paxos实现了它自">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/raft%E4%B8%8Epaxos%E5%AD%A6%E7%94%9F%E5%BA%94%E7%94%A8%E6%88%90%E7%BB%A9-3.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/raft%E4%B8%8Epaxos%E5%AD%A6%E7%94%9F%E8%B0%83%E6%9F%A5%E9%97%AE%E5%8D%B7-3.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/raft%E9%80%89%E4%B8%BE%E5%87%BA%E6%96%B0%E9%A2%86%E5%AF%BC%E4%BA%BA%E8%80%97%E6%97%B6%E6%95%B0%E6%8D%AE-2.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/unnamed-file-2-3.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/unnamed-file-3-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/term%E4%BB%BB%E6%9C%9F%E4%B8%8Eleader%E9%80%89%E4%B8%BE-2.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/entries-2.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/raft%E6%97%A5%E5%BF%97%E4%B8%8D%E4%B8%80%E8%87%B4-2.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/unnamed-file-3.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/Raft%E7%9B%B4%E6%8E%A5%E4%BB%8E3%E5%8F%B0%E8%B0%88%E5%88%B05%E5%8F%B0%E4%B8%8D%E5%AE%89%E5%85%A8-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/Raft%E6%9B%B4%E6%96%B0%E9%85%8D%E7%BD%AE%E6%97%B6%E7%9A%84%E5%85%B1%E5%90%8C%E4%B8%80%E8%87%B4%E7%8A%B6%E6%80%81-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/06/raft%E6%97%A5%E5%BF%97%E5%BF%AB%E7%85%A7-1.jpg">
+<meta property="article:published_time" content="2018-06-03T08:05:41.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.897Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="paxos">
+<meta property="article:tag" content="CoreOS">
+<meta property="article:tag" content="etcd">
+<meta property="article:tag" content="Raft">
+<meta property="article:tag" content="一致性">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2018/06/raft%E4%B8%8Epaxos%E5%AD%A6%E7%94%9F%E5%BA%94%E7%94%A8%E6%88%90%E7%BB%A9-3.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2018/06/03/%E7%AE%97%E6%B3%95/%E8%A7%A3%E8%AF%BBraft%E4%B8%80%E8%87%B4%E6%80%A7%E5%85%B1%E8%AF%86%E7%AE%97%E6%B3%95/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>分布式环境Raft一致性共识算法解读 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/06/03/%E7%AE%97%E6%B3%95/%E8%A7%A3%E8%AF%BBraft%E4%B8%80%E8%87%B4%E6%80%A7%E5%85%B1%E8%AF%86%E7%AE%97%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          分布式环境Raft一致性共识算法解读
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-06-03 16:05:41" itemprop="dateCreated datePublished" datetime="2018-06-03T16:05:41+08:00">2018-06-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Raft是分布式环境下的一致性算法，它通过少数服从多数的选举来维持集群内数据的一致性。它与RBFT算法名称有点像，然而Raft算法里不能存在拜占庭节点，而RBFT则能容忍BFT节点的存在。Raft非常类似于paxos协议（参见我的这篇文章《<a href="/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">paxos算法如何容错的–讲述五虎将的实践</a>》），然而它比paxos协议好理解许多（因为paxos协议难以具体实现，所以zookeeper参考paxos实现了它自己的Zab算法）。同样，Raft有一个用GO语言实现的etcd服务，它的功能与Zookeeper相同，在容器操作系统CoreOS作为核心组件被使用。 本文先从算法整体上说明其特点，再细说其实现。为方便大家理解，本文还是以图为主，没有过多涉及算法的细节。Raft易理解易实现，是我们入门分布式一致性算法的捷径！</p>
+<span id="more"></span>
+
+<h1 id="1-算法易被理解"><a href="#1-算法易被理解" class="headerlink" title="1.算法易被理解"></a>1.算法易被理解</h1><p>Raft协议的性能并不比paxos的各种实现更高，它的优点主要在于协议的可理解性好，且非常具备可操作性，很容易照着协议就可以实现出稳定、健壮的算法。论文作者在斯坦福和加州大学做过测试，对本科及研究生分别学习paxos和Raft协议课程后测验，在总分60分的测试里其得分如下图所示： <img src="/2018/06/raft%E4%B8%8Epaxos%E5%AD%A6%E7%94%9F%E5%BA%94%E7%94%A8%E6%88%90%E7%BB%A9-3.png"> 从上图可见，Raft协议的得分（平均25.7）明显高于paxos（平均20.8）。我相信学习过paxos算法的人都有心得：很辛苦的理解后，一段时间后就完全不记得细节了，至少我本人是如此。而Raft协议非常简单清爽，这个测试也很能反映问题。在测试后，作者还发起了一个调查问卷，询问学生这两个算法哪个更容易实现？哪个更容易理解？其答案如下图所示：<img src="/2018/06/raft%E4%B8%8Epaxos%E5%AD%A6%E7%94%9F%E8%B0%83%E6%9F%A5%E9%97%AE%E5%8D%B7-3.png"> 可见，这个带有主观性的调查问卷呈现压倒性优势：Raft是一个容易理解、容易实现的算法。</p>
+<h1 id="2-算法实现etcd的性能测试数据"><a href="#2-算法实现etcd的性能测试数据" class="headerlink" title="2.算法实现etcd的性能测试数据"></a>2.算法实现etcd的性能测试数据</h1><p>Raft有很多语言的实现，包括C++、GO、Scala、Java等（详见<a target="_blank" rel="noopener" href="https://raft.github.io/">https://raft.github.io/</a>），但最有名的实现就是etcd了，它作为CoreOS生态的重要组件而闻名。我们可以通过etcd的性能数据看一看Raft算法的实际表现。</p>
+<p>测试集群由3台服务器构成，其配置如下：</p>
+<ul>
+<li>  Google Cloud Compute Engine</li>
+<li>  3 machines of 8 vCPUs + 16GB Memory + 50GB SSD</li>
+<li>  1 machine(client) of 16 vCPUs + 30GB Memory + 50GB SSD</li>
+<li>  Ubuntu 17.04</li>
+<li>  etcd 3.2.0, go 1.8.3</li>
+</ul>
+<p>下面分别测试写和读的性能。在读性能数据中，Linearizable一致性高于Serializable，故性能稍差。其原始页面在这里：<a target="_blank" rel="noopener" href="https://coreos.com/etcd/docs/latest/op-guide/performance.html">https://coreos.com/etcd/docs/latest/op-guide/performance.html</a>。 事实上，在算法的正常运行中与paxos并无差异。而一旦leader宕机，从发现到重新选举出新leader、新leader开始工作的这段时间的长短，是影响性能的重要指标。下图中对5个节点构成的集群反复的让leader宕机，观察恢复的时间，其结果如下： <img src="/2018/06/raft%E9%80%89%E4%B8%BE%E5%87%BA%E6%96%B0%E9%A2%86%E5%AF%BC%E4%BA%BA%E8%80%97%E6%97%B6%E6%95%B0%E6%8D%AE-2.jpg"> 在上图中有以下几个关注点：</p>
+<ul>
+<li>  不同颜色及线条代表着follower的定时器。如在300ms内没有收到leader的心跳，则发起选举。其中150-300ms这样的数据表明，这5台follower的定时器分布在150ms到300ms之间，呈现随机化。而150-150ms表示没有随机化，所有节点的超时时间是一样的。</li>
+<li>  横坐标代表着发现到替换掉宕机leader开始服务的时间。数值的单位为毫秒。</li>
+<li>  纵坐标表示测试时间在全部测试数据中的比例。以上每条线都做了1000次试验（除150-150ms只试验了100次）。</li>
+</ul>
+<p>上图表明，增加随机化后，可以大幅减少选举的平均用时。下面的图表明，通过降低最短的超时时间，也可以减少宕机时间。Raft推荐的时间为150-300ms。</p>
+<h1 id="3、Raft算法概述"><a href="#3、Raft算法概述" class="headerlink" title="3、Raft算法概述"></a>3、Raft算法概述</h1><p>复杂的问题可以通过分解为多个简单的子问题来解决，Raft正是如此（paxos很难分解）。Raft首先定义自己是一个key/value数据库。那么，请求就分为读和写。Raft将问题分解为以下几个要点：</p>
+<ul>
+<li>  集群里有一台为leader节点服务器，且读写请求都只能向该节点发送，以此保证一致性；</li>
+<li>  当集群内没有leader节点时，leader节点被多数节点选出来。比如集群有3个节点，那么2个节点同意的话，就可以选出1个作为leader；</li>
+<li>  除leader节点外，其他节点叫做follower追随者。leader节点向follower节点同步每条写请求；</li>
+</ul>
+<p>因此Raft将一致性问题转换为leader的选举上，以及leader与follower之间的数据同步。我们先来谈leader与 follower之间的数据同步问题。每一次写请求会修改数据，读请求则不会，所以把leader收到的写请求当作一次操作日志记录下来，且同时把操作日志同步给所有的follower节点，而有一个最终状态数据库记录某一个key的最终值，如下图所示（事实上这与fabric区块链里，多条交易日志构成的世界状态数据库非常相似，详情请参见《<a target="_blank" rel="noopener" href="https://www.taohui.pub/%e5%8c%ba%e5%9d%97%e9%93%be%e5%bc%80%e6%ba%90%e5%ae%9e%e7%8e%b0hyperledger-fabric%e6%9e%b6%e6%9e%84%e8%af%a6%e8%a7%a3/">区块链开源实现hyperledger fabric架构详解</a>》）： <img src="/2018/05/unnamed-file-2-3.png"> 上图中其步骤含义如下：</p>
+<ol>
+<li> leader收到写请求y=9，此时状态数据库是y=1；</li>
+<li> 将y=9这条日志追加到Log的末尾，同时将该条日志同步给其他follower；</li>
+<li> 当多数follower成功收到这条y=9的日志后，leader将状态数据库从y=1更新为y=9；</li>
+<li> 返回client表示y=9设置成功。</li>
+</ol>
+<h1 id="4、如何选举出leader"><a href="#4、如何选举出leader" class="headerlink" title="4、如何选举出leader"></a>4、如何选举出leader</h1><p>当一个集群刚启动时，所有的节点都是follower，follower只能被动的接收leader的消息并响应。此时经过一段时间若follower节点发现全集群没有leader，开始把自己作为leader的候选人向大家征询投票，此时该节点叫做Candidate候选人。若多数follower节点同意后，则升级为leader节点。而leader节点有义务定时心跳通知所有的 follower节点，使follower节点知道此时集群中的leader是谁。如下图所示： <img src="/2018/05/unnamed-file-3-1.jpg"> 上图的状态变迁里，follower在一个随机定时器（例如150ms到300ms之间）内没有收到leader的心跳，则开始发起选举，而候选人就是自己，所以自己转化为Candidate，且自己首先投自己一票。若在投票未完成时，发现新的leader出现，则取消投票，由candidate转换为follower。 每次选举是一个任期，这个任期叫做term。每次任期有一个任期号，它是全局的、递增的，当网络中断时虽然会暂时不一致，但网络畅通后会很快同步，如下图所示： <img src="/2018/05/term%E4%BB%BB%E6%9C%9F%E4%B8%8Eleader%E9%80%89%E4%B8%BE-2.png"> 如上图中，蓝色是选举期，绿色是产生leader后。如果不出现意外，这个leader会一直当下云，所以term周期会很长。出现宕机或者网络波动时，重新选举于是出现term2。在term3时也可能一直选举不出新的leader，此时很可能多个candidate发起了投票，票数被平摊后谁也没拿到大多数（由于每台follower的定时器时间是随机的，因此该情况发生概率很小，且发生后也能很快回归正常）。于是会进入term4。</p>
+<h1 id="5、操作日志的同步"><a href="#5、操作日志的同步" class="headerlink" title="5、操作日志的同步"></a>5、操作日志的同步</h1><p>leader需要把写日志同步到大多数follower后才能更新状态数据库，并向client回复写成功。如果没有得到多数follower的成功应答，leader会重复发送这条日志更新请求。下图中有8条日志3个任期5个节点，每条日志里除记录了操作行为外还记录了当时的任期： <img src="/2018/05/entries-2.jpg"> 上图中，绿色是第一个任期，其中3条日志条目中第3条日志y=9没有被第4个节点接收到。黄色是第2个任期。绿色与黄色任期内，所有的日志皆被多数节点收到，因此都是写入状态数据库的，这些日志的状态都是commited已提交状态。蓝色是第3个任期，其第8条日志x=4没有被多数节点收到，因此该日志不是committed状态。 leader与 follower之间的日志也可能存在不一致的情况，follower或者少了一些日志，或者多了一些日志，如下图所示： <img src="/2018/06/raft%E6%97%A5%E5%BF%97%E4%B8%8D%E4%B8%80%E8%87%B4-2.png"> 上图中最上面一行是leader的日志，而follower的日志存在以下情况：</p>
+<ul>
+<li>  a、b表示follower相比leader少了几条日志；</li>
+<li>  c、d表示follower相比leader多了几条日志；</li>
+<li>  e、f表示同时少了一些日志，又多了一些日志。比如f情况就是这台follower在任期2时被选为leader，刚添加3条日志还没有提交呢就宕机了，重启后被选为leader，又迅速收到5个写请求加了5条日志，还没提交又宕机了，此时再启动作为follower存在时的状态就是上图f的状态。</li>
+</ul>
+<p>leader如果确定多数机器收到日志，自然可以提交。如果新leader刚被选出来，它会试图把多数机器上保存的日志（即使它自己没有这条日志）–也就是前任的日志也提交，但这未必保证一定成功，如下图所示： <img src="/2018/06/unnamed-file-3.png"> 在上图中，d和e就是提交前任日志努力下可能导致的两种状况：</p>
+<ol>
+<li> 在a中，S1是leader，前写入日志2并只同步日志到S1和S2，还未到其他节点时就宕机了；</li>
+<li> 在b中，S5通过它自己、S3、S4的投票被选为leader，因此它并不知道日志2的存在。此时它收到client的新请求写入日志3，而刚写入日志3就宕机了；</li>
+<li> 在c中，S1重新被选为leader，此时它发现日志2还未被复制到多数follower，开始复制日志2。此时S1收到新请求，并记录了日志4；</li>
+<li> 在d中是第一种场景，此时老的日志2被复制到了S3上，然而此时的日志2虽然被S1、S2、S3多数节点持有，但却是通过2次任期完成的，且新任期里的日志4并未被复制到多数机器上，所以日志2并不能认定可以处于commited状态。若此时S1宕机，S5重新当选，则日志2会被覆盖丢弃，当然也包括未被复制到多数机器的日志4；</li>
+<li> 在e中是接着c的第二种场景，若日志4也被复制到S1、S2、S3这多数机器上，则日志2与日志3同时处于commited状态，永远不会被覆盖。</li>
+</ol>
+<h1 id="6、集群规模的配置变化"><a href="#6、集群规模的配置变化" class="headerlink" title="6、集群规模的配置变化"></a>6、集群规模的配置变化</h1><p>通常我们把raft集群配置为3或者5个节点，特别是5个节点时可以容忍2个节点宕机。这给我们平滑升级时带来了好处：1台台升级时仍然可以容忍1台宕机。但若我们的集群原来是3个节点的组合，却改为5个节点，如果这个过程是不停止服务动态完成的，这可能出现问题，如下图所示： <img src="/2018/06/Raft%E7%9B%B4%E6%8E%A5%E4%BB%8E3%E5%8F%B0%E8%B0%88%E5%88%B05%E5%8F%B0%E4%B8%8D%E5%AE%89%E5%85%A8-1.png"> 在上图中，绿色的老配置只有1、2、3这三台server组成集群，而在蓝色的新配置里则在1、2、3、4、5这五台server组成的新集群。于是，存在红色箭头指标的点，在该点上，可能1、2这两台server根据老配置在它们2个中选出第1个leader，而3、4、5根据新配置在它们3个中选出了第2个leader。同一时刻出现了2个leader，这样数据就会不一致。 为了解决上述问题，Raft提出了一个共同一致状态，该状态处于老配置和新配置生效的中间阶段。首先，我们设C(old)为老配置，而新配置为C(new)，欲从C(old)状态置C(new)，必须经历C(old,new)状态。其中，更新到C(old,new)以及C(new)时，仍然以复制日志的方式进行，即：先进行日志复制，当确定多数节点收到该日志后，则该日志为commited已提交状态。如下图所示： <img src="/2018/06/Raft%E6%9B%B4%E6%96%B0%E9%85%8D%E7%BD%AE%E6%97%B6%E7%9A%84%E5%85%B1%E5%90%8C%E4%B8%80%E8%87%B4%E7%8A%B6%E6%80%81-1.png"> 从上图中可以看到：</p>
+<ol>
+<li> 在C(old,new)日志开始复制时，仍然仅使用C(old)这一种配置，所以不会出现双leader；</li>
+<li> 而C(old,new)一旦进入commited提交状态，此时若leader宕机重新选举，则要求必须是具备C(old,new)的candidate才能被选为新leader；</li>
+<li> 之后，leader开始复制日志C(new)，从这一刻起leader的新配置开始生效。</li>
+</ol>
+<h1 id="7、日志的优化"><a href="#7、日志的优化" class="headerlink" title="7、日志的优化"></a>7、日志的优化</h1><p>可以看到，Raft算法的核心就是leader选举以及日志复制。而日志的无限增长，必然带来性能问题，这是从工程角度必须解决的问题。日志表示的是过程，状态数据库表示的是结果；同样，我们可以定期把某一时间点之前的日志做成状态数据库，或者称为快照，仅保留该时间点后的日志，这样就可以大幅减少日志的数量。如下图所示： <img src="/2018/06/raft%E6%97%A5%E5%BF%97%E5%BF%AB%E7%85%A7-1.jpg"> 在上图中，原先的已经被提交的5条日志最终导致的状态是x=0&amp;&amp;y=9，故可以被快照替代，这便减少了日志量。</p>
+<h1 id="8、小结"><a href="#8、小结" class="headerlink" title="8、小结"></a>8、小结</h1><p>Raft还有一个非常形象的算法演示动画，包含了一致性算法的由来、leader的选举、隔离网络下的leader选举、日志的复制等场景，请打开<a target="_blank" rel="noopener" href="http://thesecretlivesofdata.com/raft/">RaftUnderstandable Distributed Consensus</a>链接观看。 学习Raft算法有助于我们理解分布式环境下的一致性解决方案，而且它确实比paxos好理解许多，可以作为我们的入门算法。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2015\03\27\算法\paxos分布式一致性算法-讲述诸葛亮的反穿越\" rel="bookmark">paxos分布式一致性算法--讲述诸葛亮的反穿越</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2015\07\27\算法\paxos算法如何容错的-讲述五虎将的实践\" rel="bookmark">paxos算法如何容错的--讲述五虎将的实践</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2021\08\10\nginx\APISIX架构分析：如何动态管理Nginx集群？\" rel="bookmark">APISIX架构分析：如何动态管理Nginx集群？</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2018/06/03/%E7%AE%97%E6%B3%95/%E8%A7%A3%E8%AF%BBraft%E4%B8%80%E8%87%B4%E6%80%A7%E5%85%B1%E8%AF%86%E7%AE%97%E6%B3%95/" title="分布式环境Raft一致性共识算法解读">https://www.taohui.tech/2018/06/03/算法/解读raft一致性共识算法/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/paxos/" rel="tag"># paxos</a>
+              <a href="/tags/CoreOS/" rel="tag"># CoreOS</a>
+              <a href="/tags/etcd/" rel="tag"># etcd</a>
+              <a href="/tags/Raft/" rel="tag"># Raft</a>
+              <a href="/tags/%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag"># 一致性</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/" rel="prev" title="区块链开源实现hyperledger fabric架构详解">
+      <i class="fa fa-chevron-left"></i> 区块链开源实现hyperledger fabric架构详解
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/" rel="next" title="CSDI2018广州关于《Nginx》的分享（附文字速录与PPT）">
+      CSDI2018广州关于《Nginx》的分享（附文字速录与PPT） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#1-%E7%AE%97%E6%B3%95%E6%98%93%E8%A2%AB%E7%90%86%E8%A7%A3"><span class="nav-number">1.</span> <span class="nav-text">1.算法易被理解</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2-%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0etcd%E7%9A%84%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE"><span class="nav-number">2.</span> <span class="nav-text">2.算法实现etcd的性能测试数据</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#3%E3%80%81Raft%E7%AE%97%E6%B3%95%E6%A6%82%E8%BF%B0"><span class="nav-number">3.</span> <span class="nav-text">3、Raft算法概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4%E3%80%81%E5%A6%82%E4%BD%95%E9%80%89%E4%B8%BE%E5%87%BAleader"><span class="nav-number">4.</span> <span class="nav-text">4、如何选举出leader</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#5%E3%80%81%E6%93%8D%E4%BD%9C%E6%97%A5%E5%BF%97%E7%9A%84%E5%90%8C%E6%AD%A5"><span class="nav-number">5.</span> <span class="nav-text">5、操作日志的同步</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#6%E3%80%81%E9%9B%86%E7%BE%A4%E8%A7%84%E6%A8%A1%E7%9A%84%E9%85%8D%E7%BD%AE%E5%8F%98%E5%8C%96"><span class="nav-number">6.</span> <span class="nav-text">6、集群规模的配置变化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#7%E3%80%81%E6%97%A5%E5%BF%97%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">7.</span> <span class="nav-text">7、日志的优化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#8%E3%80%81%E5%B0%8F%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">8、小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

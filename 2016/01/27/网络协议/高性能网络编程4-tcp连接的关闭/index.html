@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="TCP连接的关闭有两个方法close和shutdown，这篇文章将尽量精简的说明它们分别做了些什么。 为方便阅读，我们可以带着以下5个问题来阅读本文： 1、当socket被多进程或者多线程共享时，关闭连接时有何区别？ 2、关连接时，若连接上有来自对端的还未处理的消息，会怎么处理？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能网络编程4--TCP连接的关闭">
+<meta property="og:url" content="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B4-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%85%B3%E9%97%AD/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="TCP连接的关闭有两个方法close和shutdown，这篇文章将尽量精简的说明它们分别做了些什么。 为方便阅读，我们可以带着以下5个问题来阅读本文： 1、当socket被多进程或者多线程共享时，关闭连接时有何区别？ 2、关连接时，若连接上有来自对端的还未处理的消息，会怎么处理？">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://img.blog.csdn.net/20131026122203109?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center">
+<meta property="og:image" content="file:///C:/Users/maomaoxiong/AppData/Local/youdao/ynote/images/02596B447A7C4511A85B857326F18861/close%26shutdown%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/close%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/shutdown%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1-1.jpg">
+<meta property="article:published_time" content="2016-01-27T01:34:47.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.908Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="so_linger">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://img.blog.csdn.net/20131026122203109?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center">
+
+<link rel="canonical" href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B4-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%85%B3%E9%97%AD/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高性能网络编程4--TCP连接的关闭 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B4-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%85%B3%E9%97%AD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高性能网络编程4--TCP连接的关闭
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-27 09:34:47" itemprop="dateCreated datePublished" datetime="2016-01-27T09:34:47+08:00">2016-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>TCP连接的关闭有两个方法close和shutdown，这篇文章将尽量精简的说明它们分别做了些什么。</p>
+<p>为方便阅读，我们可以带着以下5个问题来阅读本文：</p>
+<p>1、当socket被多进程或者多线程共享时，关闭连接时有何区别？</p>
+<p>2、关连接时，若连接上有来自对端的还未处理的消息，会怎么处理？</p>
+<span id="more"></span>
+<p>3、关连接时，若连接上有本进程待发送却未来得及发送出的消息，又会怎么处理？</p>
+<p>4、so_linger这个功能的用处在哪？</p>
+<p>5、对于监听socket执行关闭，和对处于ESTABLISH这种通讯的socket执行关闭，有何区别？</p>
+<p>下面分三部分进行：首先说说多线程多进程关闭连接的区别；再用一幅流程图谈谈close；最后用一幅流程图说说shutdown。</p>
+<p>先不提其原理和实现，从多进程、多线程下 close和shutdown方法调用时的区别说起。</p>
+<p>看看close与shutdown这两个系统调用对应的内核函数：（参见unistd.h文件）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __NR_close                               3  </span></span><br><span class="line">__SYSCALL(__NR_close, sys_close)  </span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __NR_shutdown                           48  </span></span><br><span class="line">__SYSCALL(__NR_shutdown, sys_shutdown)  </span><br></pre></td></tr></table></figure>
+
+<p>但sys_close和sys_shutdown这两个系统调用最终是由tcp_close和tcp_shutdown方法来实现的，调用过程如下图所示：</p>
+<p><img src="http://img.blog.csdn.net/20131026122203109?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center"></p>
+<p><img src="file:///C:/Users/maomaoxiong/AppData/Local/youdao/ynote/images/02596B447A7C4511A85B857326F18861/close%26shutdown%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8.jpg"></p>
+<p>sys_shutdown与多线程和多进程都没有任何关系，而sys_close则不然，上图中可以看到，层层封装调用中有一个方法叫fput，它有一个引用计数，记录这个socket被引用了多少次。在说明多线程或者多进程调用close的区别前，先在代码上简单看下close是怎么调用的，对内核代码没兴趣的同学可以仅看fput方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> fastcall <span class="title">fput</span><span class="params">(struct file *file)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (atomic_dec_and_test(&amp;file-&gt;f_count))<span class="comment">//检查引用计数，直到为0才会真正去关闭socket  </span></span><br><span class="line">        __fput(file);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>当这个socket的引用计数f_count不为0时，是不会触发到真正关闭TCP连接的tcp_close方法的。</p>
+<p>那么，这个引用计数的意义何在呢？为了说明它，先要说道下进程与线程的区别。</p>
+<p>大家知道，所谓线程其实就是“轻量级”的进程。创建进程只能是一个进程（父进程）创建另一个进程（子进程），子进程会复制父进程的资源，这里的”复制“针对不同的资源其意义是不同的，例如对内存、文件、TCP连接等。创建进程是由clone系统调用实现的，而创建线程时同样也是clone实现的，只不过clone的参数不同，其行为也很不同。这个话题是很大的，这里我们仅讨论下TCP连接。</p>
+<p>在clone系统调用中，会调用方法copy_files来拷贝文件描述符（包括socket）。创建线程时，传入的flag参数中包含标志位CLONE_FILES，此时，线程将会共享父进程中的文件描述符。而创建进程时没有这个标志位，这时，会把进程打开的所有文件描述符的引用计数加1，即把file数据结构的f_count成员加1，如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">copy_files</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> clone_flags, struct task_struct * tsk)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (clone_flags &amp; CLONE_FILES) &#123;  </span><br><span class="line">        <span class="keyword">goto</span> out;<span class="comment">//创建线程  </span></span><br><span class="line">    &#125;  </span><br><span class="line">    newf = dup_fd(oldf, &amp;error);  </span><br><span class="line">out:  </span><br><span class="line">    <span class="keyword">return</span> error;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>再看看dup_fd方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> struct files_struct *<span class="title">dup_fd</span><span class="params">(struct files_struct *oldf, <span class="keyword">int</span> *errorp)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">for</span> (i = open_files; i != <span class="number">0</span>; i--) &#123;  </span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">file</span> *<span class="title">f</span> =</span> *old_fds++;  </span><br><span class="line">        <span class="keyword">if</span> (f) &#123;  </span><br><span class="line">            get_file(f);<span class="comment">//创建进程  </span></span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>get_file宏就会加引用计数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#define get_file(x) atomic_inc(&amp;(x)-&gt;f_count)  </span><br></pre></td></tr></table></figure>
+
+<p>所以，子进程会将父进程中已经建立的socket加上引用计数。当进程中close一个socket时，只会减少引用计数，仅当引用计数为0时才会触发tcp_close。</p>
+<p>到这里，对于第一个问题的close调用自然有了结论：单线程（进程）中使用close与多线程中是一致的，但这两者与多进程的行为并不一致，多进程中共享的同一个socket必须都调用了close才会真正的关闭连接。</p>
+<p>而shutdown则不然，这里是没有引用计数什么事的，只要调用了就会去试图按需关闭连接。所以，调用shutdown与多线程、多进程无关。</p>
+<p>下面我们首先深入探讨下close的行为，因为close比较shutdown来说要复杂许多。顺便回答其余四个问题。</p>
+<p>TCP连接是一种双工的连接，何谓双工？即连接双方可以并行的发送或者接收消息，而无须顾及对方此时到底在发还是收消息。这样，关闭连接时，就存在3种情形：完全关闭连接；关闭发送消息的功能；关闭接收消息的功能。其中，后两者就叫做半关闭，由shutdown实现（所以 shutdown多出一个参数正是控制关闭发送或者关闭接收），前者由close实现。</p>
+<p>TCP连接是一种可靠的连接，在这里可以这么理解：既要确认本机发出的包得到确认，又要确认收到的任何消息都已告知连接的对端。</p>
+<p>以下主要从双工、可靠性这两点上理解连接的关闭。</p>
+<p>TCP双工的这个特性使得连接的正常关闭需要四次握手，其含义为：主动端关闭了发送的功能；被动端认可；被动端也关闭了发送的功能；主动端认可。</p>
+<p>但还存在程序异常的情形，此时，则通过异常的那端发送RST复位报文通知另一端关闭连接。</p>
+<p>下图是close的主要流程：</p>
+<p><img src="/2017/01/close%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1.jpg"></p>
+<p>这个图稍复杂，这是因为它覆盖了关闭监听句柄、关闭普通连接、关闭设置了SO_LINGER的连接这三种主要场景。</p>
+<p>1）关闭监听句柄</p>
+<p>先从最右边的分支说说关闭监听socket的那些事。用于listen的监听句柄也是使用close关闭，关闭这样的句柄含义当然很不同，它本身并不对应着某个TCP连接，但是，附着在它之上的却可能有半成品连接。什么意思呢？之前说过TCP是双工的，它的打开需要三次握手，三次握手也就是3个步骤，其含义为：客户端打开接收、发送的功能；服务器端认可并也打开接收、发送的功能；客户端认可。当第1、2步骤完成、第3步步骤未完成时，就会在服务器上有许多半连接，close这个操作主要是清理这些连接。</p>
+<p>参照上图，close首先会移除keepalive定时器。keepalive功能常用于服务器上，防止僵死、异常退出的客户端占用服务器连接资源。移除此定时器后，若ESTABLISH状态的TCP连接在tcp_keepalive_time时间（如服务器上常配置为2小时）内没有通讯，服务器就会主动关闭连接。</p>
+<p>接下来，关闭每一个半连接。如何关闭半连接？这时当然不能发FIN包，即正常的四次握手关闭连接，而是会发送RST复位标志去关闭请求。处理完所有半打开的连接close的任务就基本完成了。</p>
+<p>2）关闭普通ESTABLISH状态的连接（未设置so_linger）</p>
+<p>首先检查是否有接收到却未处理的消息。</p>
+<p>如果close调用时存在收到远端的、没有处理的消息，这时根据close这一行为的意义，是要丢弃这些消息的。但丢弃消息后，意味着连接远端误以为发出的消息已经被本机收到处理了（因为ACK包确认过了），但实际上确是收到未处理，此时也不能使用正常的四次握手关闭，而是会向远端发送一个RST非正常复位关闭连接。这个做法的依据请参考draft-ietf-tcpimpl-prob-03.txt文档3.10节，Failure to RST on close with data pending。所以，这也要求我们程序员在关闭连接时，要确保已经接收、处理了连接上的消息。</p>
+<p>如果此时没有未处理的消息，那么进入发送FIN来关闭连接的阶段。</p>
+<p>这时，先看看是否有待发送的消息。前一篇已经说过，发消息时要计算滑动窗口、拥塞窗口、angle算法等，这些因素可能导致消息会延迟发送的。如果有待发送的消息，那么要尽力保证这些消息都发出去的。所以，会在最后一个报文中加入FIN标志，同时，关闭用于减少网络中小报文的angle算法，向连接对端发送消息。如果没有待发送的消息，则构造一个报文，仅含有FIN标志位，发送出去关闭连接。</p>
+<p>3）使用了so_linger的连接</p>
+<p>首先要澄清，为何要有so_linger这个功能？因为我们可能有强可靠性的需求，也就是说，必须确保发出的消息、FIN都被对方收到。例如，有些响应发出后调用close关闭连接，接下来就会关闭进程。如果close时发出的消息其实丢失在网络中了，那么，进程突然退出时连接上发出的RST就可能被对方收到，而且，之前丢失的消息不会有重发来保障可靠性了。</p>
+<p>so_linger用来保证对方收到了close时发出的消息，即，至少需要对方通过发送ACK且到达本机。</p>
+<p>怎么保证呢？等待！close会阻塞住进程，直到确认对方收到了消息再返回。然而，网络环境又得复杂的，如果对方总是不响应怎么办？所以还需要l_linger这个超时时间，控制close阻塞进程的最长时间。注意，务必慎用so_linger，它会在不经意间降低你程序中代码的执行速度（close的阻塞）。</p>
+<p>所以，当这个进程设置了so_linger后，前半段依然没变化。检查是否有未读消息，若有则发RST关连接，不会触发等待。接下来检查是否有未发送的消息时与第2种情形一致，设好FIN后关闭angle算法发出。接下来，则会设置最大等待时间l_linger，然后开始将进程睡眠，直到确认对方收到后才会醒来，将控制权交还给用户进程。</p>
+<p>这里需要注意，so_linger不是确保连接被四次握手关闭再使close返回，而只是保证我方发出的消息都已被对方收到。例如，若对方程序写的有问题，当它收到FIN进入CLOSE_WAIT状态，却一直不调用close发出FIN，此时，对方仍然会通过ACK确认，我方收到了ACK进入FIN_WAIT2状态，但没收到对方的FIN，我方的close调用却不会再阻塞，close直接返回，控制权交还用户进程。</p>
+<p>从上图可知，so_linger还有个偏门的用法，若l_linger超时时间竟被设为0，则不会触发FIN包的发送，而是直接RST复位关闭连接。我个人认为，这种玩法确没多大用处。</p>
+<p>最后做个总结。调用close时，可能导致发送RST复位关闭连接，例如有未读消息、打开so_linger但l_linger却为0、关闭监听句柄时半打开的连接。更多时会导致发FIN来四次握手关闭连接，但打开so_linger可能导致close阻塞住等待着对方的ACK表明收到了消息。</p>
+<p>最后来看看较为简单的shutdown。</p>
+<p><img src="/2017/01/shutdown%E4%B8%BB%E8%A6%81%E6%B5%81%E7%A8%8B-1-1-1.jpg"></p>
+<p>解释下上图：</p>
+<p>1）shutdown可携带一个参数，取值有3个，分别意味着：只关闭读、只关闭写、同时关闭读写。</p>
+<p>对于监听句柄，如果参数为关闭写，显然没有任何意义。但关闭读从某方面来说是有意义的，例如不再接受新的连接。看看最右边蓝色分支，针对监听句柄，若参数为关闭写，则不做任何事；若为关闭读，则把端口上的半打开连接使用RST关闭，与close如出一辙。</p>
+<p>2）若shutdown的是半打开的连接，则发出RST来关闭连接。</p>
+<p>3）若shutdown的是正常连接，那么关闭读其实与对端是没有关系的。只要本机把接收掉的消息丢掉，其实就等价于关闭读了，并不一定非要对端关闭写的。实际上，shutdown正是这么干的。若参数中的标志位含有关闭读，只是标识下，当我们调用read等方法时这个标识就起作用了，会使进程读不到任何数据。</p>
+<p>4）若参数中有标志位为关闭写，那么下面做的事与close是一致的：发出FIN包，告诉对方，本机不会再发消息了。</p>
+<p>以上，就是close与shutdown的主要行为，同时也回答了本文最初的5个问题。下一篇，我们开始讨论多路复用中常见的epoll。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B4-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%85%B3%E9%97%AD/" title="高性能网络编程4--TCP连接的关闭">https://www.taohui.tech/2016/01/27/网络协议/高性能网络编程4-tcp连接的关闭/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/so-linger/" rel="tag"># so_linger</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/01/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/" rel="prev" title="高性能网络编程3----TCP消息的接收">
+      <i class="fa fa-chevron-left"></i> 高性能网络编程3----TCP消息的接收
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="next" title="高性能网络编程5--IO复用与并发编程">
+      高性能网络编程5--IO复用与并发编程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

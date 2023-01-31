@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="（本文包括章节：1、由来，2、算法简单回顾，3、演习道具，4、演习，5、算法提出者Leslie的八卦。hoho）  由来刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者">
+<meta property="og:type" content="article">
+<meta property="og:title" content="paxos算法如何容错的--讲述五虎将的实践">
+<meta property="og:url" content="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="（本文包括章节：1、由来，2、算法简单回顾，3、演习道具，4、演习，5、算法提出者Leslie的八卦。hoho）  由来刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg">
+<meta property="article:published_time" content="2015-07-27T08:34:10.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.893Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="paxos">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>paxos算法如何容错的--讲述五虎将的实践 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          paxos算法如何容错的--讲述五虎将的实践
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-07-27 16:34:10" itemprop="dateCreated datePublished" datetime="2015-07-27T16:34:10+08:00">2015-07-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>（本文包括章节：1、由来，2、<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>简单回顾，3、演习道具，4、演习，5、算法提出者Leslie的八卦。hoho） </p>
+<h1 id="由来"><a href="#由来" class="headerlink" title="由来"></a>由来</h1><p>刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者使用了paxos算法，也不会出现冲突的政令不一情况。paxos算法理论以及刘备是怎么被孔明忽悠的部分，同学们可以参考上篇<a target="_blank" rel="noopener" href="https://www.taohui.pub/paxos%e5%88%86%e5%b8%83%e5%bc%8f%e4%b8%80%e8%87%b4%e6%80%a7%e7%ae%97%e6%b3%95-%e8%ae%b2%e8%bf%b0%e8%af%b8%e8%91%9b%e4%ba%ae%e7%9a%84%e5%8f%8d%e7%a9%bf%e8%b6%8a/">《paxos分布式一致性算法–讲述诸葛亮的反穿越》</a> </p>
+<span id="more"></span>
+<p>闲话少叙，书接上文。 </p>
+<h1 id="提案"><a href="#提案" class="headerlink" title="提案"></a>提案</h1><p>为了少打点字，刘备与诸葛亮俩玻璃不再以对话形式出现了。他们设置了五个官署（五虎将办公地，相当于Server），三个提案点（周仓等三人，发起提案时的办公地。相当于Client），当然都不在一起，信使们从提案点到官署传递信息的话，正常情况下需要半个小时，也就是30分钟。这次演习，哥俩不关注学习情况，所以paxos第三段就不在演习内容里了。诸葛亮为廖化、周他、魏延对于事件e准备了三个自相矛盾的提案，我们分别用p1、p2和p3代替吧。</p>
+<p>先行说明提案： 事件e（也就是本次paxos实例）：蜀国今后的发展路线 </p>
+<h2 id="提案p1"><a href="#提案p1" class="headerlink" title="提案p1"></a>提案p1</h2><p>学习红色锤子镰刀，走激进主义，一切发展按照计划进行，小民们凭票消费，银子多了也没用，集中力量办大事，崇尚国家垄断主义。 </p>
+<h2 id="提案p2"><a href="#提案p2" class="headerlink" title="提案p2"></a>提案p2</h2><p>学习自由联盟，走自由主义，宁失去效率也不失去公正，发展民营经济为先，民主、法制、新闻自由，通过这种公正来激发社会的整体创造力。 </p>
+<h2 id="提案p3"><a href="#提案p3" class="headerlink" title="提案p3"></a>提案p3</h2><p>坚持孔孟之道，走保守主义，兼顾黄老之学，坚信中学为体、西学为用，国体不可大改，走有大汉国情的老路让别人说去吧。 </p>
+<h1 id="算法简单回顾"><a href="#算法简单回顾" class="headerlink" title="算法简单回顾"></a>算法简单回顾</h1><p>我们再简单回顾下提案者和作为决策者的五虎将行动准则，共有六步，书记官（暂让五虎将兼职）负责记录下通过的提案p（通过了就叫法令了），这样，我们用1a,1b,2a,2b,3a,3c来表述全部的六步。（这六步就是三段式提交了，这在上篇《paxos分布式一致性算法–讲述诸葛亮的反穿越》里讲过，不再复述。） </p>
+<h2 id="魏延、廖化、周仓："><a href="#魏延、廖化、周仓：" class="headerlink" title="魏延、廖化、周仓："></a>魏延、廖化、周仓：</h2><h3 id="1a"><a href="#1a" class="headerlink" title="1a"></a>1a</h3><p>作为提案者，首先向刘备要到个编号，搞清楚自己对事件e的态度。记录下当前时间，接下来向五虎将的多数派（3个或以上）发送事件+编号。 </p>
+<h3 id="2a"><a href="#2a" class="headerlink" title="2a"></a>2a</h3><p>此时开始处理五虎将的回应，这就有多种情况了。收到明确拒绝就得放弃！检查沙漏，如果到达时间限制了，还没有足够的多数派回应，那么就试着给五虎将的其他人再发送提案看看。如果收到了足够的五虎将里多数派的回应，那么，确定在2a这步里，如果要提案，到底提哪个提议？是自己现在要提的提案？ </p>
+<h3 id="3a"><a href="#3a" class="headerlink" title="3a"></a>3a</h3><p>提案者如果收到足够的五虎将多数派回应通过，则记录提案为通过的政策法令，同时通知所有书记官，也就是兼职的五虎将，把法令记录到羊皮纸上来。 </p>
+<h2 id="五虎将"><a href="#五虎将" class="headerlink" title="五虎将"></a>五虎将</h2><h3 id="1b"><a href="#1b" class="headerlink" title="1b"></a>1b</h3><p>作为决策者，也需要沙漏，主要用于2b步骤后批准政策法令后，给自己设定个超时时间，若第三步信使没有过来，则超时后自动把提案变成政策法令记录到羊皮纸上。1b这个步骤是收到了信使的消息，来自于1a步骤里的提案者。收到事件e和编号N。五虎将这时将有可能出现三个动作：拒绝、通过以及第三个复杂点的动作，虽然通过但告诉魏延廖化，哥曾经批准过某提案了。（三种条件的达成请参考上篇文章《paxos分布式一致性算法–讲述诸葛亮的反穿越》） </p>
+<h3 id="2b"><a href="#2b" class="headerlink" title="2b"></a>2b</h3><p>与1b步骤相同，唯一不一样的是，如果决定批准某个提案，必须先把该提案和编号记录到羊皮纸的背面。（羊皮纸的详细用途参见演习前提） </p>
+<h3 id="3b"><a href="#3b" class="headerlink" title="3b"></a>3b</h3><p>记录法案到羊皮纸的正面上。（本步骤不在下面演习中出现） </p>
+<h1 id="演习道具"><a href="#演习道具" class="headerlink" title="演习道具"></a>演习道具</h1><p>先解释下我们用到的道具吧。 </p>
+<h2 id="羊皮纸（相当于硬盘）"><a href="#羊皮纸（相当于硬盘）" class="headerlink" title="羊皮纸（相当于硬盘）"></a>羊皮纸（相当于硬盘）</h2><p>其正面记录真正通过的法令，背面相当于永久有效的草纸，背面记录一个三元组（S，V，Sh），S表示上次批准的提案编号，V表示上次批准的提案，Sh表示处理过的最大提案编号。（羊皮纸丢掉后的效果在演习结束后说明） </p>
+<h2 id="草纸"><a href="#草纸" class="headerlink" title="草纸"></a>草纸</h2><p>与羊皮纸背面相同，记录三元组。唯一不同的是，草纸容易丢失。 </p>
+<h2 id="沙漏"><a href="#沙漏" class="headerlink" title="沙漏"></a>沙漏</h2><p>记录时间。我们简单的认为，任何两个地方一次通讯时间为30分钟。所以，如果我们从提案者那出发，信使到五虎将再回来，我们认为一个小时足矣（忽略五虎将或者提案者的处理时间）。 </p>
+<h1 id="演习说明"><a href="#演习说明" class="headerlink" title="演习说明"></a>演习说明</h1><p>下面的演习中，只有消息的丢失，实际上对于消息的重发和延迟，也不会有任何问题。只是对五虎将的缺席，需要做说明。如果五虎将的羊皮纸丢失，是不能直接再次加入进五人决策团的，必须学习到最新的状态。没丢羊皮纸，则可以随时加入进来。 书记官记录法令中的不一致情况这里不加讨论。 <strong>为了方便在图表中表示，我们先给五虎将五个字母编号：关羽a，张飞b，赵云c，马超d，黄忠e。</strong><br><strong>三种颜色表示不同的提案者：黄色表示廖化，蓝色表示周仓，红色表示魏延。</strong><br><strong>下面这幅图，表示不同的时间点，五虎将和三个提案者当时的状态。</strong> <strong>-&gt;表示第一步预提案。包括1a和1b两步。</strong> <strong>--&gt;表示第二步提交提案，包括2a和2b。</strong> </p>
+<p>五虎将记录的(s,v,sh)表示的三元组上面讲过了。法令项下面对应的是提案者魏、廖、周三人的状态。（wait）表示刚发出提案，1小时内等待返回呢。 e is drop表示发送给e黄忠的提案消息丢失了。 好了，可以往下看了。 </p>
+<h1 id="演习"><a href="#演习" class="headerlink" title="演习"></a>演习</h1><p>先放图，解释在下面。 <img src="/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg"><br>详细说明上图： </p>
+<ol>
+<li>8：30分上班了，红色周仓同学首先向关羽、赵云、黄忠三人发出了提案p1，编号为100，周仓开始等返回，预计9：30分时能收到三位的返回。我们假定，发给黄忠的信使出门就被孔明的跑车撞了。孔明闯祸后老实了，以下，不再出现信使失误事件了。 </li>
+<li>8：40分，崇尚民主的廖化同学向关羽、张飞、黄忠三人发出了编号为101的提案p2，预计9：40分收到返回的信使。 </li>
+<li>8：50分，喜欢孔孟的魏延同学向赵云、马超、黄忠三人发出了编号为110（魏延就是搞到大编号了啊）的提案p3，预计9：50收到返回的信使。 </li>
+<li>9：00整，周仓的提案p1到了关羽、赵云手里（黄忠没收到），两人无条件接受，记录(100,p1,100)，承诺编号低于100的提案我可不会再处理了，然后两个信使开始返回。 </li>
+<li>9：10分，廖化编号为101的提案p2到了关羽、张飞、黄忠之手，张飞、黄忠哥俩从没收过事件e的提案，毫无疑问记为(101,p2,101)，让信使回复接受。关羽则不然，红脸兄在10分钟前收到了周仓的编号为100的p1提案。所以，按规则办，关羽改自己的记录为（100,p1,101），让信使给廖化回复：你的编号101比较大，我同意你继续，不过我之前同意过一个编号为100的提案p1，请注意哦。 </li>
+<li>9：20分，魏延的p3提案到了赵云、马超、黄忠三人之手，马超第一次收到提案，记为(110,p3,110)，回复批准。赵云和黄忠则不同，赵云收到过周仓的p1提案，这时要比提案编号了，魏延的110大于周仓的100，于是赵云记为(100,p1,110)，告诉信使：我通过了，我承诺编号小于110的我不会处理，同时，我曾经批准过编号为100的提案p1。同理，黄忠记为(101,p2,110)，也告诉信使：我曾经批准过编号为101的提案p2。 </li>
+<li>9：30分，周仓同学检测返回的信使了，关羽和赵云都返回批准，但是黄忠没有返回。因为必须N/2+1，也就是大多数人批准才行，所以，周仓向张飞发出提案p1。 </li>
+<li>9：40分，廖化收到了来自关羽、张飞、黄忠的回复，三人皆表示同意，但关羽表示：关某曾收到过编号100的p1提案。所以按照规则，廖化此时不能坚持自己原来的提案p2，而要改成关羽返回的提案p1，然后发起提交皆段，同样是让信使带给关羽、张飞、黄忠三人，我们用-&gt;&gt;(a,b,e)表示。 </li>
+<li>9：50分，魏延收到了赵云、马超、黄忠三人在9:20分的答复，三人都同意了，但回答各不相同。马超没有多话，赵云说我曾收到过编号为100的p1提案，黄忠说我曾经收到过编号为101的p2提案。于是，魏延根据规则，不再提自己原来的p3提案，改为101编号对应的提案p2。接着，魏延开始向这三人发出提交请求，编号为110的提案p2。 </li>
+<li>10：00整，张飞收到了9:30分周仓补发的编号为100的提案p1，这之前，张飞在9:10分时曾经批准过来自廖化的提案p2，编号是101。所以，张飞在9:10时就已经承诺了，以后决不再处理编号小于101的提案。于是，张飞大吼一声：我拒绝。当然信使将会在10:30才能把消息带给周仓。 </li>
+<li>10：10分，关羽、张飞、黄忠收到了来自廖化于9：40分发出的(101,p1)提案，关羽和张飞都发现自己可以批准，记录到羊皮纸的背面，同时告诉信使：告诉廖化P1提案我批准了，我承诺编号小于101的提案不予理会。黄忠则不然，老将黄忠在9:20分时收到过魏延编号为110的提案，那时他批准了，意味着，所有小于110的提案他都会拒绝掉。这次廖化的提案才101，当然被拒绝掉了。三人的回复将于10:40会到达廖化处。 </li>
+<li>10：20分，魏延编号为110的P2提案到达赵云、马超、黄忠，三人没有疑问，毕竟110编号最大，都表示批准，并记录(110,p2,110)到各自的羊皮纸背面，回复信使通过。 </li>
+<li>10：30分，周仓收到了他在9：30分发给张飞的回复，张飞在10:00拒绝了，所以周仓这个提案就此作废。 </li>
+<li>10：40分，廖化收到了10：10来自关羽、张飞、黄忠的回复，关张二人批准，然而老黄忠明确表示拒绝，于是这次编号101的提案作废。 </li>
+<li>10：50分，魏延收到了赵云、马超、黄忠的回复，三人都表示批准，于是编号为110的提案p2最终作为法令记录下来（之后的3b学习过程略过），从此以后，蜀国的路线被确立为走民主路线，许多年后，蜀国统一了银河系。完。 </li>
+</ol>
+<p>以上任何步骤，大家可以任意制造难度，例如让同一个信使重复投递消息，或者延迟一天后消息到达某虎将处。或者让某个虎将正常如厕，而后正常归来。大家会发现，一致性是可以达到的，无论怎样，对于同一个事件e，互相冲突的三个法案：p1,p1,p3，一定只有一个可以达成。 </p>
+<p>对于任一虎将兄的挂掉，我们要分情况。如果是去大便，那么他的羊皮纸是不能丢的。大便完了，可以正常回到自己的官署办公。但是如果把羊皮纸丢了，那就不能立刻加入，必须向所有其他人学习，把失落的过程都学到，才能正常加入。这点至关重要，就是说，只要硬盘不坏，随时SERVER重启都能加入。硬盘一坏，对不起，学习完了才能继续办公。 </p>
+<h1 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h1><p>Leslie的八卦： paxos算法是解决分布式服务数据一致性的终极算法，google的基础服务chubby（GFS的基础服务）的开发者说， “there is only one consensus（一致性） protocol, and that’s Paxos”。Microsoft有fast paxos论文，yahoo的zookeeper也用了paxos算法。可见，paxos是解决完全的分布式服务（无单点）间数据一致性的最好方法。但是paxos比较复杂，特别是网上的中文资料里少有能说得清楚的（主要是太多paxos变种算法了，掺合到一起搅得人头大），例如中文wiki上的paxos解释，光看这个是不可能搞懂paxos的。 </p>
+<p>paxos算法由Leslie Lamport在1990年提出，毫无疑问，paxos想解决的就是分布式环境下（server会挂掉，通讯协议不可靠，消息可能延迟、丢失、重发）如何保持数据一致性的问题。Leslie Lamport同学在1982年提出的“拜占庭将军”问题上尝到了甜头，这也是个分布式环境下的一致性问题，Leslie通过类比的方式，伪造了“拜占庭将军”历史，通过这种简单的类比成功的简化了复杂的分布式环境，效果非常好。于是在1990年Leslie同样用类比的方式提出了paxos算法，该问题跟“拜占庭将军”问题的区别是，“拜占庭将军”允许有叛徒，也就是允许伪造消息（默许被黑客攻击），而paxos则不允许消息被伪造。 </p>
+<p>Leslie很有幽默感的把论文写成一个考古发现，至始至终都在虚构他的“考古发现”。他说在考古中发现了失落的文明：希腊的paxos小岛。这里的议员通过邮递员传递消息，议会中一个议员提出法案，多数议员批准后法案获得通过。当然无论议员还是邮递员，都是兼职的，他们不可靠，随时可能走人，呵，典型的分布式环境，server可以挂，消息可以丢。Leslie根据考古文献反推出了paxos议会如何搞定法案一致性的问题。 发表论文时，Leslie一直用这种语气在写论文，于是《ACM Transactions on Computer Systems》编辑们认为太荒诞了，不能从头到尾虚构故事吧？毕竟是严谨的科学杂志，于是打回。Leslie同学身为牛人，坚持自己的看法，同时认为编辑们没有幽默感，拒绝修改。时间流逝，一晃九年过去，九年后有团队根据该论文开发出一个paxos实现，终于，编辑们低头了，允许发布Leslie的论文，但还是加了段编者著，在其中表示Leslie其实是个热爱计算机技术的考古学家！也算稍事解嘲。 写这两篇文章，我也试了下借喻的手段，用我们熟悉的三国人物，看看能否讲清楚paxos。其实paxos的算法本身算不得很复杂，但如果想讲清楚在各种异常情形下paxos算法的表现，给大家带来的明确的直观感受：paxos确实能解决一致性问题，这就不容易了。所以篇幅所限，只写了丢失一个消息的情况。不过大家如果从头看到这，应该可以简单的任意推导出其他异常吧？ 最后，上面说的只是算法机制，如果需要了解现有的各种产品实现，最方便的还是看zookeeper源码，毕竟是开源的，例如去：<a target="_blank" rel="noopener" href="http://zookeeper.apache.org/doc/r3.3.2/zookeeperOver.html">http://zookeeper.apache.org/doc/r3.3.2/zookeeperOver.html</a>，可以看下概述。淘宝开发团队有许多关于zookeeper实现的文章，到网上搜下就能看到。 对google的chubby实现，因为不是开源的，只有篇论文可以看：<a target="_blank" rel="noopener" href="http://static.googleusercontent.com/external_content/untrusted_dlcp/research.google.com/zh-CN/us/archive/chubby-osdi06.pdf">http://static.googleusercontent.com/external_content/untrusted_dlcp/research.google.com/zh-CN/us/archive/chubby-osdi06.pdf</a></p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2015\03\27\算法\paxos分布式一致性算法-讲述诸葛亮的反穿越\" rel="bookmark">paxos分布式一致性算法--讲述诸葛亮的反穿越</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2018\06\03\算法\解读raft一致性共识算法\" rel="bookmark">分布式环境Raft一致性共识算法解读</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="paxos算法如何容错的--讲述五虎将的实践">https://www.taohui.tech/2015/07/27/算法/paxos算法如何容错的-讲述五虎将的实践/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/paxos/" rel="tag"># paxos</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2015/03/27/%E7%AE%97%E6%B3%95/paxos%E5%88%86%E5%B8%83%E5%BC%8F%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95-%E8%AE%B2%E8%BF%B0%E8%AF%B8%E8%91%9B%E4%BA%AE%E7%9A%84%E5%8F%8D%E7%A9%BF%E8%B6%8A/" rel="prev" title="paxos分布式一致性算法--讲述诸葛亮的反穿越">
+      <i class="fa fa-chevron-left"></i> paxos分布式一致性算法--讲述诸葛亮的反穿越
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89-accept%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5/" rel="next" title="高性能网络编程（一）----accept建立连接">
+      高性能网络编程（一）----accept建立连接 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%B1%E6%9D%A5"><span class="nav-number">1.</span> <span class="nav-text">由来</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">提案</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E6%A1%88p1"><span class="nav-number">2.1.</span> <span class="nav-text">提案p1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E6%A1%88p2"><span class="nav-number">2.2.</span> <span class="nav-text">提案p2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E6%A1%88p3"><span class="nav-number">2.3.</span> <span class="nav-text">提案p3</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E7%AE%80%E5%8D%95%E5%9B%9E%E9%A1%BE"><span class="nav-number">3.</span> <span class="nav-text">算法简单回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AD%8F%E5%BB%B6%E3%80%81%E5%BB%96%E5%8C%96%E3%80%81%E5%91%A8%E4%BB%93%EF%BC%9A"><span class="nav-number">3.1.</span> <span class="nav-text">魏延、廖化、周仓：</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1a"><span class="nav-number">3.1.1.</span> <span class="nav-text">1a</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2a"><span class="nav-number">3.1.2.</span> <span class="nav-text">2a</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3a"><span class="nav-number">3.1.3.</span> <span class="nav-text">3a</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E8%99%8E%E5%B0%86"><span class="nav-number">3.2.</span> <span class="nav-text">五虎将</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1b"><span class="nav-number">3.2.1.</span> <span class="nav-text">1b</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2b"><span class="nav-number">3.2.2.</span> <span class="nav-text">2b</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3b"><span class="nav-number">3.2.3.</span> <span class="nav-text">3b</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BC%94%E4%B9%A0%E9%81%93%E5%85%B7"><span class="nav-number">4.</span> <span class="nav-text">演习道具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BE%8A%E7%9A%AE%E7%BA%B8%EF%BC%88%E7%9B%B8%E5%BD%93%E4%BA%8E%E7%A1%AC%E7%9B%98%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">羊皮纸（相当于硬盘）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8D%89%E7%BA%B8"><span class="nav-number">4.2.</span> <span class="nav-text">草纸</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B2%99%E6%BC%8F"><span class="nav-number">4.3.</span> <span class="nav-text">沙漏</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BC%94%E4%B9%A0%E8%AF%B4%E6%98%8E"><span class="nav-number">5.</span> <span class="nav-text">演习说明</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BC%94%E4%B9%A0"><span class="nav-number">6.</span> <span class="nav-text">演习</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8E%E8%AE%B0"><span class="nav-number">7.</span> <span class="nav-text">后记</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

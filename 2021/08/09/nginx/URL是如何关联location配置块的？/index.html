@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="上一篇文章介绍了HTTP请求匹配server{ }配置块的过程，接着请求会继续匹配location{ }配置块，并最终决定哪些指令及Nginx模块处理请求。本文将介绍location的匹配规则，以及rewrite指令与location匹配顺序的关系。生产环境中的nginx.conf往往含有上百条location，这是因为Nginx常常身兼多职：充当提供静态资源CDN、作为负载均衡为分布式集群提供扩">
+<meta property="og:type" content="article">
+<meta property="og:title" content="URL是如何关联Nginx location配置块的？">
+<meta property="og:url" content="https://www.taohui.tech/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="上一篇文章介绍了HTTP请求匹配server{ }配置块的过程，接着请求会继续匹配location{ }配置块，并最终决定哪些指令及Nginx模块处理请求。本文将介绍location的匹配规则，以及rewrite指令与location匹配顺序的关系。生产环境中的nginx.conf往往含有上百条location，这是因为Nginx常常身兼多职：充当提供静态资源CDN、作为负载均衡为分布式集群提供扩">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/location%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/rewrite%E4%B8%8Elocation%E5%BE%AA%E7%8E%AF%E5%8C%B9%E9%85%8D%E7%9A%84%E6%B5%81%E7%A8%8B.png">
+<meta property="article:published_time" content="2021-08-09T12:31:51.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.847Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="Nginx">
+<meta property="article:tag" content="URI">
+<meta property="article:tag" content="Trie树">
+<meta property="article:tag" content="前缀树">
+<meta property="article:tag" content="location">
+<meta property="article:tag" content="rewrite">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>URL是如何关联Nginx location配置块的？ | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          URL是如何关联Nginx location配置块的？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-08-09 20:31:51" itemprop="dateCreated datePublished" datetime="2021-08-09T20:31:51+08:00">2021-08-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上一篇文章介绍了HTTP请求匹配server{ }配置块的过程，接着请求会继续匹配location{ }配置块，并最终决定哪些指令及Nginx模块处理请求。本文将介绍location的匹配规则，以及rewrite指令与location匹配顺序的关系。<br><img src="/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png"><br>生产环境中的nginx.conf往往含有上百条location，这是因为Nginx常常身兼多职：充当提供静态资源CDN、作为负载均衡为分布式集群提供扩展性、作为API gateway提供接口服务等等。location一旦配置错误，Nginx上巨大的并发连接数会将错误放大上万倍，很容易导致严重的线上事故。</p>
+<p>而location也很容易配置错误，它既支持前缀匹配，也支持正则表达式匹配，当二者同时出现时，为了获得更高的性能，Nginx设计了复杂的location匹配优先级。这是因为前缀匹配是对静态的location多叉树检索完成的，它的性能要比正则表达式高得多，唯有搞清楚具体的匹配流程，我们才能设计出匹配速度更快的location。</p>
+<p>而且rewrite指令修改URL的功能也让location匹配变得更为复杂。特别是rewrite出现在server{ }和location{ } 里，会导致完全不同的结果。设计location时，我们还需要考虑到rewrite的效率，以及它是否会导致循环重定向。</p>
+<span id="more"></span>
+<p>这篇文章将从底层讲清楚URL匹配location { }配置块的流程，以及rewrite指令修改URL后，Nginx又是怎样重新匹配location的。</p>
+<h1 id="如何匹配前缀location？"><a href="#如何匹配前缀location？" class="headerlink" title="如何匹配前缀location？"></a>如何匹配前缀location？</h1><p>location { }中定义了哪些Nginx模块会处理以及如何处理HTTP请求，因此，URL与location的匹配关系到功能的正确性，它是学好Nginx的必要条件。</p>
+<p>location有两类匹配URL的方式，一类是前缀匹配，一类是正则表达式匹配。我们先来看前缀匹配。</p>
+<p>URL通过/正斜杠符号分隔对象，因此URL从前至后具有天然的层级关系。比如，/wp-content/uploads/2019/07/test.jpg就具备以下意义：第1级wp-content说明它属于wordpress的内容，第2级uploads说明这是用户自行上传的文件，第3、4级2019/07描述了它的上传日期，第5级则是文件名称及格式。所以，从前至后进行前缀匹配最自然不过，像location /wp-content/uploads { } 就可以匹配wordpress中所有用户上传的文件。</p>
+<p>当请求同时匹配上多个location时，Nginx会选择前缀最长的location { }处理请求。比如，location /wp-content/uploads { }和location /wp-content/uploads/2019 { }同时存在时，/wp-content/uploads/2019/07/test.jpg请求只会命中后者。<strong>最长前缀匹配，是location匹配的核心原则。</strong></p>
+<p>由于许多location处于包含关系，因此很容易出现重复匹配，那么，当数百个前缀location同时配置时，Nginx怎样基于最长前缀原则，最有效率的关联URL呢？<strong>事实上，Nginx会在启动过程中，将server{ }内的所有location基于前缀的包含关系，建立一颗多叉树。</strong></p>
+<p>比如，如下12个location将会构造出1颗4层的静态树，其中<strong>子树中的所有location，都是比父结节更长的前缀location；在同一层的结点中，它们互不相属，但却是基于字母表有序的（注意，同级location的排序与长度无关）</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">location &#x2F;test &#123;root html;&#125;</span><br><span class="line">location &#x2F;res &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;res&#x2F;img &#123;root html&#x2F;res&#x2F;img;&#125;</span><br><span class="line">location &#x2F;res&#x2F;video &#123;root html&#x2F;res&#x2F;video;&#125;</span><br><span class="line">location &#x2F; &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;resource&#x2F;js &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;resource&#x2F;image &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;his &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;his&#x2F;20 &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;his&#x2F;2020 &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x2F;his&#x2F;20&#x2F;02 &#123;root html&#x2F;res;&#125;</span><br><span class="line">location &#x3D; &#x2F;50x.html &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B.png"></p>
+<p>举个例子，location = /50x.html和location /res都是/结点的子结点，因此它们处于树的第2层。且因为首字母5的ASCII码比r要小，因此50x.html是res的左兄弟结点。为了提高检索效率，Nginx会在构造树的过程中，取每一层兄弟结点中间的那一个，作为父结点的直接子结点。就像50x.html、his、res、test四个结点并存时，res将作为/的直接子结点，这能够减少检索的时间复杂度。</p>
+<p>我们以一个具体的例子来看下location树的匹配流程。比如/his/2001/test.jpg请求到达时，它的匹配顺序如下图蓝色箭头所示：<br><img src="/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png"></p>
+<p>事实上，/his/2001/test.jpg请求的匹配共包含6步：</p>
+<ol>
+<li>   请求首先命中/，暂时/将被设置为最长前缀，再进入子树看看有没有更长的前缀；</li>
+<li>   未匹配上直接子结点res，由于h在字母表的顺序小于r，因此到左兄弟结点his中继续匹配；</li>
+<li>   匹配上his后，此时/his被设置为最长前缀；</li>
+<li>   <strong>匹配上直接子树/his/20，将其设为最长前缀</strong>，仍然进入子树尝试更长的前缀匹配；</li>
+<li>   未匹配上直接子树20，由于1在字母表的顺序中小于2，因此到左兄弟结点中去看看；</li>
+<li>   /20未匹配命中，且在字母表中/先于1，匹配到此结束。这时，最长匹配是/his/20，于是使用此location处理请求/his/2001/test.jpg。</li>
+</ol>
+<p>这样我们搞清楚了最长前缀匹配的底层逻辑，接下来再来看正则表达式location的用法。</p>
+<h1 id="如何匹配正则表达式location？"><a href="#如何匹配正则表达式location？" class="headerlink" title="如何匹配正则表达式location？"></a>如何匹配正则表达式location？</h1><p>当遇到前缀匹配无法覆盖的URL时，可以使用正则表达式匹配请求。当然，与上一篇介绍过的server_name类似，使用正则表达式的前提是将pcre开发库编译进Nginx。一次写对正则表达式很难，在Linux下我建议你用pcretest命令行工具提前测试正则表达式。关于正则表达式和pcretest工具的用法，你可以观看下我在极客时间上的视频课程<a target="_blank" rel="noopener" href="https://time.geekbang.org/course/intro/138">《Nginx核心知识100讲》</a>第46课<a target="_blank" rel="noopener" href="https://time.geekbang.org/course/detail/138-71460">《Nginx中的正则表达式》</a>。</p>
+<p>在location中使用正则表达式，只需要在表达式前加入<del>或者</del>*符号，其中前者表示字母大小写敏感，而后者对大小写不敏感，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">location ~* *\.(gif|jpg|png|webp|)$</span><br></pre></td></tr></table></figure>
+<p>它可以匹配各类图片，且忽略文件格式后缀的大小写。</p>
+<p>多个正则表达式location之间的匹配次序很简单，按照它们在server{ }块中出现的位置，依次匹配，直接使用最先命中的location即可。所以<strong>使用正则表达式要小心，当上方的正则表达式匹配范围过大时，下方的正则表达式location可能永远也无法命中</strong>。</p>
+<p>当正则表达式与前缀location同时出现时，事情就变得复杂起来。我们前面介绍过，前缀location构成的多叉树匹配效率很高，而正则表达式的匹配要慢得多。因此，Nginx会优先进行前缀location匹配，再进行正则表达式location的匹配，而且Nginx额外给前缀location提供了2个跳过正则表达式匹配的武器：=和^~。</p>
+<p>在执行前缀匹配时，如果URL与location完全相等，那么Nginx不会再检索子树寻找更长的前缀匹配，但还会执行正则表达式匹配。如果你希望URL完全相等后，不必再匹配正则表达式location，那么可以在location前增加=号。比如，当location = / {}与location / {}同时出现时，前者是为了匹配访问首页的请求，而后者可以匹配任何请求，常用来兜底。因此，<strong>如果某些页面访问频率非常高，你应该用=号加快location的匹配速度</strong>。</p>
+<p>另外，^<del>也可以跳过正则表达式匹配阶段，加快location的执行速度，而且它比=号的应用范围更广，^</del>不需要URL完全相等，只需要匹配上前缀即可跳过后续的正则表达式。注意，<strong>只有最长匹配上携带^~符号，才能够跳过正则表达式</strong>。比如，你觉得/res/blog/js/1.js访问下面3个location时会获得什么响应？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">location ^~ &#x2F;res&#x2F;blog &#123;return 200 &#39;res blog&#39;;&#125;</span><br><span class="line">location &#x2F;res&#x2F;blog&#x2F;js &#123;return 200 &#39;res blog js&#39;;&#125;</span><br><span class="line">location ~* .*\.js &#123;return 200 &#39;js&#39;;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>答案是’js’！虽然这个请求同时命中了3个location，但2个前缀location中，/res/blog虽然带有^~符号，可惜它却不是最长的前缀匹配；而/res/blog/js虽然是最长前缀，但又不能阻止正则表达式；*<em>最终第3个location ~</em> .*.js匹配上了URL！ **</p>
+<p>简单的总结下location匹配规则（见下图）：<br><img src="/images/nginx/location%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B.png"></p>
+<ol>
+<li>   先对前缀location执行最长前缀匹配</li>
+<li>   若最长前缀location前，携带有=或者^~，那么使用此location配置块处理请求；</li>
+<li>   按server{ }中正则表达式的出现顺序，依次匹配。成功后就选中此location；</li>
+<li>   若所有正则表达式皆未匹配上，则使用第1步中检索出的最长前缀location处理请求。</li>
+</ol>
+<p>你可能会问，如果第1步中就没有找到能匹配上的前缀location，那该怎么办？很简单，Nginx会直接返回404。当然，为了避免这种情况发生，通常我们都会添加location / { }兜底，它可以匹配任意URL。</p>
+<p>注意：location中的正则表达式，就像server_name中一样，可以用小括号()提取变量，供后续其他Nginx模块的指令使用。</p>
+<p>配置location时，还有一个技巧需要你掌握：由于客户端的URL中可能含有重复的正斜杠/，因此Nginx会自动合并连续的重复正斜杠/。比如，//res/blog///a.js会被合并成/res/blog/a.js。如果你想关闭这一功能，可以添加下面这行配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">merge_slashes off;</span><br></pre></td></tr></table></figure>
+
+<p>由于location的匹配规则相当复杂，所以Nginx会在debug级别的日志中，打印出最终选中了哪个location。比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">test location: &quot;&#x2F;&quot;</span><br><span class="line">test location: &quot;res&quot;</span><br><span class="line">test location: &quot;&#x2F;blog&quot;</span><br><span class="line">using configuration &quot;&#x2F;res&#x2F;blog&quot;</span><br></pre></td></tr></table></figure>
+
+<p>其中，using configuration指明了最终选择了哪个location。当然，要想开启debug日志，除了在nginx.conf里将error_log的日志级别设为debug外，还需要在configure时加入了—with-debug选项。</p>
+<h1 id="rewrite指令是如何工作的"><a href="#rewrite指令是如何工作的" class="headerlink" title="rewrite指令是如何工作的"></a>rewrite指令是如何工作的</h1><p>虽然我们已经清楚了location的匹配规则，但是，匹配的URL未必是客户端的原始URL，因为rewrite指令可以修改URL！因此，我们还需要了解rewrite指令的用法，这样才能全面掌握location的匹配规则。</p>
+<p>当系统升级、维护或者数据迁移时，往往需要重写URL后，再执行location匹配。rewrite指令就是用来重写URL的，它的用法非常简单，比如下面这行指令就可以将/reg1/a.js修改为/reg2/a.js：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rewrite &#x2F;reg1&#x2F;(.*) &#x2F;reg2&#x2F;$1;</span><br></pre></td></tr></table></figure>
+
+<p>显然，rewrite可以反复地修改URL，并导致location被反复匹配命中。因此，<strong>为了防止不当的rewrite指令导致死循环，Nginx在代码层面将1个请求的rewrite次数限制为10次，超过后会直接返回500错误码</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NGX_HTTP_MAX_URI_CHANGES           10</span></span><br></pre></td></tr></table></figure>
+
+<p>rewrite指令既可以直接出现在server{ }块中，也可以出现在location { }块中，但它们的工作流程却完全不同！比如，你觉得下面的rewrite会导致请求/reg1/a.js无限循环吗？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rewrite &#x2F;reg1&#x2F;(.*) &#x2F;reg2&#x2F;$1;</span><br><span class="line">location &#x2F;reg2 &#123;rewrite &#x2F;reg2&#x2F;(.*) &#x2F;reg1&#x2F;$1;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实不会，因为server{ }中的rewrite指令只会执行1次。要说清楚rewrite、location的执行时机，我们得先清楚HTTP请求的11个执行阶段。</p>
+<p>当Nginx接收完HTTP头部后，会让各Nginx模块基于Pipe And Filter模型依次处理请求。其中，为了让模块的处理次序更加可控，Nginx基于Web语义将其分为11个阶段，每个Nginx模块通常会选择1个阶段介入请求的处理流程。rewrite与location涉及到其中的4个阶段，下面看看它们究竟做了些什么：<br><img src="/images/nginx/rewrite%E4%B8%8Elocation%E5%BE%AA%E7%8E%AF%E5%8C%B9%E9%85%8D%E7%9A%84%E6%B5%81%E7%A8%8B.png"></p>
+<p>我们依次分析这4个阶段：</p>
+<ol>
+<li>   server{ }块中的rewrite指令，将在NGX_HTTP_SERVER_REWRITE_PHASE阶段执行。从图中可以看到，它只会执行1次；</li>
+<li>   前2节介绍的location匹配流程，就发生在NGX_HTTP_FIND_CONFIG_PHASE阶段；</li>
+<li>   location{ }块中的rewrite指令，在NGX_HTTP_REWRITE_PHASE阶段执行；</li>
+<li>   NGX_HTTP_POST_REWRITE_PHASE阶段中，判断location中的rewrite指令是否重写了URL，如果是，那么跳转到NGX_HTTP_FIND_CONFIG_PHASE阶段再做1次location匹配，否则继续向下，由其他Nginx模块处理请求。</li>
+</ol>
+<p>因此，不同于server{ }块，location中的rewrite指令是可能反复执行多次的。</p>
+<p>其实，rewrite指令还可以携带4种不同的flag参数，它还将影响if、set等其他脚本类指令的执行。本文聚焦于location的匹配，后续我在脚本指令的介绍文章中，还会讲到rewrite指令的其他用法。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文介绍了HTTP请求匹配location的流程。</p>
+<p>location支持URL按最长前缀进行location匹配。Nginx启动时会将所有前缀location构造出一颗静态的多叉树，其中子树中的结点都是父结点的更长前缀，而兄弟结点间则按字母表排序。这样，前缀URL的匹配效率就很高。</p>
+<p>相比起来，正则表达式则按照在nginx.conf中的出现顺序进行匹配，效率要低得多。当二者同时出现时，虽然正则表达式优先级更高，但=号和^~号可以让前缀location跳过正则表达式匹配，提升性能。然而这样让location匹配更容易出错，如果你在开发环境中，可以借助debug级别的error.log日志，通过using configuration确认Nginx究竟选择了什么location来处理请求。</p>
+<p>rewrite指令可以反复修改URL，其中server{ }块中的rewrite指令只会执行1次，而location中的rewrite则可能最多执行10次，超出后Nginx会返回500错误码。只有理解了11个HTTP阶段的执行顺序，才能掌握rewrite与location的匹配关系。</p>
+<p>你可能知道，location { }配置块内可以嵌套location { }，虽然这不是一种推荐的配置方式，但它确实是被语法规则支持的。那么，在嵌套发生时，基于本文的理论，location是如何匹配的？rewrite指令又是怎样工作的？欢迎你在帖子下方留言，与我一起探讨更好的热部署实现方案。</p>
+
+    </div>
+
+    
+    
+    
+      
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="URL是如何关联Nginx location配置块的？">https://www.taohui.tech/2021/08/09/nginx/URL是如何关联location配置块的？/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Nginx/" rel="tag"># Nginx</a>
+              <a href="/tags/URI/" rel="tag"># URI</a>
+              <a href="/tags/Trie%E6%A0%91/" rel="tag"># Trie树</a>
+              <a href="/tags/%E5%89%8D%E7%BC%80%E6%A0%91/" rel="tag"># 前缀树</a>
+              <a href="/tags/location/" rel="tag"># location</a>
+              <a href="/tags/rewrite/" rel="tag"># rewrite</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" rel="prev" title="公开课：用nginx搭建waf防火墙的实践">
+      <i class="fa fa-chevron-left"></i> 公开课：用nginx搭建waf防火墙的实践
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" rel="next" title="HTTP请求是如何关联Nginx server{}块的？">
+      HTTP请求是如何关联Nginx server{}块的？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%8C%B9%E9%85%8D%E5%89%8D%E7%BC%80location%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">如何匹配前缀location？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%8C%B9%E9%85%8D%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8Flocation%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">如何匹配正则表达式location？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#rewrite%E6%8C%87%E4%BB%A4%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="nav-number">3.</span> <span class="nav-text">rewrite指令是如何工作的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

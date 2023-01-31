@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Nginx是企业内网的对外入口，它常常同时对接许多应用，因此，Nginx上会同时监听多个端口、为多个域名提供服务。然而，匹配多级域名并不简单，Nginx为此准备了字符串精确匹配、前缀通配符、后缀通配符、正则表达式，当它们同时出现时，弄清楚HTTP请求会被哪个server{ }下的指令处理，就成了一件困难的事。 这是因为基于域名规范，请求匹配server{ }配置块时，并不会按照它们在nginx.c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTTP请求是如何关联Nginx server{}块的？">
+<meta property="og:url" content="https://www.taohui.tech/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="Nginx是企业内网的对外入口，它常常同时对接许多应用，因此，Nginx上会同时监听多个端口、为多个域名提供服务。然而，匹配多级域名并不简单，Nginx为此准备了字符串精确匹配、前缀通配符、后缀通配符、正则表达式，当它们同时出现时，弄清楚HTTP请求会被哪个server{ }下的指令处理，就成了一件困难的事。 这是因为基于域名规范，请求匹配server{ }配置块时，并不会按照它们在nginx.c">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/Nginx%E7%9B%91%E5%90%AC80%E7%AB%AF%E5%8F%A3%E5%AF%B9%E5%BA%94TCP%E6%8A%A5%E6%96%87%E6%A0%BC%E5%BC%8F.jpg">
+<meta property="og:image" content="https://www.taohui.tech/images/DNS/%E5%A4%9A%E7%BA%A7%E5%9F%9F%E5%90%8D.png">
+<meta property="article:published_time" content="2021-08-09T12:33:59.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.844Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="哈希表">
+<meta property="article:tag" content="正则表达式">
+<meta property="article:tag" content="server_name">
+<meta property="article:tag" content="域名">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/images/nginx/Nginx%E7%9B%91%E5%90%AC80%E7%AB%AF%E5%8F%A3%E5%AF%B9%E5%BA%94TCP%E6%8A%A5%E6%96%87%E6%A0%BC%E5%BC%8F.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>HTTP请求是如何关联Nginx server{}块的？ | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          HTTP请求是如何关联Nginx server{}块的？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-08-09 20:33:59" itemprop="dateCreated datePublished" datetime="2021-08-09T20:33:59+08:00">2021-08-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Nginx是企业内网的对外入口，它常常同时对接许多应用，因此，Nginx上会同时监听多个端口、为多个域名提供服务。然而，匹配多级域名并不简单，Nginx为此准备了字符串精确匹配、前缀通配符、后缀通配符、正则表达式，当它们同时出现时，弄清楚HTTP请求会被哪个server{ }下的指令处理，就成了一件困难的事。</p>
+<p>这是因为基于域名规范，请求匹配server{ }配置块时，并不会按照它们在nginx.conf文件中的出现顺序作为选择依据。而且对于不支持Host头部、没有域名的HTTP/1.0请求和无法匹配到合适server{ }的异常请求，我们都要区别对待。</p>
+<p>另外，为了加快匹配速度，Nginx将字符串域名、前缀通配符、后缀通配符都放在了哈希表中，该设计充分使用了CPU的批量载入主存功能。如果不了解这些流程，既有可能导致请求没有被正确的server{ }块处理，也有可能降低了原本非常高效地哈希表查询性能。</p>
+<span id="more"></span>
+<p>本文将沿着Nginx处理HTTP请求的流程，介绍一个请求是如何根据listen、server_name等配置关联到server{ }块的。我们将从TCP连接的建立、Nginx从哪些字段取出域名、域名是怎样与server_name匹配的，讲清楚Nginx如何为请求找到处理它的server{ }块。在实际运维中，大部分问题都是由于请求匹配指令错误造成的，搞清楚这一匹配流程，对我们掌握Nginx非常重要。</p>
+<h1 id="listen指令对server-块的第1次关联"><a href="#listen指令对server-块的第1次关联" class="headerlink" title="listen指令对server{ }块的第1次关联"></a>listen指令对server{ }块的第1次关联</h1><p>为了让一台服务器可以处理访问多个域名的不同请求，我们用“虚拟主机”来定义一种域名的处理方式，在Nginx中这对应着一个server{ }块。因此，HTTP请求到达时，Nginx首先要找到处理它的server{ }配置块。</p>
+<p>请求关联server{ }块时主要依据listen和server_name这两个指令，其中listen指令发生在TCP连接建立完成时，它对server{ }块进行首次匹配，等到接收HTTP请求头部时，server_name再进行第二次匹配，这样就可以决定请求由哪个server{ }块中的指令处理。我们先来看listen指令是如何匹配请求的。</p>
+<p>Nginx启动时创建socket并监听listen指令告知的端口（包括绑定IP地址）。当运行在TCP协议之上的HTTP请求到达服务器时，操作系统首先收到了TCP三次握手请求。我们知道，TCP这种传输层协议是由内核实现的，因此，由内核完成TCP的三次握手后，就会通过“读事件”经由Linux的Epoll通知到Nginx的worker进程以及具体监听的socket。</p>
+<p>比如，我们在nginx.conf中配置了以下两个server：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">    <span class="attribute">listen</span> <span class="number">192.168.1.5:80</span>; </span><br><span class="line">&#125;</span><br><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">    <span class="attribute">listen</span> <span class="number">127.0.0.1:80</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果是本机进程发来的HTTP请求（在Linux中可以用curl或者telnet发起请求），它的IP报文头部目的IP地址就是127.0.0.1，而TCP报文头部的目的端口就是80。这样，Linux内核就找到了相应的socket，进而通过epoll_wait函数唤醒Nginx进程，而Nginx也就找到了对应的listen指令以及其所属的server{ }块。<br><img src="/images/nginx/Nginx%E7%9B%91%E5%90%AC80%E7%AB%AF%E5%8F%A3%E5%AF%B9%E5%BA%94TCP%E6%8A%A5%E6%96%87%E6%A0%BC%E5%BC%8F.jpg"></p>
+<p>你可能注意到，有些server{ }块没有listen指令也可以正常的工作。这是因为Nginx认为每个server{}都应该监听TCP端口，当你没有显式的配置listen指令时，Nginx会默认帮你打开80端口。</p>
+<h1 id="Nginx是怎样从HTTP请求中取出域名的？"><a href="#Nginx是怎样从HTTP请求中取出域名的？" class="headerlink" title="Nginx是怎样从HTTP请求中取出域名的？"></a>Nginx是怎样从HTTP请求中取出域名的？</h1><p>Nginx允许多个server{ }块监听相同的端口，所以当访问相同端口、不同域名的请求到达时，还需要根据请求中的域名做第2次匹配，以决定最终关联的server{ }块。</p>
+<p>这里我们先要搞清楚域名是怎么从HTTP请求中取出来的。在HTTP/1.0协议中并没有Host头部，这是因为互联网起步时，HTTP的设计者并没有考虑到域名的数量会远多于服务器。对于HTTP/1.0请求而言，只能从absolute URL中携带域名。</p>
+<p>举个例子，下面这个没有携带Host头部的请求可以取到<a href="http://www.taohui.pub域名：">www.taohui.pub域名：</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET http:&#x2F;&#x2F;www.taohui.pub&#x2F;index.html HTTP&#x2F;1.0</span><br></pre></td></tr></table></figure>
+
+<p>如果你不清楚HTTP协议的格式，建议你先观看下我在极客时间上的视频课程<a target="_blank" rel="noopener" href="https://time.geekbang.org/course/intro/175">《Web协议详解与抓包实战》</a>第12课<a target="_blank" rel="noopener" href="https://time.geekbang.org/course/detail/175-94392">《详解HTTP的请求行》</a>。</p>
+<p>互联网业务的推动导致一台服务器必须要处理大量域名，于是HTTP/1.1协议推出了描述访问域名的Host头部。对于不含有Host头部的HTTP/1.1请求，RFC规范要求服务器必须返回400错误码（Nginx也正是这么做的）。当Host头部与上述absolute URL中的域名同时出现时，将会以后者为准。例如对于下面这个请求，Nginx会取出<a href="http://www.taohui.tech作为匹配域名：">www.taohui.tech作为匹配域名：</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET http:&#x2F;&#x2F;www.taohui.tech&#x2F;index.html HTTP&#x2F;1.0</span><br><span class="line">Host: www.taohui.pub</span><br></pre></td></tr></table></figure>
+
+<p>另外，对于使用了TLS/SSL协议的HTTPS请求来说，还可以从TLS握手中获取到域名。关于TLS握手及相关插件我会在后续的文章中再详述。</p>
+<p>获取到请求的域名后，Nginx就会将其与上一节中listen指令匹配成功的server块进行第2次匹配，其中匹配依据就是server_name指令后的选项。我们暂且不谈server_name指令的匹配语法，先来看server_name匹配完成后的3种可能情况：</p>
+<ol>
+<li>   域名恰好与1个server{ }块中的server_name相匹配，选用该server{ }中的指令处理与请求；</li>
+<li>   有多个server{ }块匹配上了域名，此时按server_name规定的优先级选中一个server{ }块即可；</li>
+<li>   所有server{ }块都没有匹配上域名，此时必须有一个默认server { }块来处理这个请求。</li>
+</ol>
+<p>其中在第3种情况里，Nginx是这么定义默认server { }的：</p>
+<ol>
+<li>   当listen指令后明确的跟着default_server选项时，它所属的server{ }就是默认server。</li>
+<li>   如果监听同一个端口的所有server{ }都没有通过listen指令显式设置default_server，那么这些server{ }配置块中，在nginx.conf配置文件里第1个出现的就是默认server。</li>
+</ol>
+<p>注意，你不能把监听相同端口、地址对的两个server{ }块同时设为默认server，否则nginx将无法启动，并给出类似下方的错误输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nginx: [emerg] a duplicate default server for 0.0.0.0:80 in &#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;nginx.conf:40</span><br></pre></td></tr></table></figure>
+
+<p>这就是请求匹配server{ }块的总体流程，下面我们来看server_name与域名的匹配，这也是最复杂的环节。</p>
+<h1 id="server-name指令对server-块的第2次关联"><a href="#server-name指令对server-块的第2次关联" class="headerlink" title="server_name指令对server{ }块的第2次关联"></a>server_name指令对server{ }块的第2次关联</h1><p>如果你购买过域名肯定清楚，虽然只买到一个域名，但你会有无数个子域名可以使用。比如我买到的是taohui.pub二级域名（pub是一级域名），我就可以配置出blog.taohui.pub这个三级域名，甚至自己搭建一个子域名解析服务，再配置出四级域名nginx.blog.taohui.pub，甚至五级、六级域名都能使用，如下图所示：<br><img src="/images/DNS/%E5%A4%9A%E7%BA%A7%E5%9F%9F%E5%90%8D.png"></p>
+<p>由于多级域名的存在，关联域名的server_name指令也相应地复杂起来，下面我们从3个层次看看server_name的选项种类。</p>
+<p>首先，server_name支持精确地完全匹配，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server_name blog.taohui.pub;</span><br></pre></td></tr></table></figure>
+
+<p>其次，server_name可以通过*符号作为通配符来匹配一类域名，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server_name *.taohui.pub;</span><br></pre></td></tr></table></figure>
+<p>既可以匹配blog.taohui.pub，也可以匹配image.taohui.pub。由于*通配符在前方，所以我把它叫做前缀通配符。server_name还支持后缀通配符，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server_name www.taohui.*;</span><br></pre></td></tr></table></figure>
+<p>它既可以匹配<a href="http://www.taohui.pub，也可以匹配www.taohui.tech域名。注意，server_name支持的通配符只能出现在最前方或者最后方，它不能出现在域名的中间，例如：">www.taohui.pub，也可以匹配www.taohui.tech域名。注意，server_name支持的通配符只能出现在最前方或者最后方，它不能出现在域名的中间，例如：</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server_name www.*.pub;</span><br></pre></td></tr></table></figure>
+<p>就是非法的选项。</p>
+<p>最后，当遇到通配符无法解决的场景时，可以使用正则表达式来匹配域名。当然，使用正则表达式的前提是将pcre开发库编译进Nginx（在CentOS下安装pcre开发库很简单，执行yum install pcre-devel -y即可。当有多个pcre版本并存时，可以通过configure –with-pcre=指定编译具体的pcre库）。</p>
+<p>使用正则表达式时，需要在server_name选项前加入~符号，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">server_name ~^ww\d.\w+.taohui.tech;$</span><br></pre></td></tr></table></figure>
+<p>它可以匹配如ww3.blog.taohui.tech这样的域名。</p>
+<p>当然，想一次写对正则表达式并不容易。pcre库提供的pcretest工具可以让我们提前测试正则表达式。注意，你用yum等工具安装pcre时，并不会自动安装pcretest工具，这需要你下载源代码（最新的pcre2-10.34下载地址参见<a target="_blank" rel="noopener" href="https://ftp.pcre.org/pub/pcre/pcre2-10.34.tar.gz">这里</a>，帮助文档参见<a target="_blank" rel="noopener" href="https://www.pcre.org/original/doc/html/pcretest.html">这里</a>）自行编译获得。本文不会讨论正则表达式的语法，也不会讨论pcretest工具的用法，关于Nginx中如何使用这两者，你可以观看下我在极客时间上的视频课程<a target="_blank" rel="noopener" href="https://time.geekbang.org/course/intro/138">《Nginx核心知识100讲》</a>第46课<a target="_blank" rel="noopener" href="https://time.geekbang.org/course/detail/138-71460">《Nginx中的正则表达式》</a>。</p>
+<p>Nginx中的正则表达式通常会提供提取变量的能力，server_name指令也不例外！我们可以通过小括号将域名中的信息取出来，交给后续的指令使用，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    server_name ~^(ww\d).(?&lt;domain&gt;\w+).taohui.tech$;</span><br><span class="line">    return 200 &#39;regular variable: $1 $domain&#39;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时发起访问域名ww3.blog.taohui.tech的请求，由于第1个小括号我通过$1变量获取值为ww3，而第2个小括号我通过domain名称获得值为blog（通过$2也可以获得相同的内容），因此return指令发来的响应将会是regular variable: ww3 blog。</p>
+<p>说完这3种域名选项后，我们再来看它们同时出现且匹配命中时，Nginx是怎样根据优先级来选择server{ }块的。域名的总体匹配优先级，与server{ }块在nginx.conf中的出现顺序无关，也与server_name指令在server{ }块中的出现顺序无关。事实上，对于监听同一地址、端口的server{ }块而言，Nginx会在进程启动时在收集所有server_name后，将精确匹配的字符串域名、前缀通配符、后缀通配符分别构建出3个哈希表，并将正则表达式构建为一个链表。我们看下请求到达时的匹配流程：</p>
+<ol>
+<li>   匹配域名时，首先在字符串域名构成的哈希表上做精确查询，如果查询到了，就直接返回，因此，完全匹配的字符串域名优先级是最高的；</li>
+<li>   其次，将在前缀通配符哈希表上，按照每级域名的值分别查询哈希表，完成最长通配符的匹配。比如，blog.taohui.tech同时可以匹配以下2个前缀通配符：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">server_name *.tech;</span><br><span class="line">server_name *.taohui.tech;</span><br></pre></td></tr></table></figure>
+但Nginx会匹配命中*.taohui.tech。</li>
+<li>   其次，会在后缀通配符哈希表上做查询，完成最长通配符的匹配。</li>
+<li>   最后，会按照正则表达式在nginx.conf中出现的顺序，依次进行正则表达式匹配，这一步的性能比起前3步要慢许多。</li>
+</ol>
+<p>这就是域名匹配的核心流程。</p>
+<h1 id="关于域名匹配你还需要了解的技巧"><a href="#关于域名匹配你还需要了解的技巧" class="headerlink" title="关于域名匹配你还需要了解的技巧"></a>关于域名匹配你还需要了解的技巧</h1><p>事实上，还有一些域名匹配的小技巧需要你掌握。</p>
+<p>首先，就像前面说过的HTTP/1.0协议是没有Host头部的，所以使用relative URL的HTTP/1.0请求并没有域名。按照之前的流程，它只能被默认server{ }块处理，这大大限制了默认server {}块的功能。</p>
+<p>在Nginx 0.7.11之后的版本，你可以通过server_name “”指定空字符串，来匹配没有域名的请求，这就解放了默认server { }的职责。</p>
+<p>其次，当Nginx对内网提供HTTP服务时，许多客户端会通过网络可达的主机名发起请求，这样客户端填写的域名就是主机名。如果必须由管理员先用hostname命令获取到主机名，再改写server_name指令，这就太不方便了。因此，server_name后还可以填写$hostname变量，这样Nginx启动时，会自动把$hostname替换为真正的主机名。<br>server_name $hostname;</p>
+<p>最后一点，上文说过非正则表达式的server_name选项都会存放在哈希表中，这样哈希表中每个bucket桶大小就限制了域名的最大长度。当我们使用长域名或者多级域名时，默认的桶大小很可能就不够了，这时需要提升server_name的桶大小。</p>
+<p>桶大小由server_names_hash_bucket_size配置控制，由于CPU从内存中读入数据时是按批进行的，其中每批字节数是cpu cache line，因此为了一次可以载入一个哈希桶，server_names_hash_bucket_size的默认值被定为cpu cache line。目前多数CPU的cache line值是64字节，所以若域名较长时需要增加桶的大小。</p>
+<p>当你增大桶大小时，需要保证server_names_hash_bucket_size是cpu cache line的整数倍，这样读取哈希桶时，会尽量少地读取主存。毕竟操作主存的速度通常在100纳秒左右，这比CPU的速度慢得多！</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>最后对本文做个小结。</p>
+<p>当TCP三次握手完成后，Linux内核就会按照内核的负载均衡算法，唤醒监听相应端口的某个Nginx worker进程。而从读事件及socket句柄上，Nginx可以找到对应的listen指令及所属的server{ }块，这完成了初次匹配。</p>
+<p>接着，Nginx会接收HTTP请求，从absolute URL、 Host域名或者TLS插件中取出域名，再将域名与server_name进行匹配。其中匹配优先级是这样的：精确的字符串匹配优先级最高，其次是前缀通配符和后缀通配符匹配（这两者匹配时，如果多个通配符命中，会选择最长的server_name），最后才是正则表达式匹配。</p>
+<p>如果以上情况皆未匹配上，请求会被默认server{ }处理。其中默认server {}是监听同一端口、地址的一系列server{ }块中，第1个在nginx.conf中出现的那个server{ }。当然，通过listen default_server也可以显示地定义默认server{ }。</p>
+<p>最后留给你一个思考题，为什么有人用server_name _;来处理未匹配上的请求？欢迎你留言一起探讨。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\02\23\算法\《数学之美》与算法\" rel="bookmark">《数学之美》与算法</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="HTTP请求是如何关联Nginx server{}块的？">https://www.taohui.tech/2021/08/09/nginx/HTTP请求是如何关联Nginx-server-块的？/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%93%88%E5%B8%8C%E8%A1%A8/" rel="tag"># 哈希表</a>
+              <a href="/tags/%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/" rel="tag"># 正则表达式</a>
+              <a href="/tags/server-name/" rel="tag"># server_name</a>
+              <a href="/tags/%E5%9F%9F%E5%90%8D/" rel="tag"># 域名</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" rel="prev" title="URL是如何关联Nginx location配置块的？">
+      <i class="fa fa-chevron-left"></i> URL是如何关联Nginx location配置块的？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" rel="next" title="APISIX架构分析：如何动态管理Nginx集群？">
+      APISIX架构分析：如何动态管理Nginx集群？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#listen%E6%8C%87%E4%BB%A4%E5%AF%B9server-%E5%9D%97%E7%9A%84%E7%AC%AC1%E6%AC%A1%E5%85%B3%E8%81%94"><span class="nav-number">1.</span> <span class="nav-text">listen指令对server{ }块的第1次关联</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Nginx%E6%98%AF%E6%80%8E%E6%A0%B7%E4%BB%8EHTTP%E8%AF%B7%E6%B1%82%E4%B8%AD%E5%8F%96%E5%87%BA%E5%9F%9F%E5%90%8D%E7%9A%84%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">Nginx是怎样从HTTP请求中取出域名的？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#server-name%E6%8C%87%E4%BB%A4%E5%AF%B9server-%E5%9D%97%E7%9A%84%E7%AC%AC2%E6%AC%A1%E5%85%B3%E8%81%94"><span class="nav-number">3.</span> <span class="nav-text">server_name指令对server{ }块的第2次关联</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E%E5%9F%9F%E5%90%8D%E5%8C%B9%E9%85%8D%E4%BD%A0%E8%BF%98%E9%9C%80%E8%A6%81%E4%BA%86%E8%A7%A3%E7%9A%84%E6%8A%80%E5%B7%A7"><span class="nav-number">4.</span> <span class="nav-text">关于域名匹配你还需要了解的技巧</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

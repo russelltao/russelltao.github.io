@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文是我对2019年GOPS深圳站演讲的文字整理。这里我希望带给各位读者的是，如何站在整个互联网背景下系统化地理解Nginx，因为这样才能解决好大流量分布式网络所面临的高可用问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="巧用 Nginx 实现大规模分布式集群的高可用性">
+<meta property="og:url" content="https://www.taohui.tech/2019/08/09/nginx/%E5%B7%A7%E7%94%A8-nginx-%E5%AE%9E%E7%8E%B0%E5%A4%A7%E8%A7%84%E6%A8%A1%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="本文是我对2019年GOPS深圳站演讲的文字整理。这里我希望带给各位读者的是，如何站在整个互联网背景下系统化地理解Nginx，因为这样才能解决好大流量分布式网络所面临的高可用问题。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E7%9B%AE%E5%BD%95.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%874.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%875.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%876.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%877.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%879.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8710.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8711.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8712.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8713.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8715.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8716.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8717.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8718.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8719.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8720.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8721.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8722.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8723.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8724.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8725.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8727.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8728.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8729.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8730.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8731.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8732.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8733.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8734.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8735.jpg">
+<meta property="article:published_time" content="2019-08-09T00:18:03.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.859Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="负载均衡">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="tls">
+<meta property="article:tag" content="AKF">
+<meta property="article:tag" content="CDN">
+<meta property="article:tag" content="F5">
+<meta property="article:tag" content="http">
+<meta property="article:tag" content="http2">
+<meta property="article:tag" content="http3">
+<meta property="article:tag" content="Lua">
+<meta property="article:tag" content="Nginx核心知识150讲">
+<meta property="article:tag" content="Nginx模块">
+<meta property="article:tag" content="openresty">
+<meta property="article:tag" content="rest">
+<meta property="article:tag" content="RFC规范">
+<meta property="article:tag" content="slice">
+<meta property="article:tag" content="Web协议详解与抓包实战">
+<meta property="article:tag" content="共享缓存">
+<meta property="article:tag" content="反向代理">
+<meta property="article:tag" content="合并回源">
+<meta property="article:tag" content="条件请求">
+<meta property="article:tag" content="正向代理">
+<meta property="article:tag" content="流量风暴">
+<meta property="article:tag" content="网络效率">
+<meta property="article:tag" content="脚本引擎">
+<meta property="article:tag" content="过滤模块">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E7%9B%AE%E5%BD%95.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2019/08/09/nginx/%E5%B7%A7%E7%94%A8-nginx-%E5%AE%9E%E7%8E%B0%E5%A4%A7%E8%A7%84%E6%A8%A1%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>巧用 Nginx 实现大规模分布式集群的高可用性 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2019/08/09/nginx/%E5%B7%A7%E7%94%A8-nginx-%E5%AE%9E%E7%8E%B0%E5%A4%A7%E8%A7%84%E6%A8%A1%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          巧用 Nginx 实现大规模分布式集群的高可用性
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-09 08:18:03" itemprop="dateCreated datePublished" datetime="2019-08-09T08:18:03+08:00">2019-08-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文是我对2019年GOPS深圳站演讲的文字整理。这里我希望带给各位读者的是，如何站在整个互联网背景下系统化地理解Nginx，因为这样才能解决好大流量分布式网络所面临的高可用问题。</p>
+<span id="more"></span>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E7%9B%AE%E5%BD%95.jpg"></p>
+<p>标题里有“巧用”二字，何谓巧用？同一个问题会有很多种解决方案，但是，各自的约束性条件却大不相同。巧用就是找出最简单、最适合的方案，而做到这一点的前提就是必须系统化的理解Nginx！本文分四个部分讲清楚如何达到这一目的：</p>
+<ol>
+<li> 首先要搞清楚我们面对的是什么问题。这里会谈下我对大规模分布式集群的理解；</li>
+<li> Nginx如何帮助集群实现可伸缩性；</li>
+<li> Nginx如何提高服务的性能；</li>
+<li> 从Nginx的设计思路上学习如何用好它。</li>
+</ol>
+<h2 id="1-大规模分布式集群的特点"><a href="#1-大规模分布式集群的特点" class="headerlink" title="1. 大规模分布式集群的特点"></a>1. 大规模分布式集群的特点</h2><p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%874.jpg"></p>
+<p>互联网是一个巨大的分布式网络，它有以下特点：</p>
+<ul>
+<li>  多样化的客户端。网络中现存各种不同厂商、不同版本的浏览器，甚至有些用户还在使用非常古老的浏览器，而我们没有办法强制用户升级；</li>
+<li>  多层代理。我们不知道用户发来的请求是不是通过代理翻墙过来的；</li>
+<li>  多级缓存。请求链路上有很多级缓存，浏览器、正反向代理、CDN等都有缓存，怎么控制多级缓存？RFC规范中有明确的定义，但是有些Server并不完全遵守；</li>
+<li>  不可控的流量风暴。不知道用户来自于哪些地区，不知道他们会在哪个时间点集中访问，不知道什么事件会触发流量风暴；</li>
+<li>  网络安全的高要求：信息安全问题要求通信数据必须加密；</li>
+<li>  快速迭代的业务需求：BS架构使软件开发方式发生了巨大变化，我们可以通过快速迭代、发布来快速验证、试错。</li>
+</ul>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%875.jpg"></p>
+<p>上图是典型的REST架构，图中包括客户端、正反向代理、源服务器，$符号代表缓存可以服务于上游，也可以服务于下游。</p>
+<p>通过IP地址标识主机，通过域名系统简化使用，URI则指向具体资源，每种资源有许多种表述，而服务器通过HTTP协议将表述转移至客户端上展示。这便是REST名为表述性状态转移的缘由，我在极客时间《Web协议详解与抓包实战》课程第7、8节课中对此有详细的介绍。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%876.jpg"></p>
+<p>设计架构时有许多关注点，与本文主题相关的有4个要点：</p>
+<ul>
+<li>  可伸缩性。核心点在于如何有效的、动态的、灰度的均衡负载。</li>
+<li>  可扩展性指功能组件的独立进化。可以理解为某个Nginx模块独立升级后，并不影响Nginx整体服务的属性。</li>
+<li>  网络效率，也就是如何提升信息传输的效率。</li>
+<li>  HTTP协议功能的全面支持。HTTP1的RFC规范非常多，毕竟它经历了20多年的变迁，而这20多年里互联网的巨大变化是HTTP1的设计者无法预料到的，这些规范也并不被所有Server、Client支持。 当然HTTP2和HTTP3相对情况会好很多。</li>
+</ul>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%877.jpg"></p>
+<ul>
+<li>Nginx有优秀的可插拔模块化设计，它基于统一管道架构。<ul>
+<li>  其中有一类模块我称它为upstream负载均衡模块，官方Nginx便提供了最小连接、RoundRobin、基于变量控制的hash、一致性hash等负载均衡策略，而大量的第三方模块更提供了许多定制化的负载均衡算法。</li>
+<li>  基于Lua语言的Openresty有自己的生态，这些Lua模块也提供了更灵活的实现方式。</li>
+</ul>
+</li>
+<li>  Nginx在性能优化上做得非常极致，大家知道最近F5收购了Nginx公司，为什么要收购？因为Nginx的性能可以与基于硬件的、价格昂贵的F5媲美！</li>
+<li>  Nginx对HTTP协议的支持是比较全面的，当我们使用一些小众的替代解决方案时，一定要明确自己在HTTP协议有哪些独特需求。</li>
+<li>  优秀的可配置性，在nginx.conf配置文件里我们可以使用脚本指令与变量实现复杂的功能。</li>
+</ul>
+<h2 id="2-Nginx与scalability"><a href="#2-Nginx与scalability" class="headerlink" title="2. Nginx与scalability"></a>2. Nginx与scalability</h2><p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%879.jpg"></p>
+<p>在讨论Nginx的负载均衡策略前，我们先来了解AKF扩展立方体，它能使我们对此建立整体思维。AKF扩展立方体有X、Y、Z轴，这三个轴意味着可以从3个角度实现可伸缩性：</p>
+<ul>
+<li>  X轴指只需要增加应用进程，不用改代码就能水平的扩展。虽然最方便 ，但它解决不了数据不断增长的问题。</li>
+<li>  Y轴按功能切分应用，它能解决数据增长的问题，但是，切分功能意味着重构代码，它引入了复杂性，成本很高。</li>
+<li>  Z轴基于用户的属性扩展服务，运维Nginx时这招我们最常用，通常我们基于变量取到用户的IP地址、URL或者其他参数来执行负载均衡。</li>
+</ul>
+<p>当然，这三个轴可以任意组合以应对现实中的复杂问题。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8710.jpg"></p>
+<p>当然，要想解决可伸缩性问题，还必须在功能上支持足够多的协议。面向下游客户端主要是HTTP协议，当然Nginx也支持OSI传输层的UDP协议和TCP协议。受益于Nginx优秀的模块化设计，对上游服务器Nginx支持非常多的应用层协议，如grpc、uwsgi等。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8711.jpg"></p>
+<p>上图是Nginx执行反向代理的流程图，红色是负载均衡模块，任何一个独立的开发者都可以通过开发模块来添加新的LB策略。</p>
+<p>Nginx必须解决无状态HTTP协议带来的信息冗余及性能低下问题，而Cache缓存是最重要的解决手段，我们需要对Cache在反向代理流程中的作用有所了解。当下游是公网带宽并不稳定，且单用户信道较小时，通常Nginx应缓存请求body，延迟对上游应用服务建立连接的时间；反之，若上游服务的带宽不稳定，则应缓存响应body。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8712.jpg"></p>
+<p>理解nginx配置文件的3个关键点是：</p>
+<ol>
+<li> 多级指令配置。通过大括号{}，我们可以层层嵌套指令，借用父子关系来模块化的配置代码。</li>
+<li> 变量，这是我们实现复杂功能，且不影响Nginx模块化设计的关键。变量是不同模块间低耦合交互的最有效方式！</li>
+<li> 脚本引擎。脚本指令可以提供应用编程功能。很多人说Nginx的if指令是邪恶的，比如上图中的代码，其实我们只有理解if指令是如何影响父子嵌套关系后，才能正确的使用if。在《Nginx核心知识150讲》第141课我有详细介绍。</li>
+</ol>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8713.jpg"></p>
+<p>Nginx官方迭代速度很快，在前两年差不多是两周一个版本，现在是一个月一个版本。频繁的更新解决了Bug也推出了新功能。但我们更新Nginx时却不能像更新其他服务一样，因为Nginx上任一时刻处理的TCP连接都太多了，如果升级Nginx时不能很好的应对就会出现大规模的用户体验问题。</p>
+<p>Nginx采用多进程结构来解决升级问题。它的master进程是管理进程，为所有worker进程保留住Syn半连接队列，所以升级Nginx时不会导致大规模三次握手失败。相反，单进程的HAProxy升级时就会出现连接建立失败问题。</p>
+<h2 id="3-Nginx与集群performance"><a href="#3-Nginx与集群performance" class="headerlink" title="3. Nginx与集群performance"></a>3. Nginx与集群performance</h2><p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8715.jpg"></p>
+<p>缓存有两个实现维度：时间与空间。基于空间的缓存需要基于信息来预测，提前把用户可能请求的字节流准备好。而基于时间的缓存如上图所示，蓝色线条的请求触发了缓存（public share cache），这样红色线条的第二次请求可以直接命中缓存。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8716.jpg"></p>
+<p>浏览器中的是私有缓存，私有缓存只为一个用户服务。Nginx上实现了共享缓存，同时Nginx也可以控制浏览器中私有缓存的有效时间。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8717.jpg"></p>
+<p>RFC规范定义了许多缓存相关的头部，如果我们忽略了这些规则会很难理解Nginx如何基于下游的请求、上游的响应控制私有缓存及共享缓存，而且不了解这些规则其实不容易读懂nginx.conf中缓存相关指令的说明文档。在《Web协议详解与抓包实战》课程第29到32课我详细的介绍了缓存相关的规则。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8718.jpg"></p>
+<p>有些同学会问我，为什么部署Nginx之后没有看到上图中的Cache Loader和Cache Manger进程呢？因为我们没有启用Nginx的缓存。当然，即使我们开启缓存后，Cache Loader进程可能还是看不到的。</p>
+<p>为什么呢？因为Nginx为了高性能做了很多工作。当重启Nginx时，之前保存在磁盘上的缓存文件需要读入内存建立索引，但读文件的IO速度是很慢的，读缓存文件（文件很大很多）这一步骤可能耗时非常久，对服务器的负载很大，这会影响worker进程服务用户请求的能力。CL进程负责每次只读一小部分内容到共享内存中，这大大缓解了读IO慢的问题。CM进程负责淘汰过期缓存。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8719.jpg"></p>
+<p>当下游有一份过期资源时，它会来询问Nginx时：此资源还能用吗？能用的话，通过304告诉我，不要返回响应body（可能很大！）了。</p>
+<p>当Nginx缓存的资源可能过期时，它也可以问上游的web应用服务器：缓存还能用吗？能用的话通过304告诉我，我来更新缓存Age。</p>
+<p>RFC7033文档详细定义了这一过程，我在《Web协议详解与抓包实战》第28课有详细介绍。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8720.jpg"></p>
+<p>Nginx的not_modified过滤模块便负责执行这一功能。我在《Nginx核心知识150讲》课程第97、98课对此有详细介绍。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8721.jpg"></p>
+<p>如果我们突然发布了一个热点资源，许多用户请求瞬间抵达访问该资源，可是该资源可能是一个视频文件尺寸很大，Nginx上还没有建立起它的缓存，如果Nginx放任这些请求直达上游应用服务器（比如可能是Tomcat），非常可能直接把上游服务器打挂了。因为上游应用服务器为了便于功能的快速迭代开发，性能上是不能与Nginx相提并论的。这就需要合并回源请求。</p>
+<p>怎么合并回源请求呢？第一个请求过来了，放行！第二个请求也到了，但因为第1个请求还没有完成，所以上图中的请求2、4、5都不放行，直到第6步第1个请求的响应返回后，再把缓存的内容作为响应在第8、9、10中返回。这样就能缓解上游服务的压力。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8722.jpg"></p>
+<p>减少回源请求是一个解决方案，但如果Nginx上有过期的响应，能不能先将就着发给用户？当然，同时也会通过条件请求去上游应用那里获取最新的缓存。我们经常提到的互联网柔性、分级服务的原理与此是相同的。既然最新内容暂时由于带宽、性能等因素不能提供，不如先提供过期的内容，当然前提是不对业务产生严重影响。</p>
+<p>Nginx中的proxy_cache_use_stale指令允许使用stale过期缓存，上图中第1个请求放行了，第2、3请求使用旧缓存。从这里可以看出Nginx应对大流量有许多成熟的方案。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8723.jpg"></p>
+<p>我们在网页上会使用播放条拖动着看视频，这可以基于Http Range协议实现。但是，如果不启用Slice模块Nginx就会出现性能问题，比如现在浏览器要访问一个视频文件的第150-249字节，由于满足了缓存条件，Nginx试图先把文件拉取过来缓存，再返回响应。然而，Nginx会拉取完整的文件缓存！这是很慢的。</p>
+<p>怎么解决这个问题呢？使用Nginx的slice模块即可，如果配置100字节作为基础块大小，Nginx会基于100-199、200-299产生2个请求，这2个请求的应用返回并存入缓存后再构造出150-249字节的响应返回给用户。这样效率就高很多！通常，Nginx作为CDN使用时都会打开这一功能。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8724.jpg"></p>
+<p>互联网解决信息安全的方案是TLS/SSL协议，Nginx对其有很好的支持。比如，Nginx把下游公网发来的TLS流量卸载掉TLS层，再转发给上游；同时，它也可以把下游传输来的HTTP流量 ，根据配置的证书转换为HTTPS流量。在验证证书时，在nginx.conf中我们可以通过变量实现证书或者域名验证。</p>
+<p>虽然TLS工作在OSI模型的表示层，但Nginx作为四层负载均衡时仍然可以执行同样的增、删TLS层功能。Nginx的Stream模块也允许在nginx.conf中通过变量验证证书。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8725.jpg"></p>
+<p>Nginx处理TLS层性能非常好，这得益于2点：</p>
+<ul>
+<li>  Nginx本身的代码很高效，这既因为它基于C语言，也由于它具备优秀的设计。</li>
+<li>减少TLS握手次数，包括：<ul>
+<li>  session缓存。减少TLS1.2握手中1次RTT的时间，当然它对集群的支持并不好，而且比较消耗内存。</li>
+<li>  Ticket票据。Ticket票据可应用于集群，且并不占用内存。</li>
+</ul>
+</li>
+</ul>
+<p>当然，减少TLS握手的这2个策略都面临着重放攻击的危险，更好的方式是升级到TLS1.3。我在《Web协议详解与抓包实战》第80课有详细介绍。</p>
+<h2 id="4-巧用Nginx"><a href="#4-巧用Nginx" class="headerlink" title="4. 巧用Nginx"></a>4. 巧用Nginx</h2><p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8727.jpg"></p>
+<p>Nginx模块众多，我个人把它分为四类，这四类模块各自有其不同的设计原则。</p>
+<ul>
+<li>  请求处理模块。负责生成响应或者影响后续的处理模块，请求处理模块遵循请求阶段设计，在同阶段内按序处理。</li>
+<li>  过滤模块。生成了HTTP响应后，此类模块可以对响应做再加工。</li>
+<li>  仅影响变量的模块。这类模块为其他模块的指令赋能，它们提供新的变量或者修改已有的变量。</li>
+<li>  负载均衡模块。它们提供选择上游服务器的负载均衡算法，并可以管理上游连接。</li>
+</ul>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8728.jpg"></p>
+<p>请求处理模块、过滤模块、负载均衡模块均遵循unitform pipe and filter架构，每个模块以统一的接口处理输入，并以同样的接口产生输出，这些模块串联在一起提供复杂的功能。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8729.jpg"></p>
+<p>Nginx把请求处理流程分为11个阶段，所有请求处理模块必须隶属于某个阶段，或者同时在多个阶段中工作。每个处理阶段必须依次向后执行，不可跳跃阶段执行。</p>
+<p>同阶段内允许存在多个模块同时生效，这些模块串联在一起有序执行。当然，先执行的模块还有个特权，它可以决定忽略本阶段后续模块的执行，直接跳跃到下一个阶段中的第1个模块执行。</p>
+<p>每个阶段的功能单一，每个模块的功能也很简单，因此该设计扩展性很好。上图中的灰色模块Nginx框架中的请求处理模块。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8730.jpg"></p>
+<p>上图中右边是Openresty默认编译进Nginx的过滤模块，它们是按序执行的。图中用红色框出的是关键模块，它们是必须存在的，而且它们也将其他模块分为三组，开发第三方过滤模块时必须先决定自己应在哪一组，再决定自己应在组内的什么位置。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8731.jpg"></p>
+<p>Nginx中的变量分为：提供变量的模块和使用变量的模块。其含义我在《Nginx核心知识150讲》第72课有介绍，关于框架提供的变量在第73、74课中有介绍。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8732.jpg"></p>
+<p>无论我们使用了哪些模块，Nginx框架中的变量一定是默认提供的，它为我们提供了基础功能，理解好它们是我们使用好Nginx变量的关键。</p>
+<p>框架变量分为5类：</p>
+<ul>
+<li>  HTTP 请求相关的变量</li>
+<li>  TCP 连接相关的变量</li>
+<li>  Nginx 处理请求过程中产生的变量</li>
+<li>  发送 HTTP 响应时相关的变量</li>
+<li>  Nginx 系统变量</li>
+</ul>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8733.jpg"></p>
+<p>最后我们来谈谈Openresty，它其实是Nginx中的一系列模块构成的，但它由于集成了Lua引擎，又延伸出Lua模块并构成了新的生态。看看Openresty由哪些部分组成：</p>
+<ul>
+<li>  Nginx，这里指的是Nginx的框架代码。</li>
+<li>  Nginx官方模块，以及各类第三方（非Openresty系列）C模块。</li>
+<li>  Openresty生态模块，它包括直接在Nginx中执行的C模块，例如上图中的绿色模块，也包括必须运行在ngx_http_lua_module模块之上的Lua语言模块。</li>
+<li>  当然，Openresty也提供了一些方便使用的脚本工具。</li>
+</ul>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8734.jpg"></p>
+<p>Openresty中的Lua代码并不用考虑异步，它是怎么在Nginx的异步C代码框架中执行的呢？</p>
+<p>我们知道，Nginx框架由事件驱动系统、HTTP框架和STREAM框架组成。而Openresty中的ngx_http_lua_module和ngx_stream_lua_module模块给Lua语言提供了编程接口，Lua语言通过它们编译为C代码在Nginx中执行。</p>
+<p>我们在nginx.conf文件中嵌入Lua代码，而Lua代码也可以调用上述两个模块提供的SDK调动Nginx的功能。</p>
+<p><img src="/2019/08/%E5%B7%A7%E7%94%A8Nginx-%E5%B9%BB%E7%81%AF%E7%89%8735.jpg"></p>
+<p>Openresty的SDK功能强大，我个人把它分为以下8大类：</p>
+<ul>
+<li>  Cosocket提供了类似协程的网络通讯功能，它的性能优化很到位，许多其他Lua模块都是基于它实现的。</li>
+<li>  基于共享内存的字典，它支持多进程使用，所有worker进程间同步通常通过Shared.DICT。</li>
+<li>  定时器。</li>
+<li>  基于协程的并发编程。</li>
+<li>  获取客户端请求与响应的信息</li>
+<li>  修改客户端请求与响应，包括发送响应</li>
+<li>  子请求，官方Nginx就提供了树状的子请求，用于实现复杂功能，Openresty用比C简单的多的Lua语言又实现了一遍。</li>
+<li>工具类，大致包含以下5类：<ul>
+<li>  正则表达式</li>
+<li>  日志</li>
+<li>  系统配置</li>
+<li>  编解码</li>
+<li>  时间类</li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<p>最后做个总结。在恰当的时间做恰当的事，听起来很美好，但需要我们有大局观。我们要清楚大规模分布式网络通常存在哪些问题，也要清楚分布式网络的常用解决方案，然后才能谈如何用Nginx解决上述问题。而用好Nginx，必须系统的掌握Nginx的架构与设计原理，理解模块化设计、阶段式设计，清楚Nginx的核心流程，这样我们才能恰到好处地用Nginx解决掉问题。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\01\08\网络协议\http性能极限优化\" rel="bookmark">HTTP性能极限优化</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\05\06\网络协议\为什么要出web协议这门课\" rel="bookmark">为什么要出web协议这门课</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2021\02\08\nginx\深入剖析Nginx负载均衡算法\" rel="bookmark">深入剖析Nginx负载均衡算法</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2019/08/09/nginx/%E5%B7%A7%E7%94%A8-nginx-%E5%AE%9E%E7%8E%B0%E5%A4%A7%E8%A7%84%E6%A8%A1%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7/" title="巧用 Nginx 实现大规模分布式集群的高可用性">https://www.taohui.tech/2019/08/09/nginx/巧用-nginx-实现大规模分布式集群的高可用性/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/" rel="tag"># 负载均衡</a>
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/tls/" rel="tag"># tls</a>
+              <a href="/tags/AKF/" rel="tag"># AKF</a>
+              <a href="/tags/CDN/" rel="tag"># CDN</a>
+              <a href="/tags/F5/" rel="tag"># F5</a>
+              <a href="/tags/http/" rel="tag"># http</a>
+              <a href="/tags/http2/" rel="tag"># http2</a>
+              <a href="/tags/http3/" rel="tag"># http3</a>
+              <a href="/tags/Lua/" rel="tag"># Lua</a>
+              <a href="/tags/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86150%E8%AE%B2/" rel="tag"># Nginx核心知识150讲</a>
+              <a href="/tags/Nginx%E6%A8%A1%E5%9D%97/" rel="tag"># Nginx模块</a>
+              <a href="/tags/openresty/" rel="tag"># openresty</a>
+              <a href="/tags/rest/" rel="tag"># rest</a>
+              <a href="/tags/RFC%E8%A7%84%E8%8C%83/" rel="tag"># RFC规范</a>
+              <a href="/tags/slice/" rel="tag"># slice</a>
+              <a href="/tags/Web%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3%E4%B8%8E%E6%8A%93%E5%8C%85%E5%AE%9E%E6%88%98/" rel="tag"># Web协议详解与抓包实战</a>
+              <a href="/tags/%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/" rel="tag"># 共享缓存</a>
+              <a href="/tags/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/" rel="tag"># 反向代理</a>
+              <a href="/tags/%E5%90%88%E5%B9%B6%E5%9B%9E%E6%BA%90/" rel="tag"># 合并回源</a>
+              <a href="/tags/%E6%9D%A1%E4%BB%B6%E8%AF%B7%E6%B1%82/" rel="tag"># 条件请求</a>
+              <a href="/tags/%E6%AD%A3%E5%90%91%E4%BB%A3%E7%90%86/" rel="tag"># 正向代理</a>
+              <a href="/tags/%E6%B5%81%E9%87%8F%E9%A3%8E%E6%9A%B4/" rel="tag"># 流量风暴</a>
+              <a href="/tags/%E7%BD%91%E7%BB%9C%E6%95%88%E7%8E%87/" rel="tag"># 网络效率</a>
+              <a href="/tags/%E8%84%9A%E6%9C%AC%E5%BC%95%E6%93%8E/" rel="tag"># 脚本引擎</a>
+              <a href="/tags/%E8%BF%87%E6%BB%A4%E6%A8%A1%E5%9D%97/" rel="tag"># 过滤模块</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/08/07/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E4%B8%80%E6%96%87%E8%A7%A3%E9%87%8A%E6%B8%85%E6%A5%9Agoogle-bbr%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95%E5%8E%9F%E7%90%86/" rel="prev" title="一文解释清楚Google BBR拥塞控制算法原理">
+      <i class="fa fa-chevron-left"></i> 一文解释清楚Google BBR拥塞控制算法原理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/08/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/http%E6%80%A7%E8%83%BD%E6%9E%81%E9%99%90%E4%BC%98%E5%8C%96/" rel="next" title="HTTP性能极限优化">
+      HTTP性能极限优化 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%A4%A7%E8%A7%84%E6%A8%A1%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E7%9A%84%E7%89%B9%E7%82%B9"><span class="nav-number">1.</span> <span class="nav-text">1. 大规模分布式集群的特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Nginx%E4%B8%8Escalability"><span class="nav-number">2.</span> <span class="nav-text">2. Nginx与scalability</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Nginx%E4%B8%8E%E9%9B%86%E7%BE%A4performance"><span class="nav-number">3.</span> <span class="nav-text">3. Nginx与集群performance</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%B7%A7%E7%94%A8Nginx"><span class="nav-number">4.</span> <span class="nav-text">4. 巧用Nginx</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

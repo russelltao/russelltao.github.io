@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="2019年下半年，极客时间总编辑郭蕾从北京飞来杭州，问我有什么特别想分享给大家的技术。我回顾了下自己这16年来的工作经历，发现无论在华为、腾讯、思科、阿里，我都在与海量数据打交道，这个过程中对性能优化有许多思考，但一直没有系统的写下来。于是我就跟郭蕾说，那就针对分布式系统，讲讲我心中的性能优化方法论吧。这就是《系统性能调优必知必会》这门课的诞生过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="这16年来我是如何做系统性能优化的">
+<meta property="og:url" content="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="2019年下半年，极客时间总编辑郭蕾从北京飞来杭州，问我有什么特别想分享给大家的技术。我回顾了下自己这16年来的工作经历，发现无论在华为、腾讯、思科、阿里，我都在与海量数据打交道，这个过程中对性能优化有许多思考，但一直没有系统的写下来。于是我就跟郭蕾说，那就针对分布式系统，讲讲我心中的性能优化方法论吧。这就是《系统性能调优必知必会》这门课的诞生过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2020/04/%E6%B5%B7%E6%8A%A5.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2020/04/%E8%84%91%E5%9B%BE.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2020/04/%E7%9B%AE%E5%BD%95.jpg">
+<meta property="article:published_time" content="2020-04-27T10:47:58.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.914Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="cpu">
+<meta property="article:tag" content="grpc">
+<meta property="article:tag" content="kafka">
+<meta property="article:tag" content="mapreduce">
+<meta property="article:tag" content="protobuf">
+<meta property="article:tag" content="storm">
+<meta property="article:tag" content="优化">
+<meta property="article:tag" content="内存">
+<meta property="article:tag" content="分布式">
+<meta property="article:tag" content="哈希表">
+<meta property="article:tag" content="性能">
+<meta property="article:tag" content="时间复杂度">
+<meta property="article:tag" content="算法复杂度">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2020/04/%E6%B5%B7%E6%8A%A5.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>这16年来我是如何做系统性能优化的 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          这16年来我是如何做系统性能优化的
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-27 18:47:58" itemprop="dateCreated datePublished" datetime="2020-04-27T18:47:58+08:00">2020-04-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>2019年下半年，极客时间总编辑郭蕾从北京飞来杭州，问我有什么特别想分享给大家的技术。我回顾了下自己这16年来的工作经历，发现无论在华为、腾讯、思科、阿里，我都在与海量数据打交道，这个过程中对性能优化有许多思考，但一直没有系统的写下来。于是我就跟郭蕾说，那就针对分布式系统，讲讲我心中的性能优化方法论吧。这就是《系统性能调优必知必会》这门课的诞生过程。</p>
+<span id="more"></span>
+<p>我做过两门视频课，《Nginx 核心知识 100 讲》和《Web 协议详解与抓包实战》，这次和你聊聊程序员日常工作中那些<strong>绕不开的系统性能优化问题</strong>。只要技术厉害一点的工程师都知道，性能不只对产品的攻城掠地至关重要，<strong>它也是程序员价值的重要体现，特别是它在工作面试、技术等级晋升上总会扮演重要角色。</strong></p>
+<ul>
+<li>  比如，在包括阿里在内的大多数拥有技术职级晋升体系的公司里，为了保障公平性，一般会由跨部门的专家组成评委会。那么其他部门的高级专家在不熟悉候选人业务的情况下，要怎么去考察候选人的水平呢？<strong>他们只能去考察底层的硬核知识，而这当中性能问题又是最有区分度的问题。</strong>因此，掌握性能问题将对你的晋升之路有很大助益。如果你始终埋头在业务中，<strong>不关心更通用的性能优化方法论，将在技术等级晋升上非常吃亏。</strong></li>
+<li>  再比如，你在面试互联网大厂时，面试官总会问许多超出工作范围的性能问题，为什么会这样呢？当然你可以感慨甚至抱怨，这不就是“面试造火箭，入职拧螺丝”嘛？但从面试官的角度来看，你会发现<strong>性能就是最好的面试题，它从算法到架构，既考察了候选人的潜力，也能考察工程能力。</strong>如果候选人具备系统的性能优化方法论，那么无论在架构设计还是应用模块开发上，他的代码可扩展性都会更好，消耗的计算力、带宽和磁盘等 IT 资源也更少，也自然更容易被面试官青睐。</li>
+</ul>
+<p>因此，不论是为了满足业务发展的需求，还是在面试、晋升场景中有更好的表现，如果你希望成为高薪高效的 10X 程序员，那么，系统地学习性能优化就是一门必修课。我先把课程海报分享在这，再跟你说说这门课解决的具体问题。</p>
+<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e6%b5%b7%e6%8a%a5/"><img src="/2020/04/%E6%B5%B7%E6%8A%A5.jpg"></a></p>
+<p>那么，系统性能优化该怎么学呢？</p>
+<p>当然是看需求。当下的后端几乎都是<strong>分布式系统</strong>，那么对应的，我们面对的课题也就是<strong>如何全面提升复杂集群的性能</strong>。但当你想要学习分布式系统优化的时候，你却会发现，能找到的资料实在是太少了。</p>
+<p>如果你在 Google 上搜索如何优化分布式系统的性能，大概只能找到孤零零的几篇文章，相关的多数书籍也都在讨论容错、事务、流控等概念的实现，却很少有文章介绍如何优化整个分布式系统的性能。</p>
+<p>这恰恰就是我推出 <a target="_blank" rel="noopener" href="https://time.geekbang.org/column/intro/308?utm_term=zeus8DPOK&utm_source=jikeshijian&utm_medium=tuiwen">《系统性能调优必知必会》</a>这个专栏的初衷。我希望通过这个专栏，把自己这些年来在分布式性能领域所遇到的问题和解决方案，归纳总结，梳理出一条交付给你，告诉你我眼中的性能问题本质是怎样的。</p>
+<h1 id="我是谁？"><a href="#我是谁？" class="headerlink" title="我是谁？"></a>我是谁？</h1><p>我是陶辉，杭州智链达数据有限公司 CTO 兼联合创始人，前阿里云高级技术专家、腾讯云 TVP，著有《深入理解 Nginx：模块开发与架构解析》一书。</p>
+<p><strong>我 2004 年毕业于西安交通大学，有近 20 年的互联网一线工作经验</strong>：曾在华为中央软件部参与 iMAP 网管系统的研发，熟悉网络设备的工作流程；在腾讯 QQ 空间部门使用自定义的 Qzone 协议传递巨量数据，对如何设计出高性能、可扩展的应用协议有丰富的实践经验；在思科从事 Nginx 服务的研发，对 Web 服务器如何高效地处理 HTTP 协议有全面的认识；在阿里云担任 VPC 网络、ECS 管理与存储系统重构的架构师，对公有云及 IDC 内部网络系统有深刻了解。</p>
+<p>工作数年，我始终与性能相伴，目前致力于 Linux 下高性能服务器的开发，以及分布式环境下海量数据存储的设计与开发。</p>
+<h1 id="我是如何讲解性能优化的"><a href="#我是如何讲解性能优化的" class="headerlink" title="我是如何讲解性能优化的"></a>我是如何讲解性能优化的</h1><p>如果你需要从架构层面优化整个系统，那么这门课可以拓展你的知识面，告诉你如何优化架构才能让整体服务获得最大性能；如果你刚开始接触性能优化，这门课可以给你打牢基础，告诉你影响性能的底层因素，在实践中优化你的程序，看到立竿见影的效果。</p>
+<p>我先给你总结了一份<strong>「系统性能优化核心知识图谱」</strong>：</p>
+<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e8%84%91%e5%9b%be/"><img src="/2020/04/%E8%84%91%E5%9B%BE.jpg"></a></p>
+<p>你会发现，整个脑图我是从 4 个方面来梳理的，这其实就是我们在提升一个新系统的性能时，可以入手的 4 个层次。</p>
+<ol>
+<li> 首先，你可以从提升单机进程的性能入手，包括高效地使用主机的 CPU、内存、磁盘等硬件，通过并发编程提升吞吐量，根据业务特性选择合适的算法。</li>
+<li> 其次，分布式系统是由各个组件通过网络连接在一起，所以优化传输层网络可以让所有组件同时受益。具体优化时，你可以从降低请求的时延，提升总体吞吐量两个方向入手。</li>
+<li> 再次，要对业务消息采用更高效的编码方式，这既包括协议头、包体的优化，也包括 TLS 安全层的性能提升。具体优化时，既要深入静态编码，也要从动态的增量编码上优化。同时，调整消息的交互方式也能提升性能。</li>
+<li> 最后，我们再从集群整体上进行架构层面的优化。基于 ACP、AKF、NWR 等分布式理论，我们的优化方向仍然是降低时延和提升吞吐量，但实现方式则要运用分而治之的思想，调度集群中的所有结节协作配合，完成性能优化目标。</li>
+</ol>
+<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e7%9b%ae%e5%bd%95/"><img src="/2020/04/%E7%9B%AE%E5%BD%95.jpg"></a></p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2018\07\09\nginx\csdi2018广州关于《nginx》的分享（附ppt）\" rel="bookmark">CSDI2018广州关于《Nginx》的分享（附文字速录与PPT）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/" title="这16年来我是如何做系统性能优化的">https://www.taohui.tech/2020/04/27/这16年来我是如何做系统性能优化的/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/cpu/" rel="tag"># cpu</a>
+              <a href="/tags/grpc/" rel="tag"># grpc</a>
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+              <a href="/tags/mapreduce/" rel="tag"># mapreduce</a>
+              <a href="/tags/protobuf/" rel="tag"># protobuf</a>
+              <a href="/tags/storm/" rel="tag"># storm</a>
+              <a href="/tags/%E4%BC%98%E5%8C%96/" rel="tag"># 优化</a>
+              <a href="/tags/%E5%86%85%E5%AD%98/" rel="tag"># 内存</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/" rel="tag"># 分布式</a>
+              <a href="/tags/%E5%93%88%E5%B8%8C%E8%A1%A8/" rel="tag"># 哈希表</a>
+              <a href="/tags/%E6%80%A7%E8%83%BD/" rel="tag"># 性能</a>
+              <a href="/tags/%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6/" rel="tag"># 时间复杂度</a>
+              <a href="/tags/%E7%AE%97%E6%B3%95%E5%A4%8D%E6%9D%82%E5%BA%A6/" rel="tag"># 算法复杂度</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/08/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/http%E6%80%A7%E8%83%BD%E6%9E%81%E9%99%90%E4%BC%98%E5%8C%96/" rel="prev" title="HTTP性能极限优化">
+      <i class="fa fa-chevron-left"></i> HTTP性能极限优化
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/" rel="next" title="在这里，NGINX 创始人 Igor Sysoev 将亲述 NGINX 的诞生史">
+      在这里，NGINX 创始人 Igor Sysoev 将亲述 NGINX 的诞生史 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%88%91%E6%98%AF%E8%B0%81%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">我是谁？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%B2%E8%A7%A3%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84"><span class="nav-number">2.</span> <span class="nav-text">我是如何讲解性能优化的</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

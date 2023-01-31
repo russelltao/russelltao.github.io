@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="先看下图中的场景，客户端A和B，以及服务器server都保存了同一个文件，最初，A、B和server上的文件内容都是相同的（记为File.1）。某一时刻，B修改了文件内容，上传到SERVER上（记为File.2）。客户端A这时试图向服务器SERVER更新文件到最新内容，也就是File.1更新为File.2。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="详解rsync算法--如何减少同步文件时的网络传输量">
+<meta property="og:url" content="https://www.taohui.tech/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="先看下图中的场景，客户端A和B，以及服务器server都保存了同一个文件，最初，A、B和server上的文件内容都是相同的（记为File.1）。某一时刻，B修改了文件内容，上传到SERVER上（记为File.2）。客户端A这时试图向服务器SERVER更新文件到最新内容，也就是File.1更新为File.2。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/0_1330418966gvnq-1-1.png">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/28/0_13304189720Wy0.gif">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/28/0_1330418977eQQm.gif">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/28/0_13304189828LbQ.gif">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/28/0_13304189879FFQ.gif">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/29/0_1330475871lT5V.gif">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/29/0_133047587899Md.gif">
+<meta property="og:image" content="http://hi.csdn.net/attachment/201202/28/0_13304190034nZb.gif">
+<meta property="article:published_time" content="2014-01-27T01:38:31.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.898Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="alder32">
+<meta property="article:tag" content="rsync">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/01/0_1330418966gvnq-1-1.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>详解rsync算法--如何减少同步文件时的网络传输量 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          详解rsync算法--如何减少同步文件时的网络传输量
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-01-27 09:38:31" itemprop="dateCreated datePublished" datetime="2014-01-27T09:38:31+08:00">2014-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>先看下图中的场景，客户端A和B，以及服务器server都保存了同一个文件，最初，A、B和server上的文件内容都是相同的（记为File.1）。某一时刻，B修改了文件内容，上传到SERVER上（记为File.2）。客户端A这时试图向服务器SERVER更新文件到最新内容，也就是File.1更新为File.2。 <img src="/2017/01/0_1330418966gvnq-1-1.png"> </p>
+<span id="more"></span>
+<p>上面这个场景很常见，例如现在流行的网盘。假设我有一个文件a.txt在网盘上，上班时在公司的单位PC上更新了文件a.txt，下班后回到家里，家里PC硬盘上的a.txt就不是最新的内容，这时网盘就试图从服务器上去拿最新的a.txt了。 那么问题来了，如果在公司电脑上我只是更新了a.txt里很少的一部分内容，例如a.txt共有20M，我只更新了10个字节，难道家里的电脑上，网盘要从服务器上下载20M大小的文件？这明显很浪费带宽。 更有用的场景，假设我的手机<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/android" title="Android知识库">Android</a>上也用了这个网盘（手机上网费贵得多），只改了几十字节的内容，就要下载20M的文件，得不偿失。或者我把这个文件共享给其他朋友，也有同样的问题：修改少量的内容，却同步完整的文件！ rsync<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>就是用来解决上述问题的。client A发送它所保存的旧文件File.1少量的rsync摘要，server拿到后对比本地的File.2内容，得到File.2相对于File.1的变化，然后通过仅发送这个变化来代替发送完整的File.2内容，这样大大减少了网络传输数据。client A收到这个变化后，更新本地的File.1到最新的File.2。就是这么简单。下面详述rsync算法的步骤。 </p>
+<p>rsync首先需要客户端与服务器之间约定一个块大小，例如1K。然后把File.1等分成多个1K大小的字符串块，每块各计算出MD5摘要和Alder32校验和，如下图。 <img src="http://hi.csdn.net/attachment/201202/28/0_13304189720Wy0.gif"> </p>
+<p>这里简单介绍下MD5和校验和。MD5是种哈希算法，用于把任意长度的字符串转化为固定为128位的定长字符串，这里可以保证，相同的字符串不可能计算出不同的MD5值。MD5的碰撞率是有的，就是说，两个不同的字符串有可能计算出相同的MD5值，但是这个机率非常小，这里我们忽略不计。例如，在rsync算法里，同一个文件按1K切分成多块，每块都有一个MD5值，如果两块字符串的MD5值相同，则我们认为这两块数据完全相同。 </p>
+<p>校验和是把上述1K块数据映射为32位大小整型数字上，我们采用Alder32算法，这里同样可以保证，相同的字符串不可能计算出不同的Alder32值。Alder32有两个优点：</p>
+<ol>
+<li>计算非常快，比MD5快多了，成本小；</li>
+<li>当我们有了从0-1024长度的校验和后，计算出1-1025或者2-1026等其他校验和非常方便，只要少量运算即可。<br>当然，它的缺点也很明显，就是碰撞率比MD5高多了，所以，我们要把每个rynsc块同时计算出Alder32校验和与MD5值。Alder32算法我会在本文最后解释。 </li>
+</ol>
+<p>客户端按1K大小划分File.1文件为许多块，并对每块计算出MD5、Alder32校验和。最后不满1K的数据不做计算。之后，客户端把这些MD5、Alder32校验和依序通过网络传输给服务器，最后不满1K的数据直接发给服务器。那么，服务器收到数据后怎么处理呢？看下图。 <img src="http://hi.csdn.net/attachment/201202/28/0_1330418977eQQm.gif"> </p>
+<p>首先重申，计算Alder32校验和非常快！<br>所以，服务器先把最新文件File.2从0字节开始，按1K切分成许多块，每块计算出Alder32校验和，然后与客户端发来的File.1切分出来的Alder32校验和相比，如果alder32值都不一样，毫无疑问，文件内容是不相同的。接着，把File.2从1字节开始，按1K切分成许多块，每块计算出Alder32校验和，再与客户端的校验和比。如此循环下去，直到某个校验和相同了，那么把这段字符串再计算出MD5值，再与客户端过来的对应的MD5值相比（还记得吧？客户端对每个块既计算出Alder32又计算出MD5值），如果不同，则继续往后移1字节，继续比Alder32、MD5值。如果相同，则认为这1K数据，服务器与客户端保存的一致，忽略这块数据（例如1K字节），继续向下看。 </p>
+<p>全部处理完后，按File.2的文件顺序，向客户端发送以下数据：对于不能够在客户端File.1数据块中找到相同块的字符串，直接列上发出；如果可以找到，则写上MD5和Alder32值，代替原来1024字节的数据块。同样，最后不足1K大小的部分直接列上发出。 纯理论读起来会有些吃力，我再把它简化了举个例子吧。假设客户端与服务器间约定的字符块大小不是1K，而是4个字节。客户端的文件内容是： <strong>taohuiissoman</strong> 而服务器的文件内容是： <strong>itaohuiamsoman</strong> 现在我们来看看，rsync算法是怎么运作的。 首先，客户端开始分块并计算出MD5和Alder32值。 <img src="http://hi.csdn.net/attachment/201202/28/0_13304189828LbQ.gif"><br>如上图，像taoh是一块，对taoh分别计算出MD5和alder32值。以此类推，最后一个n字母不足4位保留。于是，客户端把计算出的MD5和alder32按顺序发出，最后发出字符n。 </p>
+<p>服务器收到后，先把自己保存的File.2的内容按4字节划分。 <img src="http://hi.csdn.net/attachment/201202/28/0_13304189879FFQ.gif"> 划分出itao、huia、msom、an，当然，这些串的Alder32值肯定无法从File.1里划分出的：taoh、uiis、soma、n找出相同的。于是向后移一个字节，从t开始继续按4字节划分。 <img src="http://hi.csdn.net/attachment/201202/29/0_1330475871lT5V.gif"> </p>
+<p>从taoh上找到了alder32相同的块，接着再比较MD5值，也相同！于是记下来，跳过taoh这4个字符，看uiam，又找不到File.1上相同的块了。继续向后跳1个字节从i开始看。还是没有找到Alder32相同，继续向后移，以此类推。 <img src="http://hi.csdn.net/attachment/201202/29/0_133047587899Md.gif"> 到了soma，又找到相同的块了。 重复上面的步骤，直到File.2文件结束。 那么，最终客户端与服务器间传输的数据如下图所示。 <img src="http://hi.csdn.net/attachment/201202/28/0_13304190034nZb.gif"> 上面这个例子很简单，可由此推导出复杂的情况，包括File.2对File.1在任意位置上做了增、改、删，都能够完成。 如果这是个大文本文件，应用rsync算法就非常有意义，例如20M的文件，实际可能只传输1M的数据量！这样用户体验会好很多，特别是网速慢的场景。 同时增加的消耗，就是在PC上计算的MD5值和Alder32校验和，这只消耗少量的CPU和内存而已。 最后列下Alder32的算法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">A &#x3D; 1 + D1 + D2 + ... + Dn (mod 65521)  </span><br><span class="line">B &#x3D; (1 + D1) + (1 + D1 + D2) + ... + (1 + D1 + D2 + ... + Dn) (mod 65521)  </span><br><span class="line">  &#x3D; n×D1 + (n−1)×D2 + (n−2)×D3 + ... + Dn + n (mod 65521)  </span><br><span class="line">  </span><br><span class="line">Adler-32(D) &#x3D; B × 65536 + A  </span><br></pre></td></tr></table></figure>
+
+<p>D1到Dn就是待计算的字符串块，所有位上的ASC字符。它的C代码实现为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">const int MOD_ADLER &#x3D; 65521;  </span><br><span class="line">   </span><br><span class="line">unsigned long adler32(unsigned char *data, int len) &#x2F;* where data is the location of the data in physical memory and  </span><br><span class="line">                                                       len is the length of the data in bytes *&#x2F;  </span><br><span class="line">&#123;  </span><br><span class="line">    unsigned long a &#x3D; 1, b &#x3D; 0;  </span><br><span class="line">    int index;  </span><br><span class="line">   </span><br><span class="line">    &#x2F;* Process each byte of the data in order *&#x2F;  </span><br><span class="line">    for (index &#x3D; 0; index &lt; len; ++index)  </span><br><span class="line">    &#123;  </span><br><span class="line">        a &#x3D; (a + data[index]) % MOD_ADLER;  </span><br><span class="line">        b &#x3D; (b + a) % MOD_ADLER;  </span><br><span class="line">    &#125;  </span><br><span class="line">   </span><br><span class="line">    return (b &lt;&lt; 16)  a;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+      
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/" title="详解rsync算法--如何减少同步文件时的网络传输量">https://www.taohui.tech/2014/01/27/算法/详解rsync算法-如何减少同步文件时的网络传输量/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/alder32/" rel="tag"># alder32</a>
+              <a href="/tags/rsync/" rel="tag"># rsync</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/" rel="prev" title="设计模式在C语言中的应用--读nginx源码">
+      <i class="fa fa-chevron-left"></i> 设计模式在C语言中的应用--读nginx源码
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2015/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%B8%A4%E7%A7%8D%E6%88%98%E4%BA%89/" rel="next" title="两种战争">
+      两种战争 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

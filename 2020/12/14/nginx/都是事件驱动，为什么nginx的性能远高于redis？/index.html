@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="谈到Redis缓存，我们描述其性能时会这么说：支持1万并发连接，几万QPS。而我们描述Nginx的高性能时，则会宣示：支持C10M（1千万并发连接），百万级QPS。Redis与Nginx同样使用了事件驱动、异步调用、Epoll这些机制，为什么Nginx的并发连接会高出那么多呢？（本文不讨论Redis分布式集群） 这其实是由进程架构决定的。为了让进程占用CPU的全部计算力，Nginx充分利用了分时操">
+<meta property="og:type" content="article">
+<meta property="og:title" content="都是事件驱动，为什么Nginx的性能远高于Redis？">
+<meta property="og:url" content="https://www.taohui.tech/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="谈到Redis缓存，我们描述其性能时会这么说：支持1万并发连接，几万QPS。而我们描述Nginx的高性能时，则会宣示：支持C10M（1千万并发连接），百万级QPS。Redis与Nginx同样使用了事件驱动、异步调用、Epoll这些机制，为什么Nginx的并发连接会高出那么多呢？（本文不讨论Redis分布式集群） 这其实是由进程架构决定的。为了让进程占用CPU的全部计算力，Nginx充分利用了分时操">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/42%E5%B9%B4cpu-trend-data.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx%E8%BF%9B%E7%A8%8B%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx%E7%BA%BF%E7%A8%8B%E6%B1%A0.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx%E8%BF%9B%E7%A8%8B1.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx%E8%BF%9B%E7%A8%8B2.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx%E8%BF%9B%E7%A8%8B3.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%8C%E6%88%90%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx-reuseport.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/reuseport%E5%8E%9F%E7%90%86.png">
+<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx-conf-reuseport.png">
+<meta property="article:published_time" content="2020-12-14T01:45:52.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.863Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="C10M">
+<meta property="article:tag" content="cpu绑定">
+<meta property="article:tag" content="redis">
+<meta property="article:tag" content="reuseport">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2020/12/42%E5%B9%B4cpu-trend-data.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>都是事件驱动，为什么Nginx的性能远高于Redis？ | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          都是事件驱动，为什么Nginx的性能远高于Redis？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-14 09:45:52" itemprop="dateCreated datePublished" datetime="2020-12-14T09:45:52+08:00">2020-12-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>谈到Redis缓存，我们描述其性能时会这么说：支持1万并发连接，几万QPS。而我们描述Nginx的高性能时，则会宣示：支持C10M（1千万并发连接），百万级QPS。Redis与Nginx同样使用了事件驱动、异步调用、Epoll这些机制，为什么Nginx的并发连接会高出那么多呢？（本文不讨论Redis分布式集群） 这其实是由<strong>进程架构</strong>决定的。为了让进程占用CPU的全部计算力，Nginx充分利用了分时操作系统的特点，比如增加CPU时间片、提高CPU二级缓存命中率、用异步IO和线程池的方式回避磁盘的阻塞读操作等等，只有清楚了Nginx的这些招数，你才能将Nginx的性能最大化发挥出来。 为了维持Worker进程间的负载均衡，在1.9.1版本前Nginx使用互斥锁，基于八分之七这个阈值维持了简单、高效的基本均衡。而在此之后，使用操作系统提供的多ACCEPT队列，Nginx可以获得更高的吞吐量。 本文将会沿着高性能这条主线介绍Nginx的Master/Worker进程架构，包括进程间是如何分担流量的，以及默认关闭的多线程模式又是如何工作的。同时，本文也是Nginx开源社区基础培训系列课程第一季，即6月18日晚第3次直播课的部分文字总结。  </p>
+<span id="more"></span>
+
+<h2 id="如何充分使用多核CPU？"><a href="#如何充分使用多核CPU？" class="headerlink" title="如何充分使用多核CPU？"></a>如何充分使用多核CPU？</h2><p><strong>由于散热问题，CPU频率已经十多年没有增长了</strong>。如下图统计了1970年到2018年间CPU性能的变化，可以看到表示频率的绿色线从2005年后就不再升高，服务器多数都在使用能耗比更经济的2.x GHz CPU： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/42%E5%B9%B4cpu-trend-data/"><img src="/2020/12/42%E5%B9%B4cpu-trend-data.png"></a> （图片来源：<a target="_blank" rel="noopener" href="https://www.karlrupp.net/2018/02/42-years-of-microprocessor-trend-data/%EF%BC%89">https://www.karlrupp.net/2018/02/42-years-of-microprocessor-trend-data/）</a> 我们知道，<strong>CPU频率决定了它的指令执行速度，当频率增长陷入瓶颈，这意味着所有单进程、单线程的软件性能都无法从CPU的升级上获得提升</strong>，包括本文开头介绍的Redis服务就是如此。如果你熟悉JavaScript语言，可能使用过NodeJS这个Web服务，虽然它也是高并发服务的代表，但同样受制于单进程、单线程架构，无法充分CPU资源。 CPU厂商对这一问题的解决方案是横向往多核心发展，因此上图中表示核心数的黑色线至2005年后快速上升。由于操作系统使用CPU核心的最小单位是线程，要想同时使用CPU的所有核心，软件必须支持多线程才行。当然，进程是比线程更大的调度粒度，所以多进程软件也是可以的，比如Nginx。 下图是Nginx的进程架构图，可以看到它含有4类进程：1个Master管理进程、多个Worker工作进程、1个Cache Loader缓存载入进程和1个Cache Manager缓存淘汰进程。 <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx%E8%BF%9B%E7%A8%8B%E6%9E%B6%E6%9E%84-2/"><img src="/2020/12/nginx%E8%BF%9B%E7%A8%8B%E6%9E%B6%E6%9E%84.png"></a> 其中，Master是管理进程，它长期处于Sleep状态，并不参与请求的处理，因此几乎不消耗服务器的IT资源。另外，只有在开启HTTP缓存后，Cache Loader和Cache Manager进程才存在，其中，当Nginx启动时加载完磁盘上的缓存文件后，Cache Loader进程也会自动退出。关于这两个 Cache进程，我会在后续介绍Nginx缓存时中再详细说明。   负责处理用户请求的是Worker进程，只有Worker进程能够充分的使用多核CPU，Nginx的QPS才能达到最大值。因此，<strong>Worker进程的数量必须等于或者大于CPU核心的数量</strong>。由于Nginx采用了事件驱动的非阻塞架构，繁忙时Worker进程会一直处于Running状态，<strong>因此1个Worker进程就能够完全占用1个CPU核心的全部计算力</strong>，如果Worker进程数超过了CPU核心数，反而会造成一些Worker进程因为抢不到CPU而进入Sleep状态休眠。所以，Nginx会通过下面这行代码自动获取到CPU核心数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ngx_ncpu = sysconf(_SC_NPROCESSORS_ONLN);</span><br></pre></td></tr></table></figure>
+
+<p>如果你在nginx.conf文件中加入下面这行配置：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">worker_processes</span> auto;</span><br></pre></td></tr></table></figure>
+
+<p>Nginx就会自动地将Worker进程数设置为CPU核心数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (ngx_strcmp(value[<span class="number">1</span>].data, <span class="string">&quot;auto&quot;</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">    ccf-&gt;worker_processes = ngx_ncpu;</span><br><span class="line">    <span class="keyword">return</span> NGX_CONF_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>为了防止服务器上的其他进程占用过多的CPU，你还可以给Worker进程赋予更高的静态优先级</strong>。Linux作为分时操作系统，会将CPU的执行时间分为许多碎片，交由所有进程轮番执行。这些时间片有长有短，从5毫秒到800毫秒不等，内核分配其长短时，会依据静态优先级和动态优先级。其中，动态优先级由内核根据进程类型自动决定，比如CPU型进程就能比IO型进程获得更长的时间片，而静态优先级可以通过setpriority函数设置。 在Linux中，静态优先级共包含40级，从-20到+19不等，其中-20表示最高优先级。进程的默认优先级是0，所以你可以通过调级优先级，让Worker进程获得更多的CPU资源。在nginx.conf文件中，worker_priority配置就能设置静态优先级，比如：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">worker_priority</span> -<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>由于每个CPU核心都拥有一级、二级缓存（Intel的Smart Cache三级缓存是所有核心共享的），为了提高这两级缓存的命中率，还可以将Worker进程与CPU核心绑定在一起。<strong>CPU缓存由于离计算单元更近，而且使用了更快的存储介质，所以二级缓存的访问速度不超过10纳秒，相对应的，主存存取速度至少在60纳秒以上，因此频繁命中CPU缓存，可以提升Nginx指令的执行速度</strong>。在nginx.conf中你可以通过下面这行配置绑定CPU：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">worker_cpu_affinity</span> auto;</span><br></pre></td></tr></table></figure>
+
+<p>Nginx的多进程架构已经能够支持C10M级别的高并发了，那么Nginx中的多线程又是怎么回事呢？这要从Linux文件系统的非阻塞调用说起。   Worker进程上含有数万个并发连接，在处理连接的过程中会产生大量的上下文切换。由于内核做一次切换的成本大约有5微秒，随着并发连接数的增多，这一成本是以指数级增长的。因此，<strong>只有在用户态完成绝大部分的切换，才有可能实现高并发</strong>。想做到这一点，只有完全使用非阻塞的系统调用。对于网络消息的传输，non-block socket可以完美实现。然而，Linux上磁盘文件的读取却是个大问题。 我们知道，机械硬盘上定位文件很耗时，由于磁盘转速难以提高（服务器磁盘的转速也只有10000转/秒），所以定位操作需要8毫秒左右，这是一个很高的数字。写文件时还可以通过Page Cache磁盘高速缓存的write back功能，先写入内存再异步回盘，读文件时则没有好办法。虽然Linux提供了原生异步IO系统调用，但在内存紧张时，异步AIO会回退到阻塞API（FreeBSD操作系统上的AIO没有这个问题）。 所以，为了缩小阻塞API的影响范围，Nginx允许将读文件操作放在独立的线程池中执行。比如，你可以通过下面这2条配置，为HTTP静态资源服务开启线程池：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">thread_pool</span> name threads=number [max_queue=number];</span><br><span class="line"><span class="attribute">aio</span> threads[=pool];</span><br></pre></td></tr></table></figure>
+
+<p>这个线程池是运行在Worker进程中的，并通过一个任务队列（max_queue设置了队列的最大长度），以生产者/消费者模型与主线程交换数据，如下图所示： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx%E7%BA%BF%E7%A8%8B%E6%B1%A0/"><img src="/2020/12/nginx%E7%BA%BF%E7%A8%8B%E6%B1%A0.png"></a> 在极端场景下（活跃数据占满了内存），线程池可以将静态资源服务的性能提升9倍，具体测试可以参见这篇文章：<a target="_blank" rel="noopener" href="https://www.nginx.com/blog/thread-pools-boost-performance-9x/">https://www.nginx.com/blog/thread-pools-boost-performance-9x/</a>。   到这里你可能有个疑问：又是多进程，又是多线程，为什么Nginx不索性简单点，全部使用多线程呢？这主要由2个原因决定：</p>
+<ul>
+<li>  首先，作为高性能负载均衡，稳定性非常重要。由于多线程共享同一地址空间，一旦出现内存错误，所有线程都会被内核强行终止，这会降低系统的可用性；</li>
+<li>  其次，Nginx的模块化设计允许第三方代码嵌入到核心流程中执行，这虽然大大丰富了Nginx生态，却也引入了风险。</li>
+</ul>
+<p>因此，Nginx宁肯选用多进程模式使用多核CPU，而只以多线程作为补充。  </p>
+<h2 id="Worker进程间是如何协同处理请求的？"><a href="#Worker进程间是如何协同处理请求的？" class="headerlink" title="Worker进程间是如何协同处理请求的？"></a>Worker进程间是如何协同处理请求的？</h2><p>当一个进程监听了80端口后，其他进程绑定该端口时会失败，通常你会看到“Address already in use”的提示。那么，所有Worker进程同时监听80或者443端口，又是怎样做到的呢？ 如果你用netstat命令，可以看到只有进程ID为2758的Master进程监听了端口： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx%E8%BF%9B%E7%A8%8B1/"><img src="/2020/12/nginx%E8%BF%9B%E7%A8%8B1.png"></a> </p>
+<p>Worker进程是Master的子进程，用ps命令可以从下图中看到，2758有2个Worker子进程，ID分别为3188和3189： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx%E8%BF%9B%E7%A8%8B2/"><img src="/2020/12/nginx%E8%BF%9B%E7%A8%8B2.png"></a> </p>
+<p>由于子进程自然继承了父进程已经打开的端口，所以Worker进程也在监听80和443端口，你可以用lsof命令看到这一点： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx%E8%BF%9B%E7%A8%8B3/"><img src="/2020/12/nginx%E8%BF%9B%E7%A8%8B3.png"></a> </p>
+<p>我们知道，TCP的三次握手是由操作系统完成的。其中，成功建立连接的socket会放入ACCEPT队列，如下图所示： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%8C%E6%88%90%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B/"><img src="/2020/12/%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%8C%E6%88%90%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B.png"></a> </p>
+<p>这样，当Worker进程通过epoll_wait的读事件（Master进程不会执行epoll_wait函数）获取新连接时，就由内核挑选1个Worker进程处理新连接。早期Linux内核的挑选算法很糟糕，特别是1个新连接建立完成时，内核会唤醒所有阻塞在epoll_wait函数上的Worker进程，然而，只有1个Worker进程，可以通过accept函数获取到新连接，其他进程获取失败后重新休眠，这就是曾经广为人知的“惊群”现象。同时，这也很容易造成Worker进程间负载不均衡，由于每个Worker进程绑定1个CPU核心，当部分Worker进程中的并发TCP连接过少时，意味着CPU的计算力被闲置了，所以这也降低了系统的吞吐量。   Nginx早期解决这一问题，在通过应用层accept_mutex锁完成的，在1.11.3版本前它是默认开启的：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">accept_mutex</span> <span class="literal">on</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这把锁的工作原理是这样的：同一时间，通过抢夺accept_mutex锁，只有唯一1个持有锁的Worker进程才能将监听socket添加到epoll中：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (ngx_shmtx_trylock(&amp;ngx_accept_mutex)) &#123;</span><br><span class="line">    <span class="keyword">ngx_listening_t</span>   * ls = cycle-&gt;listening.elts;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">ngx_uint_t</span>  i = <span class="number">0</span>; i &lt; cycle-&gt;listening.nelts; i++) &#123;</span><br><span class="line">        <span class="keyword">ngx_connection_t</span> * c = ls[i].connection;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (ngx_add_event(c-&gt;read, NGX_READ_EVENT, <span class="number">0</span>) == NGX_ERROR) &#123;</span><br><span class="line">            <span class="keyword">return</span> NGX_ERROR;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>这就解决了“惊群”问题，我们再来看负载均衡功能是怎么实现的</strong>。在nginx.conf中可以通过下面这行配置，设定每个Worker进程能够处理的最大并发连接数：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">worker_connections</span> number;</span><br></pre></td></tr></table></figure>
+
+<p>当空闲连接数不足总数的八分之一时，Worker进程会大幅度降低获取accept_mutex锁的概率：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ngx_int_t</span>  ngx_accept_disabled = ngx_cycle-&gt;connection_n / <span class="number">8</span> - ngx_cycle-&gt;free_connection_n;</span><br><span class="line"><span class="keyword">if</span> (ngx_accept_disabled &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    ngx_accept_disabled--;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们还可以通过accept_mutex_delay配置控制负载均衡的执行频率，它的默认值是500毫秒，也就是最多500毫秒后，并发连接数较少的Worker进程会尝试处理新连接：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">accept_mutex_delay</span> <span class="number">500ms</span>;</span><br></pre></td></tr></table></figure>
+
+<p>当然，在1.11.3版本后，Nginx默认关闭了accept_mutex锁，这是因为操作系统提供了reuseport（Linux3.9版本后才提供这一功能）这个更好的解决方案。我们先来看一下处理新连接的性能对比图： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx-reuseport/"><img src="/2020/12/nginx-reuseport.png"></a> </p>
+<p>上图中，横轴中的default项开启了accept_mutex锁。可以看到，使用reuseport后，QPS吞吐量有了3倍的提高，同时处理时延有明显的下降，特别是时延的波动（蓝色的标准差线）有大幅度的下降。 reuseport能够做到这么高的性能，是因为内核为每个Worker进程都建立了独立的ACCEPT队列，由内核将建立好的连接按负载分发到各队列中，如下图所示： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/reuseport%E5%8E%9F%E7%90%86/"><img src="/2020/12/reuseport%E5%8E%9F%E7%90%86.png"></a> </p>
+<p>这样，Worker进程的执行效率就高了很多！如果你想开启reuseport功能，只需要在listen指令后添加reuseport选项即可： <a href="/2020/12/14/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/nginx-conf-reuseport/"><img src="/2020/12/nginx-conf-reuseport.png"></a> </p>
+<p>当然，Master/Worker进程架构带来的好处还有热加载与热升级。在<a target="_blank" rel="noopener" href="https://www.nginx-cn.net/article/70">https://www.nginx-cn.net/article/70</a>这篇文章中，我对这一流程有详细的介绍。  </p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>  最后对本文的内容做个总结。 材料、散热这些基础科技没有获得重大突破前，CPU频率很难增长，类似Redis、NodeJS这样的单进程、单线程高并发服务，只能向分布式集群方向发展，才能继续提升性能。Nginx通过Master/Worker多进程架构，可以充分使用服务器上百个CPU核心，实现C10M。 </p>
+<p>为了榨干多核CPU的价值，Nginx无所不用其极：通过绑定CPU提升二级缓存的命中率，通过静态优先级扩大时间片，通过多种手段均衡Worker进程之间的负载，在独立线程池中隔离阻塞的IO操作，等等。可见，高性能既来自于架构，更来自于细节。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2018\09\19\nginx\分享我在第十届gops的ppt《百万并发下nginx的优化之道》\" rel="bookmark">分享我在第十届GOPS的PPT《百万并发下Nginx的优化之道》</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/" title="都是事件驱动，为什么Nginx的性能远高于Redis？">https://www.taohui.tech/2020/12/14/nginx/都是事件驱动，为什么nginx的性能远高于redis？/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/C10M/" rel="tag"># C10M</a>
+              <a href="/tags/cpu%E7%BB%91%E5%AE%9A/" rel="tag"># cpu绑定</a>
+              <a href="/tags/redis/" rel="tag"># redis</a>
+              <a href="/tags/reuseport/" rel="tag"># reuseport</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/" rel="prev" title="在这里，NGINX 创始人 Igor Sysoev 将亲述 NGINX 的诞生史">
+      <i class="fa fa-chevron-left"></i> 在这里，NGINX 创始人 Igor Sysoev 将亲述 NGINX 的诞生史
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/" rel="next" title="10分钟快速认识Nginx">
+      10分钟快速认识Nginx <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%85%85%E5%88%86%E4%BD%BF%E7%94%A8%E5%A4%9A%E6%A0%B8CPU%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">如何充分使用多核CPU？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Worker%E8%BF%9B%E7%A8%8B%E9%97%B4%E6%98%AF%E5%A6%82%E4%BD%95%E5%8D%8F%E5%90%8C%E5%A4%84%E7%90%86%E8%AF%B7%E6%B1%82%E7%9A%84%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">Worker进程间是如何协同处理请求的？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

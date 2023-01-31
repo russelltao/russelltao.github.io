@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在上一篇中，我们已经建立好的TCP连接，对应着操作系统分配的1个套接字。操作TCP协议发送数据时，面对的是数据流。通常调用诸如send或者write方法来发送数据到另一台主机，那么，调用这样的方法时，在操作系统内核中发生了什么事情呢？我们带着以下3个问题来细细分析：发送方法成功返回时，能保证TCP另一端的主机接收到吗？能保证数据已经发送到网络上了吗？套接字为阻塞或者非阻塞时，发送方法做的事情有何不">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能网络编程2----TCP消息的发送">
+<meta property="og:url" content="https://www.taohui.tech/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="在上一篇中，我们已经建立好的TCP连接，对应着操作系统分配的1个套接字。操作TCP协议发送数据时，面对的是数据流。通常调用诸如send或者write方法来发送数据到另一台主机，那么，调用这样的方法时，在操作系统内核中发生了什么事情呢？我们带着以下3个问题来细细分析：发送方法成功返回时，能保证TCP另一端的主机接收到吗？能保证数据已经发送到网络上了吗？套接字为阻塞或者非阻塞时，发送方法做的事情有何不">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/TCP%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B-1-2-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/TCP%E6%B6%88%E6%81%AF%E7%9A%84%E7%AE%80%E6%98%93%E6%B5%81%E7%A8%8B-1.jpg">
+<meta property="article:published_time" content="2016-01-25T03:14:12.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.905Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="tcp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2016/01/TCP%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B-1-2-1.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高性能网络编程2----TCP消息的发送 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高性能网络编程2----TCP消息的发送
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-25 11:14:12" itemprop="dateCreated datePublished" datetime="2016-01-25T11:14:12+08:00">2016-01-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在<a target="_blank" rel="noopener" href="http://blog.csdn.net/russell_tao/article/details/9111769">上一篇</a>中，我们已经建立好的TCP连接，对应着操作系统分配的1个套接字。操作TCP协议发送数据时，面对的是数据流。通常调用诸如send或者write方法来发送数据到另一台主机，那么，调用这样的方法时，在操作系统内核中发生了什么事情呢？我们带着以下3个问题来细细分析：发送方法成功返回时，能保证TCP另一端的主机接收到吗？能保证数据已经发送到网络上了吗？套接字为阻塞或者非阻塞时，发送方法做的事情有何不同？</p>
+<p>要回答上面3个问题涉及了不少知识点，我们先在TCP层面上看看，发送方法调用时内核做了哪些事。我不想去罗列内核中的数据结构、方法等，毕竟大部分应用程序开发者不需要了解这些，仅以一幅示意图粗略表示，如下：</p>
+<p> <img src="/2016/01/TCP%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B-1-2-1.jpg"></p>
+<p>图1 一种典型场景下发送TCP消息的流程</p>
+<span id="more"></span>
+<p>再详述上图10个步骤前，先要澄清几个概念：MTU、MSS、tcp_write_queue发送队列、阻塞与非阻塞套接字、拥塞窗口、滑动窗口、Nagle算法。</p>
+<p>当我们调用发送方法时，会把我们代码中构造好的消息流作为参数传递。这个消息流可大可小，例如几个字节，或者几兆字节。当消息流较大时，将有可能出现分片。我们先来讨论分片问题。</p>
+<p>1、MSS与TCP的分片</p>
+<p>由上一篇文中可知，TCP层是第4层传输层，第3层IP网络层、第2层数据链路层具备的约束条件同样对TCP层生效。下面来看看数据链路层中的一个概念：最大传输单元MTU。</p>
+<p>无论何种类型的数据链路层，都会对网络分组的长度有一个限制。例如以太网限制为1500字节，802.3限制为1492字节。当内核的IP网络层试图发送报文时，若一个报文的长度大于MTU限制，就会被分成若干个小于MTU的报文，每个报文都会有独立的IP头部。</p>
+<p>看看IP头部的格式：</p>
+<p>图2 IP头部格式</p>
+<p>可以看到，其指定IP包总长度的是一个16位（2字节）的字段，这意味一个IP包最大可以是65535字节。</p>
+<p>若TCP层在以太网中试图发送一个大于1500字节的消息，调用IP网络层方法发送消息时，IP层会自动的获取所在局域网的MTU值，并按照所在网络的MTU大小来分片。IP层同时希望这个分片对于传输层来说是透明的，接收方的IP层会根据收到的多个IP包头部，将发送方IP层分片出的IP包重组为一个消息。</p>
+<p>这种IP层的分片效率是很差的，因为必须所有分片都到达才能重组成一个包，其中任何一个分片丢失了，都必须重发所有分片。所以，TCP层会试图避免IP层执行数据报分片。</p>
+<p>为了避免IP层的分片，TCP协议定义了一个新的概念：最大报文段长度MSS。它定义了一个TCP连接上，一个主机期望对端主机发送单个报文的最大长度。TCP3次握手建立连接时，连接双方都要互相告知自己期望接收到的MSS大小。例如（使用tcpdump抓包）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">15:05:08.230782 IP 10.7.80.57.64569 &gt; houyi-vm02.dev.sd.aliyun.com.tproxy: S 3027092051:3027092051(0) win 8192 &lt;mss 1460,nop,wscale 8,nop,nop,sackOK&gt;</span><br><span class="line">15:05:08.234267 IP houyi-vm02.dev.sd.aliyun.com.tproxy &gt; 10.7.80.57.64569: S 26006838:26006838(0) ack 3027092052 win 5840 &lt;mss 1460,nop,nop,sackOK,nop,wscale 9&gt;</span><br><span class="line">15:05:08.233320 IP 10.7.80.57.64543 &gt; houyi-vm02.dev.sd.aliyun.com.tproxy: P 78972532:78972923(391) ack 12915963 win 255</span><br></pre></td></tr></table></figure>
+
+<p>由于例子中两台主机都在以太网内，以太网的MTU为1500，减去IP和TCP头部的长度，MSS就是1460，三次握手中，SYN包都会携带期望的MSS大小。</p>
+<p>当应用层调用TCP层提供的发送方法时，内核的TCP模块在tcp_sendmsg方法里，会按照对方告知的MSS来分片，把消息流分为多个网络分组（如图1中的3个网络分组），再调用IP层的方法发送数据。</p>
+<p>这个MSS就不会改变了吗？</p>
+<p>会的。上文说过，MSS就是为了避免IP层分片，在建立握手时告知对方期望接收的MSS值并不一定靠得住。因为这个值是预估的，TCP连接上的两台主机若处于不同的网络中，那么，连接上可能有许多中间网络，这些网络分别具有不同的数据链路层，这样，TCP连接上有许多个MTU。特别是，若中间途径的MTU小于两台主机所在的网络MTU时，选定的MSS仍然太大了，会导致中间路由器出现IP层的分片。</p>
+<p>怎样避免中间网络可能出现的分片呢？</p>
+<p>通过IP头部的DF标志位，这个标志位是告诉IP报文所途经的所有IP层代码：不要对这个报文分片。如果一个IP报文太大必须要分片，则直接返回一个ICMP错误，说明必须要分片了，且待分片路由器网络接受的MTU值。这样，连接上的发送方主机就可以重新确定MSS。</p>
+<p>2、发送方法返回成功后，数据一定发送到了TCP的另一端吗？</p>
+<p>答案当然是否定的。解释这个问题前，先来看看TCP是如何保证可靠传输的。</p>
+<p>TCP把自己要发送的数据流里的每一个字节都看成一个序号，可靠性是要求连接对端在接收到数据后，要发送ACK确认，告诉它已经接收到了多少字节的数据。也就是说，怎样确保数据一定发送成功了呢？必须等待发送数据对应序号的ACK到达，才能确保数据一定发送成功。TCP层提供的send或者write这样的方法是不会做这件事的，看看图1，它究竟做了哪些事。</p>
+<p>图1中分为10步。</p>
+<p>（1）应用程序试图调用send方法来发送一段较长的数据。</p>
+<p>（2）内核主要通过tcp_sendmsg方法来完成。</p>
+<p>（3）（4）内核真正执行报文的发送，与send方法的调用并不是同步的。即，send方法返回成功了，也不一定把IP报文都发送到网络中了。因此，需要把用户需要发送的用户态内存中的数据，拷贝到内核态内存中，不依赖于用户态内存，也使得进程可以快速释放发送数据占用的用户态内存。但这个拷贝操作并不是简单的复制，而是把待发送数据，按照MSS来划分成多个尽量达到MSS大小的分片报文段，复制到内核中的sk_buff结构来存放，同时把这些分片组成队列，放到这个TCP连接对应的tcp_write_queue发送队列中。</p>
+<p>（5）内核中为这个TCP连接分配的内核缓存是有限的（/proc/sys/net/core/wmem_default）。当没有多余的内核态缓存来复制用户态的待发送数据时，就需要调用一个方法sk_stream_wait_memory来等待滑动窗口移动，释放出一些缓存出来（收到ACK后，不需要再缓存原来已经发送出的报文，因为既然已经确认对方收到，就不需要定时重发，自然就释放缓存了）。例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">wait_for_memory:  </span><br><span class="line">            <span class="keyword">if</span> (copied)  </span><br><span class="line">                tcp_push(sk, tp, flags &amp; ~MSG_MORE, mss_now, TCP_NAGLE_PUSH);  </span><br><span class="line">  </span><br><span class="line">            <span class="keyword">if</span> ((err = sk_stream_wait_memory(sk, &amp;timeo)) != <span class="number">0</span>)  </span><br><span class="line">                <span class="keyword">goto</span> do_error;  </span><br></pre></td></tr></table></figure>
+
+<p>这里的sk_stream_wait_memory方法接受一个参数timeo，就是等待超时的时间。这个时间是tcp_sendmsg方法刚开始就拿到的，如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">timeo = sock_sndtimeo(sk, flags &amp; MSG_DONTWAIT);  </span><br></pre></td></tr></table></figure>
+
+<p>看看其实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">long</span> <span class="title">sock_sndtimeo</span><span class="params">(<span class="keyword">const</span> struct sock *sk, <span class="keyword">int</span> noblock)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">return</span> noblock ? <span class="number">0</span> : sk-&gt;sk_sndtimeo;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>也就是说，当这个套接字是阻塞套接字时，timeo就是SO_SNDTIMEO选项指定的发送超时时间。如果这个套接字是非阻塞套接字， timeo变量就会是0。</p>
+<p>实际上，sk_stream_wait_memory对于非阻塞套接字会直接返回，并将 errno错误码置为EAGAIN。</p>
+<p>（6）在图1的例子中，我们假定使用了阻塞套接字，且等待了足够久的时间，收到了对方的ACK，滑动窗口释放出了缓存。</p>
+<p>（7）将剩下的用户态数据都组成MSS报文拷贝到内核态的sk_buff中。</p>
+<p>（8）最后，调用tcp_push等方法，它最终会调用IP层的方法来发送tcp_write_queue队列中的报文。</p>
+<p>注意，IP层返回时，并不一定是把报文发送了出去。</p>
+<p>（9）（10）发送方法返回。</p>
+<p>从图1的10个步骤中可知，无论是使用阻塞还是非阻塞套接字，发送方法成功返回时（无论全部成功或者部分成功），既不代表TCP连接的另一端主机接收到了消息，也不代表本机把消息发送到了网络上，只是说明，内核将会试图保证把消息送达对方。</p>
+<p>3、Nagle算法、滑动窗口、拥塞窗口对发送方法的影响</p>
+<p>图1第8步tcp_push方法做了些什么呢？先来看看主要的流程：</p>
+<p><img src="/2016/01/TCP%E6%B6%88%E6%81%AF%E7%9A%84%E7%AE%80%E6%98%93%E6%B5%81%E7%A8%8B-1.jpg"></p>
+<p>图3 发送TCP消息的简易流程</p>
+<p>下面简单看看这几个概念：</p>
+<p>（1）滑动窗口</p>
+<p>滑动窗口大家都比较熟悉，就不详细介绍了。TCP连接上的双方都会通知对方自己的接收窗口大小。而对方的接收窗口大小就是自己的发送窗口大小。tcp_push在发送数据时当然需要与发送窗口打交道。发送窗口是一个时刻变化的值，随着ACK的到达会变大，随着发出新的数据包会变小。当然，最大也只能到三次握手时对方通告的窗口大小。tcp_push在发送数据时，最终会使用tcp_snd_wnd_test方法来判断当前待发送的数据，其序号是否超出了发送滑动窗口的大小，例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//检查这一次要发送的报文最大序号是否超出了发送滑动窗口大小  </span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">tcp_snd_wnd_test</span><span class="params">(struct tcp_sock *tp, struct sk_buff *skb, <span class="keyword">unsigned</span> <span class="keyword">int</span> cur_mss)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">        <span class="comment">//end_seq待发送的最大序号  </span></span><br><span class="line">    u32 end_seq = TCP_SKB_CB(skb)-&gt;end_seq;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (skb-&gt;len &gt; cur_mss)  </span><br><span class="line">        end_seq = TCP_SKB_CB(skb)-&gt;seq + cur_mss;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//snd_una是已经发送过的数据中，最小的没被确认的序号；而snd_wnd就是发送窗口的大小  </span></span><br><span class="line">    <span class="keyword">return</span> !after(end_seq, tp-&gt;snd_una + tp-&gt;snd_wnd);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>（2）慢启动和拥塞窗口</p>
+<p>由于两台主机间的网络可能很复杂，通过广域网时，中间的路由器转发能力可能是瓶颈。也就是说，如果一方简单的按照另一方主机三次握手时通告的滑动窗口大小来发送数据的话，可能会使得网络上的转发路由器性能雪上加霜，最终丢失更多的分组。这时，各个操作系统内核都会对TCP的发送阶段加入慢启动和拥塞避免算法。慢启动算法说白了，就是对方通告的窗口大小只表示对方接收TCP分组的能力，不表示中间网络能够处理分组的能力。所以，发送方请悠着点发，确保网络非常通畅了后，再按照对方通告窗口来敞开了发。</p>
+<p>拥塞窗口就是下面的cwnd，它用来帮助慢启动的实现。连接刚建立时，拥塞窗口的大小远小于发送窗口，它实际上是一个MSS。每收到一个ACK，拥塞窗口扩大一个MSS大小，当然，拥塞窗口最大只能到对方通告的接收窗口大小。当然，为了避免指数式增长，拥塞窗口大小的增长会更慢一些，是线性的平滑的增长过程。</p>
+<p>所以，在tcp_push发送消息时，还会检查拥塞窗口，飞行中的报文数要小于拥塞窗口个数，而发送数据的长度也要小于拥塞窗口的长度。</p>
+<p>如下所示，首先用unsigned int tcp_cwnd_test方法检查飞行的报文数是否小于拥塞窗口个数（多少个MSS的个数）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">tcp_cwnd_test</span><span class="params">(struct tcp_sock *tp, struct sk_buff *skb)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    u32 in_flight, cwnd;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">/* Don&#x27;t be strict about the congestion window for the final FIN.  */</span>  </span><br><span class="line">    <span class="keyword">if</span> (TCP_SKB_CB(skb)-&gt;flags &amp; TCPCB_FLAG_FIN)  </span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//飞行中的数据，也就是没有ACK的字节总数  </span></span><br><span class="line">    in_flight = tcp_packets_in_flight(tp);  </span><br><span class="line">    cwnd = tp-&gt;snd_cwnd;  </span><br><span class="line">        <span class="comment">//如果拥塞窗口允许，需要返回依据拥塞窗口的大小，还能发送多少字节的数据  </span></span><br><span class="line">    <span class="keyword">if</span> (in_flight &lt; cwnd)  </span><br><span class="line">        <span class="keyword">return</span> (cwnd - in_flight);  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>再通过tcp_window_allows方法获取拥塞窗口与滑动窗口的最小长度，检查待发送的数据是否超出：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">tcp_window_allows</span><span class="params">(struct tcp_sock *tp, struct sk_buff *skb, <span class="keyword">unsigned</span> <span class="keyword">int</span> mss_now, <span class="keyword">unsigned</span> <span class="keyword">int</span> cwnd)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    u32 window, cwnd_len;  </span><br><span class="line">  </span><br><span class="line">    window = (tp-&gt;snd_una + tp-&gt;snd_wnd - TCP_SKB_CB(skb)-&gt;seq);  </span><br><span class="line">    cwnd_len = mss_now * cwnd;  </span><br><span class="line">    <span class="keyword">return</span> min(window, cwnd_len);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>（3）是否符合NAGLE算法？</p>
+<p>Nagle算法的初衷是这样的：应用进程调用发送方法时，可能每次只发送小块数据，造成这台机器发送了许多小的TCP报文。对于整个网络的执行效率来说，小的TCP报文会增加网络拥塞的可能，因此，如果有可能，应该将相临的TCP报文合并成一个较大的TCP报文（当然还是小于MSS的）发送。</p>
+<p>Nagle算法要求一个TCP连接上最多只能有一个发送出去还没被确认的小分组，在该分组的确认到达之前不能发送其他的小分组。</p>
+<p>内核中是通过 tcp_nagle_test方法实现该算法的。我们简单的看下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">tcp_nagle_test</span><span class="params">(struct tcp_sock *tp, struct sk_buff *skb,  </span></span></span><br><span class="line"><span class="function"><span class="params">                 <span class="keyword">unsigned</span> <span class="keyword">int</span> cur_mss, <span class="keyword">int</span> nonagle)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="comment">//nonagle标志位设置了，返回1表示允许这个分组发送出去  </span></span><br><span class="line">    <span class="keyword">if</span> (nonagle &amp; TCP_NAGLE_PUSH)  </span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//如果这个分组包含了四次握手关闭连接的FIN包，也可以发送出去  </span></span><br><span class="line">    <span class="keyword">if</span> (tp-&gt;urg_mode   </span><br><span class="line">        (TCP_SKB_CB(skb)-&gt;flags &amp; TCPCB_FLAG_FIN))  </span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//检查Nagle算法  </span></span><br><span class="line">    <span class="keyword">if</span> (!tcp_nagle_check(tp, skb, cur_mss, nonagle))  </span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>再来看看tcp_nagle_check方法，它与上一个方法不同，返回0表示可以发送，返回非0则不可以，正好相反。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">tcp_nagle_check</span><span class="params">(<span class="keyword">const</span> struct tcp_sock *tp,  </span></span></span><br><span class="line"><span class="function"><span class="params">                  <span class="keyword">const</span> struct sk_buff *skb,   </span></span></span><br><span class="line"><span class="function"><span class="params">                  <span class="keyword">unsigned</span> mss_now, <span class="keyword">int</span> nonagle)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">        <span class="comment">//先检查是否为小分组，即报文长度是否小于MSS  </span></span><br><span class="line">    <span class="keyword">return</span> (skb-&gt;len &lt; mss_now &amp;&amp;  </span><br><span class="line">        ((nonagle&amp;TCP_NAGLE_CORK)   </span><br><span class="line">        <span class="comment">//如果开启了Nagle算法  </span></span><br><span class="line">         (!nonagle &amp;&amp;  </span><br><span class="line">        <span class="comment">//若已经有小分组发出（packets_out表示“飞行”中的分组）还没有确认  </span></span><br><span class="line">          tp-&gt;packets_out &amp;&amp;  </span><br><span class="line">          tcp_minshall_check(tp))));  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>最后看看tcp_minshall_check做了些什么：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">tcp_minshall_check</span><span class="params">(<span class="keyword">const</span> struct tcp_sock *tp)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">        <span class="comment">//最后一次发送的小分组还没有被确认  </span></span><br><span class="line">    <span class="keyword">return</span> after(tp-&gt;snd_sml,tp-&gt;snd_una) &amp;&amp;  </span><br><span class="line">                <span class="comment">//将要发送的序号是要大于等于上次发送分组对应的序号  </span></span><br><span class="line">        !after(tp-&gt;snd_sml, tp-&gt;snd_nxt);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>想象一种场景，当对请求的时延非常在意且网络环境非常好的时候（例如同一个机房内），Nagle算法可以关闭，这实在也没必要。使用TCP_NODELAY套接字选项就可以关闭Nagle算法。看看setsockopt是怎么与上述方法配合工作的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">do_tcp_setsockopt</span><span class="params">(struct sock *sk, <span class="keyword">int</span> level,  </span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> optname, <span class="keyword">char</span> __user *optval, <span class="keyword">int</span> optlen)</span>  </span></span><br><span class="line"><span class="function">        ...  </span></span><br><span class="line"><span class="function">    <span class="title">switch</span> <span class="params">(optname)</span> </span>&#123;  </span><br><span class="line">        ...  </span><br><span class="line">    <span class="keyword">case</span> TCP_NODELAY:  </span><br><span class="line">        <span class="keyword">if</span> (val) &#123;  </span><br><span class="line">                        <span class="comment">//如果设置了TCP_NODELAY，则更新nonagle标志  </span></span><br><span class="line">            tp-&gt;nonagle = TCP_NAGLE_OFFTCP_NAGLE_PUSH;  </span><br><span class="line">            tcp_push_pending_frames(sk, tp);  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">            tp-&gt;nonagle &amp;= ~TCP_NAGLE_OFF;  </span><br><span class="line">        &#125;  </span><br><span class="line">        <span class="keyword">break</span>;  </span><br><span class="line">        &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>可以看到，nonagle标志位就是这么更改的。</p>
+<p>当然，调用了IP层的方法返回后，也未必就保证此时数据一定发送到网络中去了。</p>
+<p>下一篇我们探讨如何接收TCP消息，以及接收到ack后内核做了些什么。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/" title="高性能网络编程2----TCP消息的发送">https://www.taohui.tech/2016/01/25/网络协议/高性能网络编程2-tcp消息的发送/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89-accept%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5/" rel="prev" title="高性能网络编程（一）----accept建立连接">
+      <i class="fa fa-chevron-left"></i> 高性能网络编程（一）----accept建立连接
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/01/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/" rel="next" title="高性能网络编程3----TCP消息的接收">
+      高性能网络编程3----TCP消息的接收 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

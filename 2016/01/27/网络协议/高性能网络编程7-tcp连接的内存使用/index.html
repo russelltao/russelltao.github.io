@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="当服务器的并发TCP连接数以十万计时，我们就会对一个TCP连接在操作系统内核上消耗的内存多少感兴趣。socket编程方法提供了SO_SNDBUF、SO_RCVBUF这样的接口来设置连接的读写缓存，linux上还提供了以下系统级的配置来整体设置服务器上的TCP内存使用，但这些配置看名字却有些互相冲突、概念模糊的感觉，如下（sysctl -a命令可以查看这些配置）： 1234567net.ipv4.t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能网络编程7--tcp连接的内存使用">
+<meta property="og:url" content="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B7-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="当服务器的并发TCP连接数以十万计时，我们就会对一个TCP连接在操作系统内核上消耗的内存多少感兴趣。socket编程方法提供了SO_SNDBUF、SO_RCVBUF这样的接口来设置连接的读写缓存，linux上还提供了以下系统级的配置来整体设置服务器上的TCP内存使用，但这些配置看名字却有些互相冲突、概念模糊的感觉，如下（sysctl -a命令可以查看这些配置）： 1234567net.ipv4.t">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/BGP-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/tcpmemory-1-1.jpg">
+<meta property="og:image" content="file:///C:/Users/hui.taoh/AppData/Local/YNote/Data/iamtaohui%40126.com/b85c6327387d42eea2f188924cd51024/clipboard.png">
+<meta property="article:published_time" content="2016-01-27T07:45:16.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.911Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="BDP">
+<meta property="article:tag" content="tcp_rmem">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/01/BGP-1.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B7-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高性能网络编程7--tcp连接的内存使用 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B7-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高性能网络编程7--tcp连接的内存使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-27 15:45:16" itemprop="dateCreated datePublished" datetime="2016-01-27T15:45:16+08:00">2016-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>当服务器的并发TCP连接数以十万计时，我们就会对一个TCP连接在操作系统内核上消耗的内存多少感兴趣。socket编程方法提供了SO_SNDBUF、SO_RCVBUF这样的接口来设置连接的读写缓存，linux上还提供了以下系统级的配置来整体设置服务器上的TCP内存使用，但这些配置看名字却有些互相冲突、概念模糊的感觉，如下（sysctl -a命令可以查看这些配置）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">net.ipv4.tcp_rmem &#x3D; 8192 87380 16777216  </span><br><span class="line">net.ipv4.tcp_wmem &#x3D; 8192 65536 16777216  </span><br><span class="line">net.ipv4.tcp_mem &#x3D; 8388608 12582912 16777216  </span><br><span class="line">net.core.rmem_default &#x3D; 262144  </span><br><span class="line">net.core.wmem_default &#x3D; 262144  </span><br><span class="line">net.core.rmem_max &#x3D; 16777216  </span><br><span class="line">net.core.wmem_max &#x3D; 16777216  </span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<p>还有一些较少被提及的、也跟TCP内存相关的配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">net.ipv4.tcp_moderate_rcvbuf &#x3D; 1  </span><br><span class="line">net.ipv4.tcp_adv_win_scale &#x3D; 2  </span><br></pre></td></tr></table></figure>
+
+<p>（注：为方便下文讲述，介绍以上系统配置时前缀省略掉，配置值以空格分隔的多个数字以数组来称呼，例如tcp_rmem[2]表示上面第一行最后一列16777216。）</p>
+<p>网上可以找到很多这些系统配置项的说明，然而往往还是让人费解，例如，tcp_rmem[2]和rmem_max似乎都跟接收缓存最大值有关，但它们却可以不一致，究竟有什么区别？或者tcp_wmem[1]和wmem_default似乎都表示发送缓存的默认值，冲突了怎么办？在用抓包软件抓到的syn握手包里，为什么TCP接收窗口大小似乎与这些配置完全没关系？</p>
+<p>TCP连接在进程中使用的内存大小千变万化，通常程序较复杂时可能不是直接基于socket编程，这时平台级的组件可能就封装了TCP连接使用到的用户态内存。不同的平台、组件、中间件、网络库都大不相同。而内核态为TCP连接分配内存的算法则是基本不变的，这篇文章将试图说明TCP连接在内核态中会使用多少内存，操作系统使用怎样的策略来平衡宏观的吞吐量与微观的某个连接传输速度。这篇文章也将一如既往的面向应用程序开发者，而不是系统级的内核开发者，所以，不会详细的介绍为了一个TCP连接、一个TCP报文操作系统分配了多少字节的内存，内核级的数据结构也不是本文的关注点，这些也不是应用级程序员的关注点。这篇文章主要描述linux内核为了TCP连接上传输的数据是怎样管理读写缓存的。</p>
+<p>一、缓存上限是什么？</p>
+<p>（1）先从应用程序编程时可以设置的SO_SNDBUF、SO_RCVBUF说起。</p>
+<p>无论何种语言，都对TCP连接提供基于setsockopt方法实现的SO_SNDBUF、SO_RCVBUF，怎么理解这两个属性的意义呢？</p>
+<p>SO_SNDBUF、SO_RCVBUF都是个体化的设置，即，只会影响到设置过的连接，而不会对其他连接生效。SO_SNDBUF表示这个连接上的内核写缓存上限。实际上，进程设置的SO_SNDBUF也并不是真的上限，在内核中会把这个值翻一倍再作为写缓存上限使用，我们不需要纠结这种细节，只需要知道，当设置了SO_SNDBUF时，就相当于划定了所操作的TCP连接上的写缓存能够使用的最大内存。然而，这个值也不是可以由着进程随意设置的，它会受制于系统级的上下限，当它大于上面的系统配置wmem_max（net.core.wmem_max）时，将会被wmem_max替代（同样翻一倍）；而当它特别小时，例如在2.6.18内核中设计的写缓存最小值为2K字节，此时也会被直接替代为2K。</p>
+<p>SO_RCVBUF表示连接上的读缓存上限，与SO_SNDBUF类似，它也受制于rmem_max配置项，实际在内核中也是2倍大小作为读缓存的使用上限。SO_RCVBUF设置时也有下限，同样在2.6.18内核中若这个值小于256字节就会被256所替代。</p>
+<p>（2）那么，可以设置的SO_SNDBUF、SO_RCVBUF缓存使用上限与实际内存到底有怎样的关系呢？</p>
+<p>TCP连接所用内存主要由读写缓存决定，而读写缓存的大小只与实际使用场景有关，在实际使用未达到上限时，SO_SNDBUF、SO_RCVBUF是不起任何作用的。对读缓存来说，接收到一个来自连接对端的TCP报文时，会导致读缓存增加，当然，如果加上报文大小后读缓存已经超过了读缓存上限，那么这个报文会被丢弃从而读缓存大小维持不变。什么时候读缓存使用的内存会减少呢？当进程调用read、recv这样的方法读取TCP流时，读缓存就会减少。因此，读缓存是一个动态变化的、实际用到多少才分配多少的缓冲内存，当这个连接非常空闲时，且用户进程已经把连接上接收到的数据都消费了，那么读缓存使用内存就是0。</p>
+<p>写缓存也是同样道理。当用户进程调用send或者write这样的方法发送TCP流时，就会造成写缓存增大。当然，如果写缓存已经到达上限，那么写缓存维持不变，向用户进程返回失败。而每当接收到TCP连接对端发来的ACK确认了报文的成功发送时，写缓存就会减少，这是因为TCP的可靠性决定的，发出去报文后由于担心报文丢失而不会销毁它，可能会由重发定时器来重发报文。因此，写缓存也是动态变化的，空闲的正常连接上，写缓存所用内存通常也为0。</p>
+<p>因此，只有当接收网络报文的速度大于应用程序读取报文的速度时，可能使读缓存达到了上限，这时这个缓存使用上限才会起作用。所起作用为：丢弃掉新收到的报文，防止这个TCP连接消耗太多的服务器资源。同样，当应用程序发送报文的速度大于接收对方确认ACK报文的速度时，写缓存可能达到上限，从而使send这样的方法失败，内核不为其分配内存。</p>
+<p>二、缓存的大小与TCP的滑动窗口到底有什么关系？</p>
+<p>（1）滑动窗口的大小与缓存大小肯定是有关的，但却不是一一对应的关系，更不会与缓存上限具有一一对应的关系。因此，网上很多资料介绍rmem_max等配置设置了滑动窗口的最大值，与我们tcpdump抓包时看到的win窗口值完全不一致，是讲得通的。下面我们来细探其分别在哪里。</p>
+<p>读缓存的作用有2个：1、将无序的、落在接收滑动窗口内的TCP报文缓存起来；2、当有序的、可以供应用程序读取的报文出现时，由于应用程序的读取是延时的，所以会把待应用程序读取的报文也保存在读缓存中。所以，读缓存一分为二，一部分缓存无序报文，一部分缓存待延时读取的有序报文。这两部分缓存大小之和由于受制于同一个上限值，所以它们是会互相影响的，当应用程序读取速率过慢时，这块过大的应用缓存将会影响到套接字缓存，使接收滑动窗口缩小，从而通知连接的对端降低发送速度，避免无谓的网络传输。当应用程序长时间不读取数据，造成应用缓存将套接字缓存挤压到没空间，那么连接对端会收到接收窗口为0的通知，告诉对方：我现在消化不了更多的报文了。</p>
+<p>反之，接收滑动窗口也是一直在变化的，我们用tcpdump抓三次握手的报文：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">14:49:52.421674 IP houyi-vm02.dev.sd.aliyun.com.6400 &gt; r14a02001.dg.tbsite.net.54073: S 2736789705:2736789705(0) ack 1609024383 win 5792 &lt;mss 1460,sackOK,timestamp 2925954240 2940689794,nop,wscale 9&gt;  </span><br></pre></td></tr></table></figure>
+
+<p>可以看到初始的接收窗口是5792，当然也远小于最大接收缓存（稍后介绍的tcp_rmem[1]）。</p>
+<p>这当然是有原因的，TCP协议需要考虑复杂的网络环境，所以使用了慢启动、拥塞窗口（参见<a target="_blank" rel="noopener" href="http://blog.csdn.net/russell_tao/article/details/9370109">高性能网络编程2—-TCP消息的发送</a>），建立连接时的初始窗口并不会按照接收缓存的最大值来初始化。这是因为，过大的初始窗口从宏观角度，对整个网络可能造成过载引发恶性循环，也就是考虑到链路上各环节的诸多路由器、交换机可能扛不住压力不断的丢包（特别是广域网），而微观的TCP连接的双方却只按照自己的读缓存上限作为接收窗口，这样双方的发送窗口（对方的接收窗口）越大就对网络产生越坏的影响。慢启动就是使初始窗口尽量的小，随着接收到对方的有效报文，确认了网络的有效传输能力后，才开始增大接收窗口。</p>
+<p>不同的linux内核有着不同的初始窗口，我们以广为使用的linux2.6.18内核为例，在以太网里，MSS大小为1460，此时初始窗口大小为4倍的MSS，简单列下代码（*rcv_wnd即初始接收窗口）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> init_cwnd = <span class="number">4</span>;  </span><br><span class="line"><span class="keyword">if</span> (mss &gt; <span class="number">1460</span>*<span class="number">3</span>)  </span><br><span class="line"> init_cwnd = <span class="number">2</span>;  </span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> (mss &gt; <span class="number">1460</span>)  </span><br><span class="line"> init_cwnd = <span class="number">3</span>;  </span><br><span class="line"><span class="keyword">if</span> (*rcv_wnd &gt; init_cwnd*mss)  </span><br><span class="line"> *rcv_wnd = init_cwnd*mss;  </span><br></pre></td></tr></table></figure>
+
+<p>大家可能要问，为何上面的抓包上显示窗口其实是5792，并不是1460*4为5840呢？这是因为1460想表达的意义是：将1500字节的MTU去除了20字节的IP头、20字节的TCP头以后，一个最大报文能够承载的有效数据长度。但有些网络中，会在TCP的可选头部里，使用12字节作为时间戳使用，这样，有效数据就是MSS再减去12，初始窗口就是（1460-12）*4=5792，这与窗口想表达的含义是一致的，即：我能够处理的有效数据长度。</p>
+<p>在linux3以后的版本中，初始窗口调整到了10个MSS大小，这主要来自于GOOGLE的建议。原因是这样的，接收窗口虽然常以指数方式来快速增加窗口大小（拥塞阀值以下是指数增长的，阀值以上进入拥塞避免阶段则为线性增长，而且，拥塞阀值自身在收到128以上数据报文时也有机会快速增加），若是传输视频这样的大数据，那么随着窗口增加到（接近）最大读缓存后，就会“开足马力”传输数据，但若是通常都是几十KB的网页，那么过小的初始窗口还没有增加到合适的窗口时，连接就结束了。这样相比较大的初始窗口，就使得用户需要更多的时间（RTT）才能传输完数据，体验不好。</p>
+<p>那么这时大家可能有疑问，当窗口从初始窗口一路扩张到最大接收窗口时，最大接收窗口就是最大读缓存吗？</p>
+<p>不是，因为必须分一部分缓存用于应用程序的延时报文读取。到底会分多少出来呢？这是可配的系统选项，如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.ipv4.tcp_adv_win_scale &#x3D; 2  </span><br></pre></td></tr></table></figure>
+
+<p>这里的tcp_adv_win_scale意味着，将要拿出1/(2^tcp_adv_win_scale)缓存出来做应用缓存。即，默认tcp_adv_win_scale配置为2时，就是拿出至少1/4的内存用于应用读缓存，那么，最大的接收滑动窗口的大小只能到达读缓存的3/4。</p>
+<p>（2）最大读缓存到底应该设置到多少为合适呢？</p>
+<p>当应用缓存所占的份额通过tcp_adv_win_scale配置确定后，读缓存的上限应当由最大的TCP接收窗口决定。初始窗口可能只有4个或者10个MSS，但在无丢包情形下随着报文的交互窗口就会增大，当窗口过大时，“过大”是什么意思呢？即，对于通讯的两台机器的内存而言不算大，但是对于整个网络负载来说过大了，就会对网络设备引发恶性循环，不断的因为繁忙的网络设备造成丢包。而窗口过小时，就无法充分的利用网络资源。所以，一般会以BDP来设置最大接收窗口（可计算出最大读缓存）。BDP叫做带宽时延积，也就是带宽与网络时延的乘积，例如若我们的带宽为2Gbps，时延为10ms，那么带宽时延积BDP则为2G/8*0.01=2.5MB，所以这样的网络中可以设最大接收窗口为2.5MB，这样最大读缓存可以设为4/3*2.5MB=3.3MB。</p>
+<p>为什么呢？因为BDP就表示了网络承载能力，最大接收窗口就表示了网络承载能力内可以不经确认发出的报文。如下图所示：</p>
+<p><img src="/2017/01/BGP-1.jpg"></p>
+<p> 经常提及的所谓长肥网络，“长”就是是时延长，“肥”就是带宽大，这两者任何一个大时，BDP就大，都应导致最大窗口增大，进而导致读缓存上限增大。所以在长肥网络中的服务器，缓存上限都是比较大的。（当然，TCP原始的16位长度的数字表示窗口虽然有上限，但在RFC1323中定义的弹性滑动窗口使得滑动窗口可以扩展到足够大。）</p>
+<p>发送窗口实际上就是TCP连接对方的接收窗口，所以大家可以按接收窗口来推断，这里不再啰嗦。</p>
+<p>三、linux的TCP缓存上限自动调整策略</p>
+<p>那么，设置好最大缓存限制后就高枕无忧了吗？对于一个TCP连接来说，可能已经充分利用网络资源，使用大窗口、大缓存来保持高速传输了。比如在长肥网络中，缓存上限可能会被设置为几十兆字节，但系统的总内存却是有限的，当每一个连接都全速飞奔使用到最大窗口时，1万个连接就会占用内存到几百G了，这就限制了高并发场景的使用，公平性也得不到保证。我们希望的场景是，在并发连接比较少时，把缓存限制放大一些，让每一个TCP连接开足马力工作；当并发连接很多时，此时系统内存资源不足，那么就把缓存限制缩小一些，使每一个TCP连接的缓存尽量的小一些，以容纳更多的连接。</p>
+<p>linux为了实现这种场景，引入了自动调整内存分配的功能，由tcp_moderate_rcvbuf配置决定，如下：</p>
+<p>net.ipv4.tcp_moderate_rcvbuf = 1</p>
+<p>默认tcp_moderate_rcvbuf配置为1，表示打开了TCP内存自动调整功能。若配置为0，这个功能将不会生效（慎用）。</p>
+<p>另外请注意：当我们在编程中对连接设置了SO_SNDBUF、SO_RCVBUF，将会使linux内核不再对这样的连接执行自动调整功能！</p>
+<p>那么，这个功能到底是怎样起作用的呢？看以下配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">net.ipv4.tcp_rmem &#x3D; 8192 87380 16777216  </span><br><span class="line">net.ipv4.tcp_wmem &#x3D; 8192 65536 16777216  </span><br><span class="line">net.ipv4.tcp_mem &#x3D; 8388608 12582912 16777216  </span><br></pre></td></tr></table></figure>
+
+<p>tcp_rmem[3]数组表示任何一个TCP连接上的读缓存上限，其中tcp_rmem[0]表示最小上限，tcp_rmem[1]表示初始上限（注意，它会覆盖适用于所有协议的rmem_default配置），tcp_rmem[2]表示最大上限。</p>
+<p>tcp_wmem[3]数组表示写缓存，与tcp_rmem[3]类似，不再赘述。</p>
+<p>tcp_mem[3]数组就用来设定TCP内存的整体使用状况，所以它的值很大（它的单位也不是字节，而是页–4K或者8K等这样的单位！）。这3个值定义了TCP整体内存的无压力值、压力模式开启阀值、最大使用值。以这3个值为标记点则内存共有4种情况：</p>
+<p>1、当TCP整体内存小于tcp_mem[0]时，表示系统内存总体无压力。若之前内存曾经超过了tcp_mem[1]使系统进入内存压力模式，那么此时也会把压力模式关闭。</p>
+<p>这种情况下，只要TCP连接使用的缓存没有达到上限（注意，虽然初始上限是tcp_rmem[1]，但这个值是可变的，下文会详述），那么新内存的分配一定是成功的。</p>
+<p>2、当TCP内存在tcp_mem[0]与tcp_mem[1]之间时，系统可能处于内存压力模式，例如总内存刚从tcp_mem[1]之上下来；也可能是在非压力模式下，例如总内存刚从tcp_mem[0]以下上来。</p>
+<p>此时，无论是否在压力模式下，只要TCP连接所用缓存未超过tcp_rmem[0]或者tcp_wmem[0]，那么都一定都能成功分配新内存。否则，基本上就会面临分配失败的状况。（注意：还有一些例外场景允许分配内存成功，由于对于我们理解这几个配置项意义不大，故略过。）</p>
+<p>3、当TCP内存在tcp_mem[1]与tcp_mem[2]之间时，系统一定处于系统压力模式下。其他行为与上同。</p>
+<p>4、当TCP内存在tcp_mem[2]之上时，毫无疑问，系统一定在压力模式下，而且此时所有的新TCP缓存分配都会失败。</p>
+<p>下图为需要新缓存时内核的简化逻辑：</p>
+<p><img src="/2017/01/tcpmemory-1-1.jpg"></p>
+<p><img src="file:///C:/Users/hui.taoh/AppData/Local/YNote/Data/iamtaohui%40126.com/b85c6327387d42eea2f188924cd51024/clipboard.png"></p>
+<p>当系统在非压力模式下，上面我所说的每个连接的读写缓存上限，才有可能增加，当然最大也不会超过tcp_rmem[2]或者tcp_wmem[2]。相反，在压力模式下，读写缓存上限则有可能减少，虽然上限可能会小于tcp_rmem[0]或者tcp_wmem[0]。</p>
+<p>所以，粗略的总结下，对这3个数组可以这么看：</p>
+<p>1、只要系统TCP的总体内存超了 tcp_mem[2] ，新内存分配都会失败。</p>
+<p>2、tcp_rmem[0]或者tcp_wmem[0]优先级也很高，只要条件1不超限，那么只要连接内存小于这两个值，就保证新内存分配一定成功。</p>
+<p>3、只要总体内存不超过tcp_mem[0]，那么新内存在不超过连接缓存的上限时也能保证分配成功。</p>
+<p>4、tcp_mem[1]与tcp_mem[0]构成了开启、关闭内存压力模式的开关。在压力模式下，连接缓存上限可能会减少。在非压力模式下，连接缓存上限可能会增加，最多增加到tcp_rmem[2]或者tcp_wmem[2]。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\07\网络协议\一文解释清楚google-bbr拥塞控制算法原理\" rel="bookmark">一文解释清楚Google BBR拥塞控制算法原理</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B7-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8/" title="高性能网络编程7--tcp连接的内存使用">https://www.taohui.tech/2016/01/27/网络协议/高性能网络编程7-tcp连接的内存使用/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/BDP/" rel="tag"># BDP</a>
+              <a href="/tags/tcp-rmem/" rel="tag"># tcp_rmem</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B6-reactor%E5%8F%8D%E5%BA%94%E5%A0%86%E4%B8%8E%E5%AE%9A%E6%97%B6%E5%99%A8%E7%AE%A1%E7%90%86/" rel="prev" title="高性能网络编程6--reactor反应堆与定时器管理">
+      <i class="fa fa-chevron-left"></i> 高性能网络编程6--reactor反应堆与定时器管理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/01/25/django%E4%B8%ADmodelform%E5%A4%9A%E8%A1%A8%E5%8D%95%E7%BB%84%E5%90%88%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" rel="next" title="django中ModelForm多表单组合的解决方案">
+      django中ModelForm多表单组合的解决方案 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

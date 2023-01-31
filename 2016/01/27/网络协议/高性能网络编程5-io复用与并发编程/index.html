@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="对于服务器的并发处理能力，我们需要的是：每一毫秒服务器都能及时处理这一毫秒内收到的数百个不同TCP连接上的报文，与此同时，可能服务器上还有数以十万计的最近几秒没有收发任何报文的相对不活跃连接。同时处理多个并行发生事件的连接，简称为并发；同时处理万计、十万计的连接，则是高并发。服务器的并发编程所追求的就是处理的并发连接数目无限大，同时维持着高效率使用CPU等资源，直至物理资源首先耗尽。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能网络编程5--IO复用与并发编程">
+<meta property="og:url" content="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="对于服务器的并发处理能力，我们需要的是：每一毫秒服务器都能及时处理这一毫秒内收到的数百个不同TCP连接上的报文，与此同时，可能服务器上还有数以十万计的最近几秒没有收发任何报文的相对不活跃连接。同时处理多个并行发生事件的连接，简称为并发；同时处理万计、十万计的连接，则是高并发。服务器的并发编程所追求的就是处理的并发连接数目无限大，同时维持着高效率使用CPU等资源，直至物理资源首先耗尽。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://img.blog.csdn.net/20131204155307437?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/%E4%BD%8E%E5%B9%B6%E5%8F%91epoll%E4%B8%8Eselect.png">
+<meta property="og:image" content="http://img.blog.csdn.net/20131204155323937?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/%E9%AB%98%E5%B9%B6%E5%8F%91epoll%E4%B8%8Eselect.png">
+<meta property="og:image" content="http://img.blog.csdn.net/20131204155348718?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/epoll%E5%AE%9E%E7%8E%B0.png">
+<meta property="og:image" content="file:///C:/Users/hui.taoh/AppData/Local/youdao/ynote/images/0328F5789AA44AC5AA218CC0198EEF98/clipboard.png">
+<meta property="article:published_time" content="2016-01-27T07:35:15.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.909Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="epoll">
+<meta property="article:tag" content="边缘触发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://img.blog.csdn.net/20131204155307437?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center">
+
+<link rel="canonical" href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高性能网络编程5--IO复用与并发编程 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高性能网络编程5--IO复用与并发编程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-27 15:35:15" itemprop="dateCreated datePublished" datetime="2016-01-27T15:35:15+08:00">2016-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>对于服务器的并发处理能力，我们需要的是：每一毫秒服务器都能及时处理这一毫秒内收到的数百个不同TCP连接上的报文，与此同时，可能服务器上还有数以十万计的最近几秒没有收发任何报文的相对不活跃连接。同时处理多个并行发生事件的连接，简称为并发；同时处理万计、十万计的连接，则是高并发。服务器的并发编程所追求的就是处理的并发连接数目无限大，同时维持着高效率使用CPU等资源，直至物理资源首先耗尽。</p>
+<span id="more"></span>
+<p>并发编程有很多种实现模型，最简单的就是与“线程”捆绑，1个线程处理1个连接的全部生命周期。优点：这个模型足够简单，它可以实现复杂的业务场景，同时，线程个数是可以远大于CPU个数的。然而，线程个数又不是可以无限增大的，为什么呢？因为线程什么时候执行是由操作系统内核调度算法决定的，调度算法并不会考虑某个线程可能只是为了一个连接服务的，它会做大一统的玩法：时间片到了就执行一下，哪怕这个线程一执行就会不得不继续睡眠。</p>
+<p>这样反复的唤醒、睡眠线程在次数不多的情况下，是廉价的，但如果操作系统的线程总数很多时，它就是昂贵的（被放大了），因为这种技术性的调度损耗会影响到线程上执行的业务代码的时间。举个例子，这时大部分拥有不活跃连接的线程就像我们的国企，它们执行效率太低了，它总是唤醒就睡眠在做无用功，而它唤醒争到CPU资源的同时，就意味着处理活跃连接的民企线程减少获得了CPU的机会，CPU是核心竞争力，它的无效率进而影响了GDP总吞吐量。我们所追求的是并发处理数十万连接，当几千个线程出现时，系统的执行效率就已经无法满足高并发了。</p>
+<p>对高并发编程，目前只有一种模型，也是本质上唯一有效的玩法。</p>
+<p>从这个系列的前4篇文章可知，连接上的消息处理，可以分为两个阶段：等待消息准备好、消息处理。当使用默认的阻塞套接字时（例如上面提到的1个线程捆绑处理1个连接），往往是把这两个阶段合而为一，这样操作套接字的代码所在的线程就得睡眠来等待消息准备好，这导致了高并发下线程会频繁的睡眠、唤醒，从而影响了CPU的使用效率。</p>
+<p>高并发编程方法当然就是把两个阶段分开处理。即，等待消息准备好的代码段，与处理消息的代码段是分离的。当然，这也要求套接字必须是非阻塞的，否则，处理消息的代码段很容易导致条件不满足时，所在线程又进入了睡眠等待阶段。那么问题来了，等待消息准备好这个阶段怎么实现？它毕竟还是等待，这意味着线程还是要睡眠的！解决办法就是，线程主动查询，或者让1个线程为所有连接而等待！</p>
+<p>这就是IO多路复用了。多路复用就是处理等待消息准备好这件事的，但它可以同时处理多个连接！它也可能“等待”，所以它也会导致线程睡眠，然而这不要紧，因为它一对多、它可以监控所有连接。这样，当我们的线程被唤醒执行时，就一定是有一些连接准备好被我们的代码执行了，这是有效率的！没有那么多个线程都在争抢处理“等待消息准备好”阶段，整个世界终于清净了！</p>
+<p>多路复用有很多种实现，在linux上，2.4内核前主要是select和poll，现在主流是epoll，它们的使用方法似乎很不同，但本质是一样的。</p>
+<p>效率却也不同，这也是epoll完全替代了select的原因。</p>
+<p>简单的谈下epoll为何会替代select。</p>
+<p>前面提到过，高并发的核心解决方案是1个线程处理所有连接的“等待消息准备好”，这一点上epoll和select是无争议的。但select预估错误了一件事，就像我们开篇所说，当数十万并发连接存在时，可能每一毫秒只有数百个活跃的连接，同时其余数十万连接在这一毫秒是非活跃的。select的使用方法是这样的：</p>
+<ul>
+<li>  返回的活跃连接 ==select（全部待监控的连接）</li>
+</ul>
+<p>什么时候会调用select方法呢？在你认为需要找出有报文到达的活跃连接时，就应该调用。所以，调用select在高并发时是会被频繁调用的。这样，这个频繁调用的方法就很有必要看看它是否有效率，因为，它的轻微效率损失都会被“频繁”二字所放大。它有效率损失吗？显而易见，全部待监控连接是数以十万计的，返回的只是数百个活跃连接，这本身就是无效率的表现。被放大后就会发现，处理并发上万个连接时，select就完全力不从心了。</p>
+<p>看几个图。当并发连接为一千以下，select的执行次数不算频繁，与epoll似乎并无多少差距：</p>
+<p><img src="http://img.blog.csdn.net/20131204155307437?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center"><a href="/2016/01/27/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E4%BD%8E%E5%B9%B6%E5%8F%91epoll%E4%B8%8Eselect/"><img src="/2016/01/%E4%BD%8E%E5%B9%B6%E5%8F%91epoll%E4%B8%8Eselect.png"></a></p>
+<p>然而，并发数一旦上去，select的缺点被“执行频繁”无限放大了，且并发数越多越明显：</p>
+<p><img src="http://img.blog.csdn.net/20131204155323937?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center"><a href="/2016/01/27/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E9%AB%98%E5%B9%B6%E5%8F%91epoll%E4%B8%8Eselect/"><img src="/2016/01/%E9%AB%98%E5%B9%B6%E5%8F%91epoll%E4%B8%8Eselect.png"></a></p>
+<p>再来说说epoll是如何解决的。它很聪明的用了3个方法来实现select方法要做的事：</p>
+<ul>
+<li>  新建的epoll描述符==epoll_create()</li>
+<li>  epoll_ctrl(epoll描述符，添加或者删除所有待监控的连接)</li>
+<li>  返回的活跃连接 ==epoll_wait（ epoll描述符 ）</li>
+</ul>
+<p>这么做的好处主要是：分清了频繁调用和不频繁调用的操作。例如，epoll_ctrl是不太频繁调用的，而epoll_wait是非常频繁调用的。这时，epoll_wait却几乎没有入参，这比select的效率高出一大截，而且，它也不会随着并发连接的增加使得入参越发多起来，导致内核执行效率下降。</p>
+<p>epoll是怎么实现的呢？其实很简单，从这3个方法就可以看出，它比select聪明的避免了每次频繁调用“哪些连接已经处在消息准备好阶段”的 epoll_wait时，是不需要把所有待监控连接传入的。这意味着，它在内核态维护了一个数据结构保存着所有待监控的连接。这个数据结构就是一棵红黑树，它的结点的增加、减少是通过epoll_ctrl来完成的。用我在《深入理解Nginx》第8章中所画的图来看，它是非常简单的：</p>
+<p><img src="http://img.blog.csdn.net/20131204155348718?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center"><a href="/2016/01/27/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/epoll%E5%AE%9E%E7%8E%B0/"><img src="/2016/01/epoll%E5%AE%9E%E7%8E%B0.png"></a></p>
+<p><img src="file:///C:/Users/hui.taoh/AppData/Local/youdao/ynote/images/0328F5789AA44AC5AA218CC0198EEF98/clipboard.png"></p>
+<p>图中左下方的红黑树由所有待监控的连接构成。左上方的链表，同是目前所有活跃的连接。于是，epoll_wait执行时只是检查左上方的链表，并返回左上方链表中的连接给用户。这样，epoll_wait的执行效率能不高吗？</p>
+<p>最后，再看看epoll提供的2种玩法ET和LT，即翻译过来的边缘触发和水平触发。其实这两个中文名字倒也有些贴切。这2种使用方式针对的仍然是效率问题，只不过变成了epoll_wait返回的连接如何能够更准确些。</p>
+<p>例如，我们需要监控一个连接的写缓冲区是否空闲，满足“可写”时我们就可以从用户态将响应调用write发送给客户端 。但是，或者连接可写时，我们的“响应”内容还在磁盘上呢，此时若是磁盘读取还未完成呢？肯定不能使线程阻塞的，那么就不发送响应了。但是，下一次epoll_wait时可能又把这个连接返回给你了，你还得检查下是否要处理。可能，我们的程序有另一个模块专门处理磁盘IO，它会在磁盘IO完成时再发送响应。那么，每次epoll_wait都返回这个“可写”的、却无法立刻处理的连接，是否符合用户预期呢？</p>
+<p>于是，ET和LT模式就应运而生了。LT是每次满足期待状态的连接，都得在epoll_wait中返回，所以它一视同仁，都在一条水平线上。ET则不然，它倾向更精确的返回连接。在上面的例子中，连接第一次变为可写后，若是程序未向连接上写入任何数据，那么下一次epoll_wait是不会返回这个连接的。ET叫做 边缘触发，就是指，只有连接从一个状态转到另一个状态时，才会触发epoll_wait返回它。可见，ET的编程要复杂不少，至少应用程序要小心的防止epoll_wait的返回的连接出现：可写时未写数据后却期待下一次“可写”、可读时未读尽数据却期待下一次“可读”。</p>
+<p>当然，从一般应用场景上它们性能是不会有什么大的差距的，ET可能的优点是，epoll_wait的调用次数会减少一些，某些场景下连接在不必要唤醒时不会被唤醒（此唤醒指epoll_wait返回）。但如果像我上面举例所说的，有时它不单纯是一个网络问题，跟应用场景相关。当然，大部分开源框架都是基于ET写的，框架嘛，它追求的是纯技术问题，当然力求尽善尽美。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B5-io%E5%A4%8D%E7%94%A8%E4%B8%8E%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" title="高性能网络编程5--IO复用与并发编程">https://www.taohui.tech/2016/01/27/网络协议/高性能网络编程5-io复用与并发编程/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/epoll/" rel="tag"># epoll</a>
+              <a href="/tags/%E8%BE%B9%E7%BC%98%E8%A7%A6%E5%8F%91/" rel="tag"># 边缘触发</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B4-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%85%B3%E9%97%AD/" rel="prev" title="高性能网络编程4--TCP连接的关闭">
+      <i class="fa fa-chevron-left"></i> 高性能网络编程4--TCP连接的关闭
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B6-reactor%E5%8F%8D%E5%BA%94%E5%A0%86%E4%B8%8E%E5%AE%9A%E6%97%B6%E5%99%A8%E7%AE%A1%E7%90%86/" rel="next" title="高性能网络编程6--reactor反应堆与定时器管理">
+      高性能网络编程6--reactor反应堆与定时器管理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

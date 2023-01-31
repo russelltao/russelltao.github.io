@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在深度学习出现后，人脸识别技术才真正有了可用性。这是因为之前的机器学习技术中，难以从图片中取出合适的特征值。轮廓？颜色？眼睛？如此多的面孔，且随着年纪、光线、拍摄角度、气色、表情、化妆、佩饰挂件等等的不同，同一个人的面孔照片在照片象素层面上差别很大，凭借专家们的经验与试错难以取出准确率较高的特征值，自然也没法对这些特征值进一步分类。 深度学习的最大优势在于由训练算法自行调整参数权重，构造出一个准确">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入浅出人脸识别技术">
+<meta property="og:url" content="https://www.taohui.tech/2017/10/29/%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="在深度学习出现后，人脸识别技术才真正有了可用性。这是因为之前的机器学习技术中，难以从图片中取出合适的特征值。轮廓？颜色？眼睛？如此多的面孔，且随着年纪、光线、拍摄角度、气色、表情、化妆、佩饰挂件等等的不同，同一个人的面孔照片在照片象素层面上差别很大，凭借专家们的经验与试错难以取出准确率较高的特征值，自然也没法对这些特征值进一步分类。 深度学习的最大优势在于由训练算法自行调整参数权重，构造出一个准确">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-9.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/facenet%E5%83%8F%E7%B4%A0%E6%95%B0%E4%B8%8E%E8%AF%86%E5%88%AB%E7%8E%87-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-6.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-1-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-2-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-3-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/sigmoid%E5%9B%BE-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/softmax%E5%85%AC%E5%BC%8F-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/softmax%E8%8E%B7%E5%BE%97%E6%A6%82%E7%8E%87%E7%A4%BA%E6%84%8F%E5%9B%BE-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-4-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-1-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-5-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-6-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-2-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-7-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-8-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-3-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-4-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/tensorflow%E6%B8%B8%E4%B9%90%E5%9C%BA%E7%A4%BA%E4%BE%8B-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/cnn%E5%A4%9A%E5%8D%B7%E7%A7%AF%E6%A0%B81-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/cnn%E5%B1%80%E9%83%A8%E6%84%9F%E7%9F%A5%E8%A7%A3%E5%86%B3%E8%AE%A1%E7%AE%97%E9%87%8F%E8%BF%87%E5%A4%A7-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/unnamed-file-1.gif">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/relu%E6%BF%80%E5%8A%B1%E5%87%BD%E6%95%B0-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/cnn%E6%B1%A0%E5%8C%961-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/cnn%E7%9A%84%E5%8F%AF%E8%A7%86%E5%8C%96-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/centor-loss%E7%9A%84%E5%88%86%E7%B1%BB%E7%A4%BA%E4%BE%8B-1.png">
+<meta property="og:image" content="https://www.taohui.tech/2017/10/centorloss%E5%9C%A8%E4%B8%8D%E5%90%8Cr%E4%B8%8B%E7%9A%84%E5%88%86%E7%B1%BB%E7%A4%BA%E6%84%8F-1.png">
+<meta property="article:published_time" content="2017-10-29T12:22:42.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.896Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="cnn卷积神经网络">
+<meta property="article:tag" content="tensorflow">
+<meta property="article:tag" content="人脸识别">
+<meta property="article:tag" content="梯度下降">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/10/unnamed-file-9.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2017/10/29/%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>深入浅出人脸识别技术 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2017/10/29/%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入浅出人脸识别技术
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-10-29 20:22:42" itemprop="dateCreated datePublished" datetime="2017-10-29T20:22:42+08:00">2017-10-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/" itemprop="url" rel="index"><span itemprop="name">人工智能</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在深度学习出现后，人脸识别技术才真正有了可用性。这是因为之前的机器学习技术中，难以从图片中取出合适的特征值。轮廓？颜色？眼睛？如此多的面孔，且随着年纪、光线、拍摄角度、气色、表情、化妆、佩饰挂件等等的不同，同一个人的面孔照片在照片象素层面上差别很大，凭借专家们的经验与试错难以取出准确率较高的特征值，自然也没法对这些特征值进一步分类。</p>
+<p>深度学习的最大优势在于由训练算法自行调整参数权重，构造出一个准确率较高的f(x)函数，给定一张照片则可以获取到特征值，进而再归类。本文中笔者试图用通俗的语言探讨人脸识别技术，首先概述人脸识别技术，接着探讨深度学习有效的原因以及梯度下降为什么可以训练出合适的权重参数，最后描述基于CNN卷积神经网络的人脸识别。 </p>
+<span id="more"></span>
+<h1 id="人脸识别技术概述"><a href="#人脸识别技术概述" class="headerlink" title="人脸识别技术概述"></a>人脸识别技术概述</h1><p>人脸识别技术大致由<strong>人脸检测和人脸识别</strong>两个环节组成。 之所以要有人脸检测，不光是为了检测出照片上是否有人脸，更重要的是把照片中人脸无关的部分删掉，否则整张照片的像素都传给f(x)识别函数肯定就不可用了。人脸检测不一定会使用深度学习技术，因为这里的技术要求相对低一些，只需要知道有没有人脸以及人脸在照片中的大致位置即可。一般我们考虑使用opencv、dlib等开源库的人脸检测功能（基于专家经验的传统特征值方法计算量少从而速度更快），也可以使用基于深度学习实现的技术如mtcnn（在神经网络较深较宽时运算量大从而慢一些）。 </p>
+<p>在人脸检测环节中，我们主要关注检测率、漏检率、误检率三个指标，其中： </p>
+<ul>
+<li>检测率：存在人脸并且被检测出的图像在所有存在人脸图像中的比例；</li>
+<li>漏检率：存在人脸但是没有检测出的图像在所有存在人脸图像中的比例；</li>
+<li>误检率：不存在人脸但是检测出存在人脸的图像在所有不存在人脸图像中的比例。</li>
+</ul>
+<p>当然，检测速度也很重要。本文不对人脸检测做进一步描述。 在人脸识别环节，其应用场景一般分为<strong>1:1和1:N</strong>。 </p>
+<p>1：1就是判断两张照片是否为同一个人，通常应用在人证匹配上，例如身份证与实时抓拍照是否为同一个人，常见于各种营业厅以及后面介绍的1:N场景中的注册环节。</p>
+<p>而1:N应用场景，则是首先执行注册环节，给定N个输入包括人脸照片以及其ID标识，再执行识别环节，给定人脸照片作为输入，输出则是注册环节中的某个ID标识或者不在注册照片中。</p>
+<p>可见，从概率角度上来看，前者相对简单许多，且由于证件照通常与当下照片年代间隔时间不定，所以通常我们设定的相似度阈值都是比较低的，以此获得比较好的通过率，容忍稍高的误识别率。 而后者1：N，随着N的变大误识别率会升高，识别时间也会增长，所以相似度阈值通常都设定得较高，通过率会下降。</p>
+<p>这里简单解释下上面的几个名词：</p>
+<ul>
+<li>误识别率就是照片其实是A的却识别为B的比率；</li>
+<li>通过率就是照片确实是A的，但可能每5张A的照片才能识别出4张是A其通过率就为80%；</li>
+<li>相似度阈值是因为对特征值进行分类是概率行为，除非输入的两张照片其实是同一个文件，否则任何两张照片之间都有一个相似度，设定好相似度阈值后唯有两张照片的相似度超过阈值，才认为是同一个人。</li>
+</ul>
+<p>所以，单纯的评价某个人脸识别算法的准确率没有意义，我们最需要弄清楚的是<strong>误识别率小于某个值时（例如0.1%）的通过率</strong>。不管1:1还是1:N，其底层技术是相同的，只是难度不同而已。 </p>
+<p>取出人脸特征值是最难的，那么深度学习是如何取特征值的？ 假定我们给出的人脸照片是100*100像素大小，由于每个像素有RGB三个通道，每个像素通道由0-255范围的字节表示，则共有3个100*100的矩阵计3万个字节作为输入数据。深度学习实际上就是生成一个近似函数，把上面的输入值转化为可以用作特征分类的特征值。那么，特征值可以是一个数字吗？当然不行，一个数字（或者叫标量）是无法有效表示出特征的。通常我们用多个数值组成的向量表示特征值，向量的维度即其中的数值个数。特征向量的维度并非越大越好，google的facenet项目（参见<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1503.03832%E8%AE%BA%E6%96%87%EF%BC%89%E5%81%9A%E8%BF%87%E7%9A%84%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C%E6%98%BE%E7%A4%BA%EF%BC%8C">https://arxiv.org/abs/1503.03832论文）做过的测试结果显示，</a>** 128 ** 个数值组成的特征向量结果最好，如下图所示： <img src="/2017/10/unnamed-file-9.jpg"> </p>
+<p>那么，现在问题就转化为怎么把3*100*100的矩阵转化为128维的向量，且这个向量能够准确的区分出不同的人脸？ </p>
+<p>假定照片为x，特征值为y，也就是说存在一个函数f(x)=y可以完美的找出照片的人脸特征值。现在我们有一个f*(x)近似函数，其中它有参数w（或者叫权重w）可以设置，例如写成f*(x;w)，若有训练集x及其id标识y，设初始参数p1后，那么每次f*(x;w)得到的y`与实际标识y相比，若正确则通过，若错误则适当调整参数w，如果能够正确的调整好参数w，f*(x;w)就会与理想中的f(x)函数足够接近，我们就获得了概率上足够高准确率的f*(x;w)函数。这一过程叫做监督学习下的训练。</p>
+<p>而计算f*(x;w)值的过程因为是正常的函数运算，我们称为<strong>前向运算</strong>，而训练过程中比较y`与实际标识id值y结果后，调整参数p的过程则是反过来的，称为<strong>反向传播</strong>。 </p>
+<p>由于我们传递的x入参毕竟是一张照片，照片既有对焦、光线、角度等导致的不太容易衡量的质量问题，也有本身的像素数多少问题。如果x本身含有的数据太少，即图片非常不清晰，例如28*28像素的照片，那么谁也无法准确的分辨出是哪个人。可以想见，必然像素数越多识别也越准，但像素数越多导致的计算、传输、存储消耗也越大，我们需要有根据的找到合适的阈值。下图是facenet论文的结果，虽然只是一家之言，但google的严谨态度使得数据也很有参考价值。 <img src="/2017/10/facenet%E5%83%8F%E7%B4%A0%E6%95%B0%E4%B8%8E%E8%AF%86%E5%88%AB%E7%8E%87-1.jpg"> 从图中可见排除照片其他质量外象素数至少也要有100*100（纯人脸部分）才能保证比较高的识别率。 </p>
+<h1 id="深度学习技术的原理"><a href="#深度学习技术的原理" class="headerlink" title="深度学习技术的原理"></a>深度学习技术的原理</h1><p>由清晰的人脸照转化出的象素值矩阵，应当设计出什么样的函数f(x)转化为特征值呢？这个问题的答案依赖于分类问题。即，先不谈特征值，首先如何把照片集合按人正确的分类？这里就要先谈谈机器学习。机器学习认为可以从有限的训练集样本中把算法很好的泛化。所以，我们先找到有限的训练集，设计好初始函数f(x;w)，并已经量化好了训练集中x-&gt;y。如果数据x是低维的、简单的，例如只有二维，那么分类很简单，如下图所示：<br><img src="/2017/10/unnamed-file-6.png"> </p>
+<p>上图中的二维数据x只有方形和圆形两个类别y，很好分，我们需要学习的分类函数用最简单的f(x,y)=ax+by+c就能表示出分类直线。例如f(x,y)大于0时表示圆形，小于0时表示方形。 给定随机数作为a,c,b的初始值，我们通过训练数据不断的优化参数a,b,c，把不合适的L1、L3等分类函数逐渐训练成L2，这样的L2去面对泛化的测试数据就可能获得更好的效果。然而如果有多个类别，就需要多条分类直线才能分出，如下图所示：<br><img src="/2017/10/unnamed-file-1-1.jpg"> </p>
+<p>这其实相当于多条分类函数执行与&amp;&amp;、或操作后的结果。这个时候还可能用f1&gt;0 &amp;&amp; f2&lt;0 &amp;&amp; f3&gt;0这样的分类函数，但如果更复杂的话，例如本身的特征不明显也没有汇聚在一起，这种找特征的方式就玩不转了，如下图所示，不同的颜色表示不同的分类，此时的训练数据完全是<strong>非线性可分</strong>的状态：<br><img src="/2017/10/unnamed-file-2-1.jpg"> </p>
+<p>这个时候，我们可以通过多层函数嵌套的方法来解决，例如f(x)=f1(f2(x))，这样f2函数可以是数条直线，而f1函数可以通过不同的权重w以及激励函数完成与&amp;&amp;、或等等操作。这里只有两层函数，<strong>如果函数嵌套层数越多，它越能表达出复杂的分类方法</strong>，这对高维数据很有帮助。例如我们的照片毫无疑问就是这样的输入。所谓激励函数就是把函数f计算出的非常大的值域转化为[0,1]这样较小的值域，这允许多层函数不断的前向运算、分类。 </p>
+<p>前向运算只是把输入交给f1(x,w1)函数，计算出的值再交给f2(y1,w2)函数，依次类推，很简单就可以得到最终的分类值。但是，因为初始的w权重其实没有多大意义，它得出的分类值f*(x)肯定是错的，在训练集上我们知道正确的值y，那么事实上我们其实是希望y-f*(x)的值最小，这样分类就越准。这其实变成了求最小值的问题。当然，y-f*(x)只是示意，事实上我们得到的f*(x)只是落到各个分类上的概率，把这个概率与真实的分类相比较得到最小值的过程，我们称为<strong>损失函数</strong>，其值为loss，我们的目标是把损失函数的值loss最小化。在人脸识别场景中，softmax是一个效果比较好的损失函数，我们简单看下它是如何使用的。 </p>
+<p>比如我们有训练数据集照片对应着cat、dog、ship三个类别，某个输入照片经过函数f(x)=x*W+b，前向运算得到该照片属于这3个分类的得分值。此时，这个函数被称为<strong>得分函数</strong>，如下图所示，假设左边关于猫的input image是一个4维向量[56,231,24,2]，而W权重是一个4*3的矩阵，那么相乘后再加上向量[1.1,3.2,-1.2]可得到在cat、 dog、ship三个类别上的得分： <img src="/2017/10/unnamed-file-3-1.jpg"> </p>
+<p>从上图示例可见，虽然输入照片是猫，但得分上属于狗的得分值437.9最高，但究竟比猫和船高多少呢？很难衡量！如果我们把得分值转化为0-100的百分比概率，这就方便度量了。这里我们可以使用sigmoid函数，如下图所示：<br><img src="/2017/10/sigmoid%E5%9B%BE-1.jpg"> </p>
+<p>从上图公式及图形可知，sigmoid可以把任意实数转换为0-1之间的某个数作为概率。但sigmoid概率不具有<strong>归一性</strong>，也就是说我们需要保证输入照片在所有类别的概率之和为1，这样我们还需要对得分值按softmax方式做以下处理：<br><img src="/2017/10/softmax%E5%85%AC%E5%BC%8F-1.png"><br>这样给定x后可以得到x在各个类别下的概率。假定三个类别的得分值分别为3、1、-3，则按照上面的公式运算后可得概率分别为[0.88、0.12、0]，计算过程如下图所示： <img src="/2017/10/softmax%E8%8E%B7%E5%BE%97%E6%A6%82%E7%8E%87%E7%A4%BA%E6%84%8F%E5%9B%BE-1.jpg"> </p>
+<p>然而实际上x对应的概率其实是第一类，比如[1,0,0]，现在拿到的概率（或者可称为似然）是[0.88、0.12、0]。那么它们之间究竟有多大的差距呢？这个差距就是损失值loss。如何获取到损失值呢？在softmax里我们用<strong>互熵损失</strong>函数计算量最小（方便求导），如下所示：<br><img src="/2017/10/unnamed-file-4-1.jpg"> </p>
+<p>其中i就是正确的分类，例如上面的例子中其loss值就是-ln0.88。这样我们有了损失函数f(x)后，怎么调整x才能够使得函数的loss值最小呢？这涉及到微分导数。 </p>
+<h1 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h1><p>梯度下降就是为了快速的调整权重w，使得损失函数f(x;w)的值最小。因为损失函数的值loss最小，就表示上面所说的在训练集上的得分结果与正确的分类值最接近！ </p>
+<p><strong>导数</strong>求的是函数在某一点上的变化率。例如从A点开车到B点，通过距离和时间可以算出平均速度，但在其中C点的瞬时速度是多少呢？如果用x表示时间，f(x)表示车子从A点驶出的距离，那么在x0的瞬时速度可以转化为：从x0时再开一个很小的时间，例如1秒，那么这一秒的平均速度就是这一秒开出的距离除以1秒，即(f(1+x0)-f(x0))/1。如果我们用的不是1秒而是1微秒，那么这个1微秒内的平均速度必然更接近x0时的瞬时速度。于是，到该时间段t趋向于0时，我们就得到了x0时的瞬时速度。这个瞬时速度就是函数f在x0上的变化率，所有x上的变化率就构成了函数f(x)的导数，称为f`(x)。即： <img src="/2017/10/unnamed-file-1-1.png"> </p>
+<p>从几何意义上看，<strong>变化率就变成了斜率</strong>，这更容易理解怎样求函数的最小值。例如下图中有函数y=f(x)用粗体黑线表示，其在P0点的变化率就是切线红线的斜率：<br><img src="/2017/10/unnamed-file-5-1.jpg"><br>可以形象的看出，当斜率的值为正数时，把x向左移动变小一些，f(x)的值就会小一些；当斜率的值为负数时，把x向右移动变大一些，f(x)的值也会小一些，如下图所示：<br><img src="/2017/10/unnamed-file-6-1.jpg"><br>这样，斜率为0时我们其实就得到了函数f在该点可以得到最小值。那么，把x向左或者向右移一点，到底移多少呢？如果移多了，可能移过了，如果移得很少，则可能要移很久才能找到最小点。还有一个问题，如果f(x)操作函数有多个局部最小点、全局最小点时，如果x移的非常小，则可能导致通过导数只能找到某个并不足够小的局部最小点。如下图所示：<br><img src="/2017/10/unnamed-file-2-1.png"><br>蓝色的为局部最小点，红色是全局最小点。所以x移动多少是个问题，x每次的移动步长过大或者过小都可能导致找不到全局最小点。这个步长除了跟导数斜率有关外，我们还需要有一个超参数来控制它的移动速度，这个超参数称为<strong>学习率</strong>，由于它很难优化，所以一般需要手动设置而不能自动调整。考虑到训练时间也是成本，我们通常在初始训练阶段把学习率设的大一些，越往后学习率设的越小。 </p>
+<p>那么每次移动的步长与导数的值有关吗？这是自然的，导数的正负值决定了移动的方向，而导数的绝对值大小则决定了斜率是否陡峭。越陡峭则移动的步长应当越大。所以，步长由学习率和导数共同决定。就像下面这个函数， λ是学习率，而∂F(ωj) / ∂ωj是在ωj点的导数。 ωj = ωj - λ ∂F(ωj) / ∂ωj 根据导数判断损失函数f在x0点上应当如何移动，才能使得f最快到达最小值的方法，我们称为<strong>梯度下降</strong>。梯度也就是导数，沿着负梯度的方向，按照梯度值控制移动步长，就能快速到达最小值。当然，实际上我们未必能找到最小点，特别是本身存在多个最小点时，但如果这个值本身也足够小，我们也是可以接受的，如下图所示：<br><img src="/2017/10/unnamed-file-7-1.jpg"><br>以上我们是以一维数据来看梯度下降，但我们的照片是多维数据，此时如何求导数？又如何梯度下降呢？此时我们需要用到偏导数的概念。其实它与导数很相似，因为x是多维向量，那么我们假定计算Xi的导数时，x上的其他数值不变，这就是Xi的偏导数。此时应用梯度下降法就如下图所示，θ是二维的，我们分别求θ0和θ1的导数，就可以同时从θ0和θ1两个方向移动相应的步长，寻找最低点，如下图所示：<br><img src="/2017/10/unnamed-file-8-1.jpg"><br>前文说过，根据有限的训练集，去适应无限的测试集，当然训练集容量越大效果就越好。但是，训练集如果很大，那么每次都根据全部数据执行梯度下降计算量就太大了。此时，我们选择每次只取全部训练集中的一小部分（究竟多少，一般根据内存和计算量而定），执行梯度下降，不断的迭代，根据经验一样可以快速的把梯度降下来。这就是<strong>随机梯度下降</strong>。 </p>
+<p>上面的梯度下降法只能对f函数的w权重进行调整，而上文中我们说过实际是多层函数套在一起，例如f1(f2(x;w2);w1)，那么怎么求对每一层函数输入的导数呢？这也是所谓的<strong>反向传播</strong>怎样继续反向传递下去呢？这就要提到链式法则。其实质为，本来y对x的求导，可以通过引入中间变量z来实现，如下图所示：<br><img src="/2017/10/unnamed-file-3-1.png"> 这样，y对x的导数等价于y对z的导数乘以z对x的偏导。当输入为多维时则有下面的公式： <img src="/2017/10/unnamed-file-4-1.png"><br>如此，我们可以得到每一层函数的导数，这样可以得到每层函数的w权重应当调整的步长，优化权重参数。 由于函数的导数很多，例如resnet等网络已经达到100多层函数，所以为区别传统的机器学习，我们称其为<strong>深度学习</strong>。 </p>
+<p>深度学习只是受到神经科学的启发，所以称为神经网络，但实质上就是上面提到的多层函数前向运算得到分类值，训练时根据实际标签分类取损失函数最小化后，根据随机梯度下降法来优化各层函数的权重参数。人脸识别也是这么一个流程。以上我们初步过完多层函数的参数调整，但函数本身应当如何设计呢？ </p>
+<h1 id="基于CNN卷积神经网络进行人脸识别"><a href="#基于CNN卷积神经网络进行人脸识别" class="headerlink" title="基于CNN卷积神经网络进行人脸识别"></a>基于CNN卷积神经网络进行人脸识别</h1><p>我们先从全连接网络谈起。google的<strong>tensorflow游乐场</strong>里可以直观的体验全连接神经网络的威力，这是游乐场的网址：<a target="_blank" rel="noopener" href="http://playground.tensorflow.org/%EF%BC%8C%E6%B5%8F%E8%A7%88%E5%99%A8%E9%87%8C%E5%B0%B1%E5%8F%AF%E4%BB%A5%E5%81%9A%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E8%AE%AD%E7%BB%83%EF%BC%8C%E4%B8%94%E8%BF%87%E7%A8%8B%E4%B8%8E%E7%BB%93%E6%9E%9C%E5%8F%AF%E8%A7%86%E5%8C%96%E3%80%82%E5%A6%82%E4%B8%8B%E5%9B%BE%E6%89%80%E7%A4%BA%EF%BC%9A">http://playground.tensorflow.org/，浏览器里就可以做神经网络训练，且过程与结果可视化。如下图所示：</a> <img src="/2017/10/tensorflow%E6%B8%B8%E4%B9%90%E5%9C%BA%E7%A4%BA%E4%BE%8B-1.jpg"> </p>
+<p>这个神经网络游乐场共有1000个训练点和1000个测试点，用于对4种不同图案划分出蓝色点与黄色点。DATA处可选择4种不同图案。 整个网络的输入层是FEATURES（待解决问题的特征），例如x1和x2表示垂直或者水平切分来划分蓝色与黄色点，这是最容易理解的2种划分点的方法。其余5种其实不太容易想到，这也是传统的专家系统才需要的，实际上，这个游乐场就是为了演示，1、好的神经网络只用最基本的x1,x2这样的输入层FEATURES就可以完美的实现；2、即使有很多种输入特征，我们其实并不清楚谁的权重最高，但好的神经网络会解决掉这个问题。 </p>
+<p>隐层HIDDEN LAYERS可以随意设置层数，每个隐层可以设置神经元数。实际上神经网络并不是在计算力足够的情况下，层数越多越好或者每层神经元越多越好。好的神经网络架构模型是很难找到的。本文后面我们会重点讲几个CNN经典网络模型。然而，在这个例子中，多一些隐层和神经元可以更好的划分。 epoch是训练的轮数。红色框出的loss值是衡量训练结果的最重要指标，如果loss值一直是在下降，比如可以低到0.01这样，就说明这个网络训练的结果好。loss也可能下降一会又突然上升，这就是不好的网络，大家可以尝试下。learning rate初始都会设得高些，训练到后面都会调低些。Activation是激励函数，目前CNN都在使用Relu函数。 </p>
+<p>了解了神经网络后，现在我们回到人脸识别中来。每一层神经元就是一个f函数，上面的四层网络就是f1(f2(f3(f4(x))))。然而，就像上文所说，照片的象素太多了，全连接网络中任意两层之间每俩个神经元都需要有一次计算。特别之前提到的，复杂的分类依赖于许多层函数共同运算才能达到目的。当前的许多网络都是多达100层以上，如果每层都有3*100*100个神经元，可想而知计算量有多大！于是<strong>CNN卷积神经网络</strong>应运而生，它可以在大幅降低运算量的同时保留全连接网络的威力。 CNN认为可以只对整张图片的一个矩形窗口做全连接运算（可称为<strong>卷积核</strong>），滑动这个窗口以相同的权重参数w遍历整张图片后，可以得到下一层的输入，如下图所示：<br><img src="/2017/10/cnn%E5%A4%9A%E5%8D%B7%E7%A7%AF%E6%A0%B81-1.jpg"><br>CNN中认为同一层中的权重参数可以共享，因为同一张图片的各个不同区域具有一定的相似性。这样原本的全连接计算量过大问题就解决了，如下图所示：<br><img src="/2017/10/cnn%E5%B1%80%E9%83%A8%E6%84%9F%E7%9F%A5%E8%A7%A3%E5%86%B3%E8%AE%A1%E7%AE%97%E9%87%8F%E8%BF%87%E5%A4%A7-1.jpg"><br>结合着之前的函数前向运算与矩阵，我们以一个动态图片直观的看一下前向运算过程：<br><img src="/2017/10/unnamed-file-1.gif"><br>这里卷积核大小与移动的步长stride、输出深度决定了下一层网络的大小。同时，核大小与stride步长在导致上一层矩阵不够大时，需要用padding来补0（如上图灰色的0）。以上就叫做<strong>卷积运算</strong>，这样的一层神经元称为卷积层。上图中W0和W1表示深度为2。 CNN卷积网络通常在每一层卷积层后加一个激励层，激励层就是一个函数，它把卷积层输出的数值以非线性的方式转换为另一个值，在保持大小关系的同时约束住值范围，使得整个网络能够训练下去。在人脸识别中，通常都使用Relu函数作为激励层，relu函数就是max(0,x)，如下所示：<br><img src="/2017/10/relu%E6%BF%80%E5%8A%B1%E5%87%BD%E6%95%B0-1.png"> </p>
+<p>可见 relu的计算量其实非常小！ CNN中还有一个池化层，当某一层输出的数据量过大时，通过池化层可以对数据降维，在保持住特征的情况下减少数据量，例如下面的4*4矩阵通过取最大值降维到2*2矩阵： <img src="/2017/10/cnn%E6%B1%A0%E5%8C%961-1.jpg"> 上图中通过对每个颜色块筛选出最大数字进行池化，以减小计算数据量。 通常网络的最后一层为全连接层，这样一般的CNN网络结构如下所示： <img src="/2017/10/cnn%E7%9A%84%E5%8F%AF%E8%A7%86%E5%8C%96-1.jpg"> CONV就是卷积层，每个CONV后会携带RELU层。这只是一个示意图，实际的网络要复杂许多。目前开源的google facenet是采用resnet v1网络进行人脸识别的，关于resnet网络请参考论文<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1602.07261%EF%BC%8C%E5%85%B6%E5%AE%8C%E6%95%B4%E7%9A%84%E7%BD%91%E7%BB%9C%E8%BE%83%E4%B8%BA%E5%A4%8D%E6%9D%82%EF%BC%8C%E8%BF%99%E9%87%8C%E4%B8%8D%E5%86%8D%E5%88%97%E5%87%BA%EF%BC%8C%E4%B9%9F%E5%8F%AF%E4%BB%A5%E6%9F%A5%E7%9C%8B%E5%9F%BA%E4%BA%8Etensorflow%E5%AE%9E%E7%8E%B0%E7%9A%84python%E4%BB%A3%E7%A0%81https://github.com/davidsandberg/facenet/blob/master/src/models/inception/_resnet/_v1.py%EF%BC%8C%E6%B3%A8%E6%84%8Fslim.conv2d%E5%90%AB%E6%9C%89relu%E6%BF%80%E5%8A%B1%E5%B1%82%E3%80%82">https://arxiv.org/abs/1602.07261，其完整的网络较为复杂，这里不再列出，也可以查看基于tensorflow实现的python代码https://github.com/davidsandberg/facenet/blob/master/src/models/inception\_resnet\_v1.py，注意slim.conv2d含有relu激励层。</a> 以上只是通用的CNN网络，由于人脸识别应用中不是直接分类，而是有一个注册阶段，需要把照片的特征值取出来。如果直接拿softmax分类前的数据作为特征值效果很不好，例如下图是直接将全连接层的输出转化为二维向量，在二维平面上通过颜色表示分类的可视化表示：<br><img src="/2017/10/centor-loss%E7%9A%84%E5%88%86%E7%B1%BB%E7%A4%BA%E4%BE%8B-1.png"><br>可见效果并不好，中间的样本距离太近了。通过<strong>centor loss</strong>方法处理后，可以把特征值间的距离扩大，如下图所示： <img src="/2017/10/centorloss%E5%9C%A8%E4%B8%8D%E5%90%8Cr%E4%B8%8B%E7%9A%84%E5%88%86%E7%B1%BB%E7%A4%BA%E6%84%8F-1.png"> </p>
+<p>这样取出的特征值效果就会好很多。 实际训练resnetv1网络时，首先需要关注训练集照片的质量，且要把不同尺寸的人脸照片resize到resnet1网络首层接收的尺寸大小。另外除了上面提到的学习率和随机梯度下降中每一批batchsize图片的数量外，还需要正确的设置epochsize，因为每一轮epoch应当完整的遍历完训练集，而batchsize受限于硬件条件一般不变，但训练集可能一直在变大，这样应保持epochsize*batchsize接近全部训练集。训练过程中需要密切关注loss值是否在收敛，可适当调节学习率。 </p>
+<p>最后说一句，目前人脸识别效果的评价唯一通行的标准是LFW(即Labeled Faces in the Wild，参见<a target="_blank" rel="noopener" href="http://vis-www.cs.umass.edu/lfw/)%EF%BC%8C%E5%AE%83%E5%8C%85%E5%90%AB%E5%A4%A7%E7%BA%A66000%E4%B8%AA%E4%B8%8D%E5%90%8C%E7%9A%84%E4%BA%BA%E7%9A%8412000%E5%BC%A0%E7%85%A7%E7%89%87%EF%BC%8C%E8%AE%B8%E5%A4%9A%E7%AE%97%E6%B3%95%E9%83%BD%E4%BE%9D%E6%8D%AE%E5%AE%83%E6%9D%A5%E8%AF%84%E4%BB%B7%E5%87%86%E7%A1%AE%E7%8E%87%E3%80%82%E4%BD%86%E5%AE%83%E6%9C%89%E4%B8%A4%E4%B8%AA%E9%97%AE%E9%A2%98%EF%BC%8C%E4%B8%80%E6%98%AF%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%8D%E5%A4%9F%E5%A4%A7%EF%BC%8C%E4%BA%8C%E6%98%AF%E6%95%B0%E6%8D%AE%E9%9B%86%E5%9C%BA%E6%99%AF%E5%BE%80%E5%BE%80%E4%B8%8E%E7%9C%9F%E5%AE%9E%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF%E5%B9%B6%E4%B8%8D%E5%8C%B9%E9%85%8D%E3%80%82%E6%89%80%E4%BB%A5%E5%A6%82%E6%9E%9C%E6%9F%90%E4%B8%AA%E7%AE%97%E6%B3%95%E7%A7%B0%E5%85%B6%E5%9C%A8LFW%E4%B8%8A%E7%9A%84%E5%87%86%E7%A1%AE%E7%8E%87%E8%BE%BE%E5%88%B0%E5%A4%9A%E4%B9%88%E7%9A%84%E9%AB%98%EF%BC%8C%E5%B9%B6%E4%B8%8D%E8%83%BD%E5%8F%8D%E5%BA%94%E5%85%B6%E7%9C%9F%E5%AE%9E%E5%8F%AF%E7%94%A8%E6%80%A7%E3%80%82">http://vis-www.cs.umass.edu/lfw/)，它包含大约6000个不同的人的12000张照片，许多算法都依据它来评价准确率。但它有两个问题，一是数据集不够大，二是数据集场景往往与真实应用场景并不匹配。所以如果某个算法称其在LFW上的准确率达到多么的高，并不能反应其真实可用性。</a> 笔者水平有限，如有错误欢迎大家指出。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\12\13\bdtc2017北京大数据技术大会参会心得\" rel="bookmark">BDTC2017北京大数据技术大会参会心得</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2017/10/29/%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF/" title="深入浅出人脸识别技术">https://www.taohui.tech/2017/10/29/算法/深入浅出人脸识别技术/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/cnn%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" rel="tag"># cnn卷积神经网络</a>
+              <a href="/tags/tensorflow/" rel="tag"># tensorflow</a>
+              <a href="/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/" rel="tag"># 人脸识别</a>
+              <a href="/tags/%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/" rel="tag"># 梯度下降</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/07/03/%E5%8C%BA%E5%9D%97%E9%93%BE%E6%8A%80%E6%9C%AF%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="prev" title="区块链技术学习笔记">
+      <i class="fa fa-chevron-left"></i> 区块链技术学习笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/" rel="next" title="BDTC2017北京大数据技术大会参会心得">
+      BDTC2017北京大数据技术大会参会心得 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">人脸识别技术概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%8A%80%E6%9C%AF%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">深度学习技术的原理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D"><span class="nav-number">3.</span> <span class="nav-text">梯度下降</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8ECNN%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E8%BF%9B%E8%A1%8C%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB"><span class="nav-number">4.</span> <span class="nav-text">基于CNN卷积神经网络进行人脸识别</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

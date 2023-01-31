@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="我们选购电脑时，CPU处理器的配置会有缓存大小，它是CPU性能的重要指标。   为什么呢？因为CPU计算速度与访问主存速度非常不匹配！">
+<meta property="og:type" content="article">
+<meta property="og:title" content="利用cpu缓存实现高性能程序">
+<meta property="og:url" content="https://www.taohui.tech/2018/09/05/%E5%88%A9%E7%94%A8cpu%E7%BC%93%E5%AD%98%E5%AE%9E%E7%8E%B0%E9%AB%98%E6%80%A7%E8%83%BD%E7%A8%8B%E5%BA%8F/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="我们选购电脑时，CPU处理器的配置会有缓存大小，它是CPU性能的重要指标。   为什么呢？因为CPU计算速度与访问主存速度非常不匹配！">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2018/08/intel%E5%AE%98%E7%BD%91cpu%E5%88%97%E8%A1%A8%E4%B8%AD%E7%9A%84%E7%BC%93%E5%AD%98-1-3.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/08/cpu%E6%8C%87%E4%BB%A4%E7%9A%84%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/08/cpu%E5%90%84%E7%BA%A7%E7%BC%93%E5%AD%98%E7%9A%84%E8%AE%BF%E9%97%AE%E9%80%9F%E5%BA%A6-2.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/08/intel-smart-cache-e5-2620v4-3.png">
+<meta property="og:image" content="https://www.taohui.tech/2018/08/intel%E8%B6%85%E7%BA%BF%E7%A8%8B%E6%8A%80%E6%9C%AF-1-4.jpg">
+<meta property="article:published_time" content="2018-09-04T23:57:26.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.868Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="ALU">
+<meta property="article:tag" content="cpu">
+<meta property="article:tag" content="cpu cache line">
+<meta property="article:tag" content="cpu缓存">
+<meta property="article:tag" content="intel">
+<meta property="article:tag" content="perf">
+<meta property="article:tag" content="smart cache">
+<meta property="article:tag" content="多核">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2018/08/intel%E5%AE%98%E7%BD%91cpu%E5%88%97%E8%A1%A8%E4%B8%AD%E7%9A%84%E7%BC%93%E5%AD%98-1-3.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2018/09/05/%E5%88%A9%E7%94%A8cpu%E7%BC%93%E5%AD%98%E5%AE%9E%E7%8E%B0%E9%AB%98%E6%80%A7%E8%83%BD%E7%A8%8B%E5%BA%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>利用cpu缓存实现高性能程序 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/09/05/%E5%88%A9%E7%94%A8cpu%E7%BC%93%E5%AD%98%E5%AE%9E%E7%8E%B0%E9%AB%98%E6%80%A7%E8%83%BD%E7%A8%8B%E5%BA%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          利用cpu缓存实现高性能程序
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-09-05 07:57:26" itemprop="dateCreated datePublished" datetime="2018-09-05T07:57:26+08:00">2018-09-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>我们选购电脑时，CPU处理器的配置会有缓存大小，它是CPU性能的重要指标。 <img src="/2018/08/intel%E5%AE%98%E7%BD%91cpu%E5%88%97%E8%A1%A8%E4%B8%AD%E7%9A%84%E7%BC%93%E5%AD%98-1-3.jpg"> </p>
+<p>为什么呢？因为CPU计算速度与访问主存速度非常不匹配！ </p>
+<span id="more"></span>
+<p>先来看计算速度。单颗CPU计算速度目前在2GHz-4GHz之间，以2.5GHz计即每秒钟计算25亿次，每个时钟周期耗时1/2.5GHz==0.4纳秒。当前所有的计算机都遵循冯诺依曼结构，所以执行任何指令（例如加法操作）的流程必然遵循下图： <img src="/2018/08/cpu%E6%8C%87%E4%BB%A4%E7%9A%84%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B-1.jpg"> </p>
+<p>所以，做一次加法的指令是由多个时钟周期组成的（如取指令和数字、放入寄存器、执行ALU、将结果写回主存），做ALU执行指令仅需要1个时钟周期，而取指令或者取数据、回写结果数据就需要与主存打交道了。CPU访问内存（主存）的速度非常慢，访问一次常常需要上百纳秒以上，这与计算指令有千倍的差距！怎样解决访问主存慢导致的<strong>CPU计算能力的浪费</strong>呢？加入CPU缓存！ </p>
+<p>CPU上增加缓存后，由于CPU缓存离CPU核心更近，所以访问速度比主存快得多！如果我们访问内存时，先把数据读取到CPU缓存再计算，而下次读取到该数据时直接使用缓存（若未被淘汰掉），这在时间和空间上都会降低CPU计算能力的浪费！在时间上，有些数据访问频率高（热点），多次访问之间都未被淘汰出缓存；在空间上，缓存可以同时加载相邻的数据、代码，这样函数、循环的执行都在使用缓存中的数据。 </p>
+<p>CPU缓存是分为多级的，原因是热点数据太大了！最快的缓存一定离CPU核心最近，因为体积小所以容量也最小，不能满足以MB计算的热点数据。最终发展出了三级缓存，分别称为L1、L2、L3级缓存。这三级缓存的访问速度各不相同，但都远大于访问主存的速度（访问时间更小），如下图所示： <img src="/2018/08/cpu%E5%90%84%E7%BA%A7%E7%BC%93%E5%AD%98%E7%9A%84%E8%AE%BF%E9%97%AE%E9%80%9F%E5%BA%A6-2.png"> 可见，L1和L2的缓存访问速度非常快，只有不到3ns，L3稍慢一些，但都远小于访问主存的速度。当然，CPU缓存的大小也远小于主存的大小，如本文最开始的那张图，现在的CPU缓存往往只有几十MB。如果大家点击具体的CPU细看缓存，可以看到intel只标明了smart cache，如下图所示（intel e5-2620 v4）： <img src="/2018/08/intel-smart-cache-e5-2620v4-3.png"> 这个smart cache其实就是L3缓存，现在的CPU都是多核心的，而smart cache就是智能的被多CPU核心共用的意思。那么L1、L2缓存大小为什么不标出来呢？其实没有必要，因为通常L1就是32KB，而L2是256KB，在linux上我们可以直接看到：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">model name: Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz</span><br><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu1/cache/index0/size </span></span><br><span class="line">32K</span><br><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu1/cache/index1/size </span></span><br><span class="line">32K</span><br><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu1/cache/index2/size </span></span><br><span class="line">256K</span><br><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu1/cache/index3/size </span></span><br><span class="line">20480K</span><br></pre></td></tr></table></figure>
+
+<p>这里，index0和index1分别代表L1缓存中的指令缓存和数据缓存，index2是L2缓存，index3就是L3缓存。也可能一个缓存由多个CPU共享，仍然以E5-2620 v4这个8核16线程的CPU为例：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu0/cache/index1/shared_cpu_list </span></span><br><span class="line">0,16</span><br><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu0/cache/index2/shared_cpu_list </span></span><br><span class="line">0,16</span><br><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu0/cache/index3/shared_cpu_list </span></span><br><span class="line">0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30</span><br></pre></td></tr></table></figure>
+
+<p>笔者的服务器有两颗e5，所以表现为32颗逻辑CPU。由于intel的超线程技术，所以两颗逻辑CPU对应一颗物理CPU。简单插一下何谓超线程技术：由于访问主存的速度太慢，所以intel想了一个主意，就是当CPU在等待从主存中调入数据或者指令时，同时做另一个任务，这样一颗CPU就表现为两颗逻辑CPU，如下图所示： <img src="/2018/08/intel%E8%B6%85%E7%BA%BF%E7%A8%8B%E6%8A%80%E6%9C%AF-1-4.jpg"> 从<code>shared_cpu_list</code>可见，20MB的L3缓存被16颗逻辑CPU（8颗物理CPU）共享，而L2和L1都是由一颗物理CPU独占的。 CPU缓存与主存交换数据每次大小是固定的，我们称其为cpu cache line，在64位系统下通常是64字节，在linux下可以这么获取该值：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@zldfwq103 ~]<span class="comment"># cat /sys/devices/system/cpu/cpu1/cache/index3/coherency_line_size </span></span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+
+<p>在C语言程序里，可以通过sysconf (_SC_LEVEL1_DCACHE_LINESIZE)获取，例如在nginx 1.13.8版本后是这么获取的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+<span class="meta">#<span class="meta-keyword">if</span> (NGX_HAVE_LEVEL1_DCACHE_LINESIZE)</span></span><br><span class="line">+    size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);</span><br><span class="line">+    <span class="keyword">if</span> (size &gt; <span class="number">0</span>) &#123;</span><br><span class="line">+        ngx_cacheline_size = size;</span><br><span class="line">+    &#125;</span><br><span class="line">+<span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<p>为什么需要cpu cache line这个数值呢？因为它对提高性能是有用的！比如nginx中存储http header的hash表。假设我们的cache size是64字节，而一个hash bucket是48字节。假如某一个bucket的起始地址是1F7D030，那么它占用的内存就从1F7D030到1F7D05F，而cache size的特性导致只会从64的整数倍地址访问，于是需要访问两次：1F7D000和1F7D040。而如果我们能使得hash bucket大小是cache size的整数倍，那么就不会出现访问一个hash bucket需要两次操作主存的情况。比如，若原本bucket size是32，则设为64；原本为96，则设为128，即向上对齐。nginx有一个向上对齐函数就是做这个事的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ngx_align(d, a)     (((d) + (a - 1)) &amp; ~(a - 1))</span></span><br><span class="line"></span><br><span class="line">    cmcf-&gt;server_names_hash_bucket_size =</span><br><span class="line">            ngx_align(cmcf-&gt;server_names_hash_bucket_size, ngx_cacheline_size);</span><br></pre></td></tr></table></figure>
+
+<p>上面这个ngx_align算法来源于一个数学特性：对于正整数2^n（n&gt;1）来说，存在这样的特性，如果整数X是2^n的整数倍，则X的二进制形式的低n位为0， 如果X不是2^n的整数倍，则X与（~(2^n-1)）进行与运算可以得到一个与X相近的是2^n整数倍的正整数。对于上对齐，则需要先加上2^n-1，再进行上述运算。 事实上，如果hash bucket没有对齐cache line，那么出现访问一个bucket要调用两次载入主存数据的操作可能性非常大！比如上面的例子中hash bucket size是48，即使第一个bucket没有跨cache line，第2个bucket一定会跨从而导致两次主存访问！   当CPU获取数据时，cpu缓存由于已经存有数据，那么核心可以直接使用缓存，不用再去访问内存了，这一过程我们称为cache hit命中！反之，称为cache miss。可见，如果我们的程序在循环或者热点代码中，能够控制数据规模，使之长期落在CPU缓存中，那么性能就可以提升！怎么判断CPU缓存命中率现在是多少呢？在linux下可以通过perf命令轻松实现（centos下通过yum install perf安装），如下所示：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@zldfwq103 <span class="built_in">test</span>]<span class="comment"># perf stat -B -e cache-references,cache-misses ./test5 64</span></span><br><span class="line">time cost: 12283832us</span><br><span class="line"></span><br><span class="line"> Performance counter stats <span class="keyword">for</span> <span class="string">&#x27;./test5 64&#x27;</span>:</span><br><span class="line"></span><br><span class="line">           440,366      cache-references                                            </span><br><span class="line">           157,177      cache-misses              <span class="comment">#   35.692 % of all cache refs    </span></span><br><span class="line"></span><br><span class="line">      12.290852528 seconds time elapsed</span><br></pre></td></tr></table></figure>
+
+<p>当然，perf支持很多事件，包括进程上下文切换等，上面的<code>cache-references,cache-misses</code>两个事件分别代表缓存命中和未命中。perf支持的事件很多，如下表所示：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">branch-instructions OR branches                    [Hardware event]</span><br><span class="line">branch-misses                                      [Hardware event]</span><br><span class="line">bus-cycles                                         [Hardware event]</span><br><span class="line">cache-misses                                       [Hardware event]</span><br><span class="line">cache-references                                   [Hardware event]</span><br><span class="line">cpu-cycles OR cycles                               [Hardware event]</span><br><span class="line">instructions                                       [Hardware event]</span><br><span class="line">ref-cycles                                         [Hardware event]</span><br><span class="line"></span><br><span class="line">alignment-faults                                   [Software event]</span><br><span class="line">context-switches OR cs                             [Software event]</span><br><span class="line">cpu-clock                                          [Software event]</span><br><span class="line">cpu-migrations OR migrations                       [Software event]</span><br><span class="line">dummy                                              [Software event]</span><br><span class="line">emulation-faults                                   [Software event]</span><br><span class="line">major-faults                                       [Software event]</span><br><span class="line">minor-faults                                       [Software event]</span><br><span class="line">page-faults OR faults                              [Software event]</span><br><span class="line">task-clock                                         [Software event]</span><br><span class="line"></span><br><span class="line">L1-dcache-load-misses                              [Hardware cache event]</span><br><span class="line">L1-dcache-loads                                    [Hardware cache event]</span><br><span class="line">L1-dcache-stores                                   [Hardware cache event]</span><br><span class="line">L1-icache-load-misses                              [Hardware cache event]</span><br><span class="line">LLC-load-misses                                    [Hardware cache event]</span><br><span class="line">LLC-loads                                          [Hardware cache event]</span><br><span class="line">LLC-store-misses                                   [Hardware cache event]</span><br><span class="line">LLC-stores                                         [Hardware cache event]</span><br><span class="line">branch-load-misses                                 [Hardware cache event]</span><br><span class="line">branch-loads                                       [Hardware cache event]</span><br><span class="line">dTLB-load-misses                                   [Hardware cache event]</span><br><span class="line">dTLB-loads                                         [Hardware cache event]</span><br><span class="line">dTLB-store-misses                                  [Hardware cache event]</span><br><span class="line">dTLB-stores                                        [Hardware cache event]</span><br><span class="line">iTLB-load-misses                                   [Hardware cache event]</span><br><span class="line">iTLB-loads                                         [Hardware cache event]</span><br><span class="line">node-load-misses                                   [Hardware cache event]</span><br><span class="line">node-loads                                         [Hardware cache event]</span><br><span class="line">node-store-misses                                  [Hardware cache event]</span><br><span class="line">node-stores                                        [Hardware cache event]</span><br></pre></td></tr></table></figure>
+
+<p>使用perf来定位程序性能的瓶颈是个有效的办法！ 下一篇我们来讨论怎样写出能利用好CPU缓存的代码。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2015\01\27\算法\linux内核调度算法（2）-cpu时间片如何分配\" rel="bookmark">linux内核调度算法（2）--CPU时间片如何分配</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2018/09/05/%E5%88%A9%E7%94%A8cpu%E7%BC%93%E5%AD%98%E5%AE%9E%E7%8E%B0%E9%AB%98%E6%80%A7%E8%83%BD%E7%A8%8B%E5%BA%8F/" title="利用cpu缓存实现高性能程序">https://www.taohui.tech/2018/09/05/利用cpu缓存实现高性能程序/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ALU/" rel="tag"># ALU</a>
+              <a href="/tags/cpu/" rel="tag"># cpu</a>
+              <a href="/tags/cpu-cache-line/" rel="tag"># cpu cache line</a>
+              <a href="/tags/cpu%E7%BC%93%E5%AD%98/" rel="tag"># cpu缓存</a>
+              <a href="/tags/intel/" rel="tag"># intel</a>
+              <a href="/tags/perf/" rel="tag"># perf</a>
+              <a href="/tags/smart-cache/" rel="tag"># smart cache</a>
+              <a href="/tags/%E5%A4%9A%E6%A0%B8/" rel="tag"># 多核</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/09/03/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E5%89%8D%E7%AB%AF%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E8%BD%AC%E5%9E%8B%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%88%E5%9F%BA%E7%A1%80%E7%89%88%EF%BC%89/" rel="prev" title="前端程序员如何快速转型全栈工程师（基础版）">
+      <i class="fa fa-chevron-left"></i> 前端程序员如何快速转型全栈工程师（基础版）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/09/19/nginx/%E5%88%86%E4%BA%AB%E6%88%91%E5%9C%A8%E7%AC%AC%E5%8D%81%E5%B1%8Agops%E7%9A%84ppt%E3%80%8A%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E4%B8%8Bnginx%E7%9A%84%E4%BC%98%E5%8C%96%E4%B9%8B%E9%81%93%E3%80%8B/" rel="next" title="分享我在第十届GOPS的PPT《百万并发下Nginx的优化之道》">
+      分享我在第十届GOPS的PPT《百万并发下Nginx的优化之道》 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="搭建cms内容站点时，wordpress是一个很好的选择，不用做任何开发就可以通过配置、插件获得丰富的功能。用Docker容器技术部署运维都非常简单，特别是对于wordpress这种我们无需做任何开发的组件。而出于低成本考虑，公有云都是一个最佳选择，这里我选择阿里云。为了提速，wordpress前会有一个nginx作为负载均衡和web加速服务器，将静态内容都由nginx处理。出于高可靠性，我选用阿">
+<meta property="og:type" content="article">
+<meta property="og:title" content="阿里云搭建wordpress生产级CMS网站实践">
+<meta property="og:url" content="https://www.taohui.tech/2017/01/27/%E9%98%BF%E9%87%8C%E4%BA%91%E6%90%AD%E5%BB%BAwordpress%E7%94%9F%E4%BA%A7%E7%BA%A7cms%E7%BD%91%E7%AB%99%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="搭建cms内容站点时，wordpress是一个很好的选择，不用做任何开发就可以通过配置、插件获得丰富的功能。用Docker容器技术部署运维都非常简单，特别是对于wordpress这种我们无需做任何开发的组件。而出于低成本考虑，公有云都是一个最佳选择，这里我选择阿里云。为了提速，wordpress前会有一个nginx作为负载均衡和web加速服务器，将静态内容都由nginx处理。出于高可靠性，我选用阿">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/01/unnamed-file.jpg">
+<meta property="article:published_time" content="2017-01-27T08:47:41.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.915Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="高可用">
+<meta property="article:tag" content="wordpress">
+<meta property="article:tag" content="docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/01/unnamed-file.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2017/01/27/%E9%98%BF%E9%87%8C%E4%BA%91%E6%90%AD%E5%BB%BAwordpress%E7%94%9F%E4%BA%A7%E7%BA%A7cms%E7%BD%91%E7%AB%99%E5%AE%9E%E8%B7%B5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>阿里云搭建wordpress生产级CMS网站实践 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2017/01/27/%E9%98%BF%E9%87%8C%E4%BA%91%E6%90%AD%E5%BB%BAwordpress%E7%94%9F%E4%BA%A7%E7%BA%A7cms%E7%BD%91%E7%AB%99%E5%AE%9E%E8%B7%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          阿里云搭建wordpress生产级CMS网站实践
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-01-27 16:47:41" itemprop="dateCreated datePublished" datetime="2017-01-27T16:47:41+08:00">2017-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>搭建cms内容站点时，wordpress是一个很好的选择，不用做任何开发就可以通过配置、插件获得丰富的功能。用<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/docker" title="Docker知识库">Docker</a>容器技术部署运维都非常简单，特别是对于wordpress这种我们无需做任何开发的组件。而出于低成本考虑，公有云都是一个最佳选择，这里我选择阿里云。为了提速，wordpress前会有一个nginx作为负载均衡和web加速服务器，将静态内容都由nginx处理。出于高可靠性，我选用阿里云的容器服务（目前免费），由它来管理所有容器。而多容器间的磁盘目录共享，阿里云提供了oss映射和nas盘，oss盘的速度太慢，而nas盘IO与云盘相当，可以作为第一选择。<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/mysql" title="MySQL知识库">数据库</a>为了可靠性，如果没有独立的DB运维人员，就选择rds <a target="_blank" rel="noopener" href="http://lib.csdn.net/base/mysql" title="MySQL知识库">MySQL</a>好了（目前单机版RDS刚上线，相比双机mysql便宜很多）。 </p>
+<span id="more"></span>
+<h1 id="搭建基本站点"><a href="#搭建基本站点" class="headerlink" title="搭建基本站点"></a>搭建基本站点</h1><p>一、最初我们验证方案时，总是先从最简单的做起，功能满足要求即可。 </p>
+<h2 id="购买ECS"><a href="#购买ECS" class="headerlink" title="购买ECS"></a>购买ECS</h2><p>我们购买好ECS（如果是经典网络一定要含公网带宽，否则接下来用到阿里云容器服务时你会悲催的发现，目前阿里云容器要求集群内的经典网络节点必须含有公网带宽， 否则该ECS无法加入集群中。VPC网络就没有这个问题。在可见的一段时间内，阿里云可能都不会修复这个问题。），<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/operatingsystem" title="操作系统知识库">操作系统</a>如果是centos7.0或者7.2，高内核版本支持docker就更简单了。 </p>
+<h2 id="创建数据库配置文件"><a href="#创建数据库配置文件" class="headerlink" title="创建数据库配置文件"></a>创建数据库配置文件</h2><p>数据库在centos7.0以上版本时，mariadb比较方便（出于性能考虑，docker容器的db不推荐为生产环境下的数据库）。yum install这个数据库，修改/etc/my.cnf，使其支持utf-8，例如：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">init_connect=<span class="string">&#x27;SET collation_connection = utf8_unicode_ci&#x27;</span></span><br><span class="line">init_connect=<span class="string">&#x27;SET NAMES utf8&#x27;</span></span><br><span class="line">character-set-server=utf8</span><br><span class="line">collation-server=utf8_unicode_ci</span><br><span class="line">skip-character-set-client-handshake</span><br><span class="line">[client]</span><br><span class="line">default-character-set=utf8</span><br><span class="line">[mysql]</span><br><span class="line">default-character-set=utf8</span><br></pre></td></tr></table></figure>
+
+<p>用service mariadb start启动数据库。</p>
+<h2 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h2><p>用create user命令创建好用户，create database创建好db，grant命令赋予权限，例如：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> database yourdb;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> youruser IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;yourpass&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> PRIVILEGES <span class="keyword">ON</span> yourdb.<span class="operator">*</span> <span class="keyword">TO</span> youruser;</span><br><span class="line">flush privileges;</span><br></pre></td></tr></table></figure>
+
+<h2 id="用docker运行数据库"><a href="#用docker运行数据库" class="headerlink" title="用docker运行数据库"></a>用docker运行数据库</h2><p>用docker pull wordpress命令拉下官方最新版本的image，然后用docker run将其启动。-p端口映射到主机的80端口上。注意，很多image都会通过提供环境变量来修改配置，而wordpress也是如此，这里我们主要是修改其连接哪个数据库，通常这四个环境变量配置好即可。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-e WORDPRESS_DB_HOST=...</span><br><span class="line">-e WORDPRESS_DB_USER=...</span><br><span class="line">-e WORDPRESS_DB_PASSWORD=...</span><br><span class="line">-e WORDPRESS_DB_NAME=...</span><br></pre></td></tr></table></figure>
+
+<h2 id="解析域名"><a href="#解析域名" class="headerlink" title="解析域名"></a>解析域名</h2><p>接下来我们将购买的域名在阿里云的云解析页面上，配置到该公网IP上。（wordpress里需要配置域名，直接使用域名比IP方便）。</p>
+<h2 id="在浏览器上安装wordpress"><a href="#在浏览器上安装wordpress" class="headerlink" title="在浏览器上安装wordpress"></a>在浏览器上安装wordpress</h2><p>在页面上打开域名，显示wordpress的安装站点页面。根据提示傻瓜化的安装这个wordpress，接下来我们就可以体验下wordpress强大的CMS功能了。 </p>
+<h1 id="优化站点"><a href="#优化站点" class="headerlink" title="优化站点"></a>优化站点</h1><p>二、接下来，我们需要一个更美观的站点，而wordpress提供主题自定义功能。我们可以在google上找到很多免费或者收费的主题。接下来美化这个站点，使之符合功能需求。 </p>
+<ol>
+<li>首先找到符合要求的主题，下载后一般是一个zip文件。 </li>
+<li>在wordpress的/wp-admin页面下进入管理界面，由外观-&gt;主题-&gt;添加-&gt;上传主题页面里，点击选择文件，将zip主题包上传。 </li>
+</ol>
+<p>通常在这个步骤中，我们可能会看到上传失败的结果。提示上传文件过大（特别是你下载的zip主题包达到几十M的时候）。这是<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/php" title="PHP知识库">PHP</a>服务默认允许的上传文件过小所致。要想解决，首先得改image的配置。此时，我们首先要重新运行docker，把容器的/var/www/html目录映射到主机目录中（用-v 主机目录：容器目录，这个volumes命令可以把容器的磁盘内容映射到主机目录中供我们修改）。我们在映射目录下创建.htaccess文件，在此文件中输入以下配置项：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">php_value upload_max_filesize 64M</span><br><span class="line">php_value post_max_size 64M</span><br><span class="line">php_value max_execution_time 300</span><br><span class="line">php_value max_input_time 300</span><br></pre></td></tr></table></figure>
+
+<p>这里把上传文件的大小增加到64M。再启动docker容器，上传并安装新主题即可。</p>
+<h1 id="提升性能"><a href="#提升性能" class="headerlink" title="提升性能"></a>提升性能</h1><p>三、接着，多半会发现这个站点太慢了，体验很差，我们希望网站速度更快一点。 </p>
+<ol>
+<li>去除头像拉取<br>用浏览器的debug模式可以发现，最慢的请求从url看都是获取gravatar头像，请求之所以慢与墙有关（提供头像服务的机器网络不稳定）。最简单的解决办法是在wp-content/themes/your-theme-using目录下，在functions.php文件的结尾加上以下几行（参见<a target="_blank" rel="noopener" href="http://www.dmeng.net/wordpress-replace-gravatar-host.html">http://www.dmeng.net/wordpress-replace-gravatar-host.html</a>）：</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">function dmeng_get_https_avatar($avatar)&#123;</span><br><span class="line">    $avatar &#x3D; str_replace(array(&quot;www.gravatar.com&quot;, &quot;0.gravatar.com&quot;, &quot;1.gravatar.com&quot;, &quot;2.gravatar.com&quot;), &quot;secure.gravatar.com&quot;, $avatar);</span><br><span class="line">    return $avatar;</span><br><span class="line">&#125;</span><br><span class="line">add_filter(&#39;get_avatar&#39;, &#39;dmeng_get_https_avatar&#39;);</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>用Nginx处理静态资源<br>增加一台nginx，域名直接指向nginx所在的机器，由nginx将动态请求反向代理给wordpress容器。而静态内容由nginx处理。</li>
+</ol>
+<p>此时我们可能会遇到网站无法访问的情况，在nginx的日志里可以看到是301重定向过多导致。解决办法还是在上面的functions.php文件的结尾加上一行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">remove_filter(&#39;template_redirect&#39;, &#39;redirect_canonical&#39;);</span><br></pre></td></tr></table></figure>
+
+<p>我们还可能遇到上传新的主题文件时得到413错误，这是nginx拒绝所致，记得在nginx.conf里加上client_max_body_size 60M; 3、nginx还可以配成http2，但后面得用阿里云的slb防单点。 </p>
+<h1 id="提升可用性"><a href="#提升可用性" class="headerlink" title="提升可用性"></a>提升可用性</h1><p>四、一台访问速度和功能都满足我们需求的CMS站点出现了，接下来，我们开始解决可靠性问题。首先，我们需要把单点数据库改为RDS数据库（如果你的数据库有人全职维护那就不需要）。购买一个rds实例，建议与你的ECS在同一个可用区（同一机房内，带宽高又稳定）。目前RDS单实例对于使用wordpress作为站点的公司来说应该够了吧？ </p>
+<ol>
+<li>在web站点上初始化root用户密码（注意，阿里云的RDS用户权限比自建的小了很多!）。 </li>
+<li>加上访问白名单。通常我们是ECS内网访问数据库（便宜安全），所以将ECS内网IP加入白名单。 </li>
+<li>迁移数据。<br>这里我悲催了，阿里云RDS提供的迁移工具只能是mysql对mysql迁移，而我之前用的是相似的mariadb，迁移工具执行失败，提工单后售后反馈暂时不支持。 </li>
+</ol>
+<p>不同种类数据库的迁移这种情况下，用sql导入肯定是可行的。于是准备用mysqldump把mariadb中数据库的数据导出sql文件，出现错误： mysqldump: Error: Binlogging on server not active 在my.cnf上加入</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">log_bin=mysql-bin</span><br></pre></td></tr></table></figure>
+
+<p>再执行：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump --databases yourdb --user=youruser -hyourhost --password --master-data &gt; transfer.sql</span><br></pre></td></tr></table></figure>
+
+<p>先用root登上RDS，建数据库建用户。再导入时发现还是不行：ERROR 1227 (42000) at line 22: Access denied; you need (at least one of) the SUPER privilege(s) for this operation 这是生成的sql文件里有RDS不支持的操作。将其中最上面的两行删掉：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CHANGE MASTER <span class="keyword">TO</span> MASTER_LOG_FILE<span class="operator">=</span><span class="string">&#x27;mysql-bin.000001&#x27;</span>, MASTER_LOG_POS<span class="operator">=</span><span class="number">191500</span>;</span><br><span class="line"><span class="keyword">CREATE</span> DATABASE <span class="comment">/*!32312 IF NOT EXISTS*/</span> `yourdb` <span class="comment">/*!40100 DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci */</span>;</span><br></pre></td></tr></table></figure>
+
+<p>再执行：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql <span class="operator">-</span>u youruser <span class="operator">-</span>h yourhost yourdb <span class="operator">-</span>p <span class="operator">&lt;</span> transfer.sql</span><br></pre></td></tr></table></figure>
+
+<p>即完成数据库的迁移。<br>4、最后将docker wordpress容器通过环境变量指向RDS数据库。 </p>
+<h1 id="搭建wordpress集群"><a href="#搭建wordpress集群" class="headerlink" title="搭建wordpress集群"></a>搭建wordpress集群</h1><p>五、数据库单点解决掉后，再来解决wordpress <a target="_blank" rel="noopener" href="http://lib.csdn.net/base/docker" title="Docker知识库">Container</a>容器的单点与运维。这里有个待解决的问题是wordpress容器如果有多个实例，且跨ECS主机，那么就需要共享磁盘去映射容器中的/var/www/html目录（特别是其中包括uploads上传文件的目录）。 </p>
+<p>1、首先，我们要利用阿里云容器将dockoer容器运维起来的优势，将wordpress放在容器服务里运行。 </p>
+<p>2、其次，阿里云容器支持OSS或者NAS盘映射到集群内每一台ECS机器上某个目录。即，如果我们配置数据卷支持OSS和NAS（当然需要先购买这两种服务），集群内每个ECS都将自动的多出/mnt/acs_mnt/nas和/mnt/acs_mnt/ossfs目录，方便我们每个contain容器进行映射。 这里需要注意，如果是oss映射为磁盘，必须在其他参数里增加“-o umask=000”，否则docker容器每次新生成的文件其权限是有问题的，无法访问，这个BUG阿里云可能以后会解决吧。 另外，大家会强烈的感受到用oss去映射/var/www/html目录网站就会非常慢，这是因为oss本身的时延就高，而改成nas盘就会好多了。（但oss盘比nas盘便宜很多） </p>
+<p>当然，用oss可以非常方便的使用cdn，nas就没有这么便利了。 <img src="/2017/01/unnamed-file.jpg"> 最终<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/architecture" title="大型网站架构知识库">架构</a>如上所示。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2018\09\19\nginx\分享我在第十届gops的ppt《百万并发下nginx的优化之道》\" rel="bookmark">分享我在第十届GOPS的PPT《百万并发下Nginx的优化之道》</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2021\02\15\从wordpress迁移到hexo静态站点\" rel="bookmark">从wordpress迁移到hexo静态站点</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2017/01/27/%E9%98%BF%E9%87%8C%E4%BA%91%E6%90%AD%E5%BB%BAwordpress%E7%94%9F%E4%BA%A7%E7%BA%A7cms%E7%BD%91%E7%AB%99%E5%AE%9E%E8%B7%B5/" title="阿里云搭建wordpress生产级CMS网站实践">https://www.taohui.tech/2017/01/27/阿里云搭建wordpress生产级cms网站实践/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/" rel="tag"># 高可用</a>
+              <a href="/tags/wordpress/" rel="tag"># wordpress</a>
+              <a href="/tags/docker/" rel="tag"># docker</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/01/25/%E4%B8%93%E8%AE%BF%E9%98%BF%E9%87%8C%E9%99%B6%E8%BE%89%EF%BC%9A%E5%A4%A7%E8%A7%84%E6%A8%A1%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E3%80%81%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="prev" title="专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享">
+      <i class="fa fa-chevron-left"></i> 专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/01/27/nginx/%E6%B7%B1%E5%9C%B3%E3%80%8A%E8%BF%90%E7%BB%B4%E4%B8%96%E7%95%8C%E5%A4%A7%E4%BC%9A%E3%80%8B%E4%B8%AD%E3%80%8A%E4%BB%8E%E4%BB%A3%E7%A0%81%E7%9C%8Bnginx%E8%BF%90%E7%BB%B4%E6%9C%AC%E8%B4%A8%E3%80%8B/" rel="next" title="深圳《运维世界大会》中《从代码看Nginx运维本质》演讲PPT分享">
+      深圳《运维世界大会》中《从代码看Nginx运维本质》演讲PPT分享 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E5%9F%BA%E6%9C%AC%E7%AB%99%E7%82%B9"><span class="nav-number">1.</span> <span class="nav-text">搭建基本站点</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B4%AD%E4%B9%B0ECS"><span class="nav-number">1.1.</span> <span class="nav-text">购买ECS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E5%BA%93%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">1.2.</span> <span class="nav-text">创建数据库配置文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%94%A8%E6%88%B7"><span class="nav-number">1.3.</span> <span class="nav-text">创建用户</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8docker%E8%BF%90%E8%A1%8C%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">1.4.</span> <span class="nav-text">用docker运行数据库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E5%9F%9F%E5%90%8D"><span class="nav-number">1.5.</span> <span class="nav-text">解析域名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E6%B5%8F%E8%A7%88%E5%99%A8%E4%B8%8A%E5%AE%89%E8%A3%85wordpress"><span class="nav-number">1.6.</span> <span class="nav-text">在浏览器上安装wordpress</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E7%AB%99%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">优化站点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E5%8D%87%E6%80%A7%E8%83%BD"><span class="nav-number">3.</span> <span class="nav-text">提升性能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E5%8D%87%E5%8F%AF%E7%94%A8%E6%80%A7"><span class="nav-number">4.</span> <span class="nav-text">提升可用性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%AD%E5%BB%BAwordpress%E9%9B%86%E7%BE%A4"><span class="nav-number">5.</span> <span class="nav-text">搭建wordpress集群</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

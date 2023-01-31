@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="12月7、8、9号三天在北京参加了BDTC大会，主题是人工智能与大数据，除了第一天的全员大会外，我参加了第二天上午的大数据云服务、下午的知识图谱、第三天的机器学习论坛。在此做一个回顾，也希望能为未参加大会的朋友们分享从我个人角度思考的心得。 禇晓文教授的《基于GPU的性能建模与分布式深度学习框架评价》是在GPU训练性能上讨论了benchmark分析方法。从CPU到GPU后，训练时间降低了一些，但能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BDTC2017北京大数据技术大会参会心得">
+<meta property="og:url" content="https://www.taohui.tech/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="12月7、8、9号三天在北京参加了BDTC大会，主题是人工智能与大数据，除了第一天的全员大会外，我参加了第二天上午的大数据云服务、下午的知识图谱、第三天的机器学习论坛。在此做一个回顾，也希望能为未参加大会的朋友们分享从我个人角度思考的心得。 禇晓文教授的《基于GPU的性能建模与分布式深度学习框架评价》是在GPU训练性能上讨论了benchmark分析方法。从CPU到GPU后，训练时间降低了一些，但能">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/12/gpu%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD%E6%98%AF%E7%93%B6%E9%A2%88-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/12/intel5345%E7%9A%84OI%E6%98%AF7.5-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/12/unnamed-file-2.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2017/12/unnamed-file-1-1.jpg">
+<meta property="article:published_time" content="2017-12-13T12:04:38.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.834Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="gpu">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/12/gpu%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD%E6%98%AF%E7%93%B6%E9%A2%88-1.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>BDTC2017北京大数据技术大会参会心得 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          BDTC2017北京大数据技术大会参会心得
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-12-13 20:04:38" itemprop="dateCreated datePublished" datetime="2017-12-13T20:04:38+08:00">2017-12-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/" itemprop="url" rel="index"><span itemprop="name">人工智能</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>12月7、8、9号三天在北京参加了BDTC大会，主题是人工智能与大数据，除了第一天的全员大会外，我参加了第二天上午的大数据云服务、下午的知识图谱、第三天的机器学习论坛。在此做一个回顾，也希望能为未参加大会的朋友们分享从我个人角度思考的心得。 禇晓文教授的《基于GPU的性能建模与分布式深度学习框架评价》是在GPU训练性能上讨论了benchmark分析方法。从CPU到GPU后，训练时间降低了一些，但能降得更多些吗？换成多块GPU显卡，可以再下降吗？应当采购什么样的显卡，性价比最好？这场分享回答了以上问题。</p>
+<span id="more"></span>
+<p>先来看一张图： <img src="/2017/12/gpu%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD%E6%98%AF%E7%93%B6%E9%A2%88-1.jpg"> 可见，显卡的计算单元ALU速度很快，从518到了15000 GFLOPS，翻了快30倍，然而显存带宽只翻了15倍，所以，显存带宽开始制约我们的训练效率。而且，一次矩阵计算至少需要两次读和一次写，对显存的操作本就更多。拿常用的gtx1080显卡来说，8.8TFLOPS和320GB/s的带宽吞吐能力，可见它们差不多有20多倍的速度差距。 所以我们通常采用多线程并行、编程控制共享显存、使用更快的显存等方法读写数据来减少速度差的影响，以使得GPU计算能力满载。 </p>
+<p>我们如何设计网络模型，以使得GPU可以满载呢？这里要引入一个指标OI（operational insensity），它表示计算量除以带宽FLOPS/BYTES。例如： 求两个向量的点积，每个向量含n个float变量，那么计算量是2n，读写字节数是2*n*4，故OI是1/4。 求矩阵与向量相乘，那么计算量是2n*n，字节数是(n*n+2*n)*4，故OI是1/2。 求两个n*n矩阵相乘，那么计算量是2*n*n*n，而字节数是(n*n*3)*4，故OI可能达到n/6。 </p>
+<p>而拿上面的GTX1080显卡举例，其OI达到8TFLOPS/320GB/s约等于28，所以至少需要OI达到28的运算才能把GPU跑满。 例如拿intel的E5345 cpu举例，其浮点运算能力是75GFLOPS，而内存带宽是10GB/s，那么其OI大概在7.5可以把CPU跑满，只有模型的OI超过7.5时，计算能力才会成为瓶颈，如下图所示： <img src="/2017/12/intel5345%E7%9A%84OI%E6%98%AF7.5-1.jpg"> </p>
+<p>具体的模型不像上面提到的矩阵乘法那么简单，特别是现代网络的深度是很大的，下图是常见经典网络各层的计算消耗比例： <img src="/2017/12/unnamed-file-2.jpg"> 可见，卷积层是计算量最大的。而影响计算量的主要因素是卷积kernel size，所以一般kernel size都在3、5等较小的数字（都是奇数）。 </p>
+<p>舒继教授的《<strong>大数据时代存储系统若干变化的思考</strong>》是一场关于深度学习训练过程的优化方法分享，关注点在前沿的工程领域，非常的酣畅淋漓！AI和大数据使得传统计算机课程都不再适用，我们心中的操作系统是这样的：CPU计算最快，它的寄存器是存储介质里在速度上最快的，其次是L1、L2等缓存，再次是内存，以上都是易丢失的存储介质，而能够落地的磁盘系统最慢（主要是机械硬盘）。所以操作系统、编译器做了大量优化，例如做IO处理时操作系统会有电梯优化算法，以加长一些IO的时延为代价，汇聚更多的IO批量读写以提高吞吐量。而现今来看，机械硬盘虽然单元存储价格最低，但<strong>时延高、吞吐量小、能耗高、可靠性低、随机读写性能差、发热量大</strong>，这必将被flash存储介质替换，如下图所示： <img src="/2017/12/unnamed-file-1-1.jpg"> </p>
+<p>所以flash磁盘的大规模使用将对整个操作系统架构产生影响，例如原先的文件系统常假设外存为机械硬盘，所以有逻辑与物理地址映射管理、各种磁盘驱动程序、SATA接口等等。且各种非易失性内存技术的指标逐渐接近现在使用的DRAM内存，这会完全改变现有的系统架构。而从计算上讲，GPU由于专注于数值运算，其并行计算能力很高，从而大量的计算任务就跳过了CPU缓存、CPU寄存器，直接从GPU共享内存、缓存进入GPU计算单元中。因而，硬件的变化领先于低层软件系统，这意味着今后的底层系统会有较大的改变。 </p>
+<p>徐宗本院士的《<strong>模型驱动的深度学习</strong>》让我心有戚戚：学术界工作者和小公司的从业者们如何<strong>破除深度学习必然需要大数据作为训练基础</strong>的魔咒呢？大数据只有大公司才有，如此一来，最有活力的创业公司岂不是不要再玩什么深度学习、AI之类的东东了？破局点有两个：</p>
+<ul>
+<li>第一，如果生产环境上并没有足够多的数据，除了下载些国外的开源标注数据外（国内标注数据真的很少），就像Alpha GO zero一样，没有大数据时大可以依据规则生成大数据，用生成的非真实大数据来训练模型，以解决冷启动时没有大数据的困境；</li>
+<li>第二，如果把整个网络当成黑盒，每 一层都不知道其意义所在，那么自然只能靠堆砌大量的数据来拟合泛化。例如激活函数常见的relu等他们的表达能力都很差（为了减少计算量），所以需要大量的训练数据有效拟合，如果在优化网络时提高激活函数的表达能力，有目的的更换激活函数，则网络就有可能把规模降下来，从而不需要那么大量的训练样本。</li>
+</ul>
+<p>当然，百度也给了一个方案，就是百度数据众包平台（百度两场分享都在介绍这个平台）。目前的深度学习基本都是监督学习，而监督学习需要的数据都是标注数据。百度有很强的整理清洗数据的基因，例如百度百科，基于人力进行数据标注。如此一来，百度就可以通过标注图片、语音、行业数据等来提供训练样本，提供了AI中的基础训练数据。可以感觉得到，百度相比其他巨头对AI行业布局的决心，可见“All in AI“不是说说而已！   </p>
+<p>长沙超算中心的彭绍亮带来的医疗AI实践的分享给我耳目一新的感觉。一直以来，我以为医疗AI只有IBM的watson，而国内只是还在信息化而已，还在采集脉搏血压心跳数据、连接患者、药厂、医生之中，如果算法能够开处方看病进入一线医疗，好像还非常遥远。而这场分享中，彭为我们描述了目前的实践已经到了可以开处方的地步，虽然只是辅助。而且由于国内信息保护很差，人口基数又大，因此中国比美国在医疗、人脸识别上有先天优势。所以，目前AI最热的三个领域有智能医疗就不足为奇了。 </p>
+<p>赛迪对《人工智能产业趋势和投融资分析》的分享帮助我们看到，现在北京还是AI投资最热的第一梯队，其领先于第二梯队上海、深圳、杭州之合。同时，中美的差距一如既往，但由于对信息隐私保护上中国还很差，以及中国巨大的网民基数，使得在红绿灯、人脸识别领域已经领先于美国了。非常看好中国AI产业的发展。 </p>
+<p>最后一定要吐槽，中国的大会一如既往的具有一个非常讨厌的特点：只要某一场演讲嘉宾是代表大企业的分享，那么几乎就变成广告宣讲会了，特别是产品总监或者非一线研发经理演讲时更是如此，全场都是在分享他们的产品特点。如果恰好你正在用这个产品时还稍好些（这概率真的极小），否则很浪费时间。仅有少数一线程序员会详细的说明如何实现、有哪些难点，遇到这种分享真是听众们的幸运了。当然，如果是学术界的讲师，那绝对都是业界良心，真的在分享知识和思路，可以开拓我们的视野，真心希望以后的大会组织者们注意下宣讲嘉宾的主题，不<strong>要把纯粹卖自家产品、夸自家企业的嘉宾放到这种技术大会的某场专题演讲中</strong>，哪怕提高些票价。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\10\29\算法\深入浅出人脸识别技术\" rel="bookmark">深入浅出人脸识别技术</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/" title="BDTC2017北京大数据技术大会参会心得">https://www.taohui.tech/2017/12/13/bdtc2017北京大数据技术大会参会心得/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/gpu/" rel="tag"># gpu</a>
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/10/29/%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF/" rel="prev" title="深入浅出人脸识别技术">
+      <i class="fa fa-chevron-left"></i> 深入浅出人脸识别技术
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/12/23/419/" rel="next" title="详解python django面向关系数据库的ORM对象映射系统（1）">
+      详解python django面向关系数据库的ORM对象映射系统（1） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

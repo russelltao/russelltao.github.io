@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见这里）需要重构。干脆基于hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。  wordpress与hexo静态站点的优劣比较静态站点的优点在于部署简单、性能优异，比如你可以将其部署在免费的github page上，甚至无须购买域名即可对外提供服务（">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从wordpress迁移到hexo静态站点">
+<meta property="og:url" content="https://www.taohui.tech/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见这里）需要重构。干脆基于hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。  wordpress与hexo静态站点的优劣比较静态站点的优点在于部署简单、性能优异，比如你可以将其部署在免费的github page上，甚至无须购买域名即可对外提供服务（">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/images/建站/知识共享许可协议.JPG">
+<meta property="og:image" content="https://www.taohui.tech/images/建站/hexo标签页.JPG">
+<meta property="og:image" content="https://www.taohui.tech/images/建站/analytics-baidu-id.png">
+<meta property="article:published_time" content="2021-02-15T13:01:01.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.866Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="wordpress">
+<meta property="article:tag" content="nodejs">
+<meta property="article:tag" content="hexo">
+<meta property="article:tag" content="next">
+<meta property="article:tag" content="github">
+<meta property="article:tag" content="免费托管">
+<meta property="article:tag" content="备案">
+<meta property="article:tag" content="管局">
+<meta property="article:tag" content="sftp">
+<meta property="article:tag" content="评论">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/images/建站/知识共享许可协议.JPG">
+
+<link rel="canonical" href="https://www.taohui.tech/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从wordpress迁移到hexo静态站点 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从wordpress迁移到hexo静态站点
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-15 21:01:01" itemprop="dateCreated datePublished" datetime="2021-02-15T21:01:01+08:00">2021-02-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/%E5%BB%BA%E7%AB%99/%E7%9F%A5%E8%AF%86%E5%85%B1%E4%BA%AB%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE.JPG" itemprop="contentUrl">
+            <img src="/images/%E5%BB%BA%E7%AB%99/hexo%E6%A0%87%E7%AD%BE%E9%A1%B5.JPG" itemprop="contentUrl">
+            <img src="/images/%E5%BB%BA%E7%AB%99/analytics-baidu-id.png" itemprop="contentUrl">
+        </div>
+        <blockquote>
+<p>接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见<a href="">这里</a>）需要重构。干脆基于hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。</p>
+</blockquote>
+<h1 id="wordpress与hexo静态站点的优劣比较"><a href="#wordpress与hexo静态站点的优劣比较" class="headerlink" title="wordpress与hexo静态站点的优劣比较"></a>wordpress与hexo静态站点的优劣比较</h1><p>静态站点的优点在于部署简单、性能优异，比如你可以将其部署在免费的github page上，甚至无须购买域名即可对外提供服务（你可以点击<a target="_blank" rel="noopener" href="https://russelltao.github.io/">russelltao.github.io</a>查看我的github页面）。再比如，公有云提供的静态站点服务，可以将其自动部署到CDN站点上（腾讯云的Hexo部署插件见<a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/1210/43365">这里</a>），用户体验非常好。文章、图片等资源的备份也很简单，可以直接连同代码一起存放在git仓库中。</p>
+<span id="more"></span>
+<p>当然，静态站点的缺点也很明显，它自身无法处理用户输入的数据，比如文章的评论、阅读量等，需要借助第三方API服务才能实现。虽然类似的服务很多，但今年国家监管得很严，个人站点一旦发现评论就可能会被关站，因此，个人博客改用静态站点其实挺合适的。</p>
+<p>静态站点通常以markdown格式写作，将.md文件渲染为.html文件，再发布到支持Http协议的Web服务器上，比如Apache、NodeJS或者Nginx。GoLang、Python等语言都有成熟的静态站点软件框架，而Javascript语言擅长前端UI界面的渲染，因此基于JS的Hexo框架渲染.md模板效果不错，尤其Hexo的中文文档相对较多，对国内用户更友好。Hexo有一个Next Theme主题非常好用，集成了很多常用插件。因此，我选择Hexo+Next搭建新的静态站点，并将原先的wordpress博客迁移过来，下面记录了相关步骤，供参考。</p>
+<h1 id="搭建hexo-Next主题站点"><a href="#搭建hexo-Next主题站点" class="headerlink" title="搭建hexo Next主题站点"></a>搭建hexo Next主题站点</h1><p>你可以在自己熟悉的操作系统上进行内容创作，再将它发布到Linux服务器上。先来看如何构建静态站点的源码环境。</p>
+<h2 id="在windows上安装生成站点环境"><a href="#在windows上安装生成站点环境" class="headerlink" title="在windows上安装生成站点环境"></a>在windows上安装生成站点环境</h2><p>安装NodeJS及hexo生成器，包括以下3步：</p>
+<ol>
+<li>进入<a target="_blank" rel="noopener" href="https://nodejs.org/en/">NodeJS官网</a>下载安装包。</li>
+<li>更换淘宝源，这样下载软件会快一些。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm config <span class="built_in">set</span> registry http://registry.npm.taobao.org</span><br></pre></td></tr></table></figure></li>
+<li>安装hexo：<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="建立博客站点"><a href="#建立博客站点" class="headerlink" title="建立博客站点"></a>建立博客站点</h2><p>想好用于存放站点文件的目录名，例如blog，执行：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init blog</span><br></pre></td></tr></table></figure>
+<p>进入hexo创建的blog目录中，再执行：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> blog</span><br><span class="line">npm install</span><br></pre></td></tr></table></figure>
+<p>完成后，这个站点的目录如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── _config.yml</span><br><span class="line">├── package.json</span><br><span class="line">├── scaffolds</span><br><span class="line">├── <span class="built_in">source</span></span><br><span class="line">|   ├── _drafts</span><br><span class="line">|   └── _posts</span><br><span class="line">└── themes</span><br></pre></td></tr></table></figure>
+<h3 id="目录说明"><a href="#目录说明" class="headerlink" title="目录说明"></a>目录说明</h3><ul>
+<li>source：所有博客文章（比如.md格式）、图片、视频等内容都在这里，目录层级不限。删除文章时，只要将.md及其引用资源（比如图片）删除即可。<ul>
+<li>_drafts：草稿放在该目录下，这些.md文章默认不会渲染到用于部署的public目录。</li>
+<li>_posts：文章放在此目录下。如果你的文章很多，<strong>为了维护方便，你可以在此目录下继续构建多级子目录放置文章</strong>。</li>
+</ul>
+</li>
+<li>themes：主题样式目录放在此处，比如接下来将要介绍的Next主题。</li>
+<li>scaffolds：新建文章时，会基于该目录下的3个模板文件，构造文章、草稿和页面。</li>
+<li>package.json：依赖软件包信息。</li>
+<li>_config.yml：站点级的配置文件，比如：<ul>
+<li>站点名称可以通过修改title和subtitle完成。</li>
+</ul>
+</li>
+</ul>
+<h2 id="设置Next主题"><a href="#设置Next主题" class="headerlink" title="设置Next主题"></a>设置Next主题</h2><p>默认的主题太难看，而hexo中最流行的Next主题功能非常强大，简单易用，适合新手入门。<br>安装主题很简单，首先将github上的Next主题放到themes目录：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/theme-next/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure>
+<p>接着，将站点配置文件_config.yml文件中theme项修改：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">theme:</span> <span class="string">next</span></span><br></pre></td></tr></table></figure>
+<p>Next主题已经生效。</p>
+<h3 id="设置主题风格"><a href="#设置主题风格" class="headerlink" title="设置主题风格"></a>设置主题风格</h3><p>目前Next有4种风格，可以通过修改next/_config.yml主题配置文件实现，例如修改为pisces风格：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Schemes</span></span><br><span class="line"><span class="comment">#scheme: Muse</span></span><br><span class="line"><span class="comment">#scheme: Mist</span></span><br><span class="line"><span class="attr">scheme:</span> <span class="string">Pisces</span></span><br><span class="line"><span class="comment">#scheme: Gemini</span></span><br></pre></td></tr></table></figure>
+<h3 id="去除底部LOGO"><a href="#去除底部LOGO" class="headerlink" title="去除底部LOGO"></a>去除底部LOGO</h3><p>如果想将站点底部的Hexo、Next字样消除，可以将footer中的powered置为false：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">footer:</span></span><br><span class="line">  <span class="attr">powered:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>如果显示站点创建时间，则可以更改since选项：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">footer:</span></span><br><span class="line">  <span class="attr">since:</span> <span class="number">2021</span></span><br></pre></td></tr></table></figure>
+<h3 id="设置站点语言"><a href="#设置站点语言" class="headerlink" title="设置站点语言"></a>设置站点语言</h3><p>将网站语言修改为中文，可以通过修改站点_config.yml文件完成，目前Next主题支持的语言如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>语言</th>
+<th>代码</th>
+<th>设定示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>English</td>
+<td>en</td>
+<td>language: en</td>
+</tr>
+<tr>
+<td>简体中文</td>
+<td>zh-Hans</td>
+<td>language: zh-Hans</td>
+</tr>
+<tr>
+<td>Français</td>
+<td>fr-FR</td>
+<td>language: fr-FR</td>
+</tr>
+<tr>
+<td>Português</td>
+<td>pt</td>
+<td>language: pt or language: pt-BR</td>
+</tr>
+<tr>
+<td>繁體中文</td>
+<td>zh-hk 或者 zh-tw</td>
+<td>language: zh-hk</td>
+</tr>
+<tr>
+<td>Русский язык</td>
+<td>ru</td>
+<td>language: ru</td>
+</tr>
+<tr>
+<td>Deutsch</td>
+<td>de</td>
+<td>language: de</td>
+</tr>
+<tr>
+<td>日本語</td>
+<td>ja</td>
+<td>language: ja</td>
+</tr>
+<tr>
+<td>Indonesian</td>
+<td>id</td>
+<td>language: id</td>
+</tr>
+<tr>
+<td>Korean</td>
+<td>ko</td>
+<td>language: ko</td>
+</tr>
+</tbody></table>
+<p>故修改为language: zh-CN即可。</p>
+<h1 id="迁移wordpress博客内容"><a href="#迁移wordpress博客内容" class="headerlink" title="迁移wordpress博客内容"></a>迁移wordpress博客内容</h1><h2 id="迁移数据"><a href="#迁移数据" class="headerlink" title="迁移数据"></a>迁移数据</h2><p>首先，安装 hexo-migrator-wordpress 插件。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-migrator-wordpress --save</span><br></pre></td></tr></table></figure>
+<p>在 WordPress 仪表盘中导出数据(“Tools” → “Export” → “WordPress”)。注意，<strong>草稿里的文章建议删除后再导出，否则发布日期可能会导致插件异常</strong>。<br>接着，将导出的xxx.xml文件导入hexo站点：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo migrate wordpress xxx.xml</span><br></pre></td></tr></table></figure>
+<p>这个插件问题很多，有些wordpress文章很可能导致migrate过程异常终止。出现这种问题时，我建议你先找到导致migrate抛异常的文章，做相关处理后再重新导出、migrate。</p>
+<p>另外，即使migrate成功后，还需要大量的工作修复数据格式，包括更改代码、表格及段落格式等，如下文所描述的那样。</p>
+<h2 id="更改代码块格式"><a href="#更改代码块格式" class="headerlink" title="更改代码块格式"></a>更改代码块格式</h2><p>wordpress导出的代码段，仅用```来分隔，不会标注代码语言，这就无法使用语法高亮显示功能了。我们需要在``` 之后添加编程语言。比如，Nginx配置文件可以这么写：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">``` nginx</span><br><span class="line"><span class="attribute">location</span> /a &#123;</span><br><span class="line">  <span class="attribute">alias</span> /d;</span><br><span class="line">&#125;   ```</span><br></pre></td></tr></table></figure>
+
+<p>点击<a target="_blank" rel="noopener" href="https://github.com/highlightjs/highlight.js/blob/master/SUPPORTED_LANGUAGES.md">代码块支持语言</a>查看所有支持的语言。</p>
+<h2 id="更改表格格式"><a href="#更改表格格式" class="headerlink" title="更改表格格式"></a>更改表格格式</h2><p>默认表格迁移到markdown格式，每个行、列交汇处的数值是单行放置的！手动更改为markdown格式表格是极其痛苦的！ 如果你在用VsCode编辑器，可以安装个插件Markdown Shortcut，它可以将导入的数据简单的转换为表格。</p>
+<h2 id="增加分类、标签页"><a href="#增加分类、标签页" class="headerlink" title="增加分类、标签页"></a>增加分类、标签页</h2><p>分类页可以将所有文章的Category分类聚合成为独立的页面，供用户点击选择。同样，标签页可以将所有文章的Tag标签聚合为独立的页面，并通过字体大小、粗体等方式表达标签的引用次数，如下图所示：<br><img src="/images/%E5%BB%BA%E7%AB%99/hexo%E6%A0%87%E7%AD%BE%E9%A1%B5.JPG"></p>
+<p>生成这2个页面的步骤很简单，包括：</p>
+<ol>
+<li><p>首先生成分类页和标签页：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo new page categories</span><br><span class="line">hexo new page tags</span><br></pre></td></tr></table></figure></li>
+<li><p>修改2个页面的type值<br>在新生成的source/categories/index.md文件中，添加type项：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">title:</span> <span class="string">categories</span></span><br><span class="line"><span class="attr">date:</span> <span class="number">2021-01-29 10:17:39</span></span><br><span class="line"><span class="attr">type:</span> <span class="string">&quot;categories&quot;</span></span><br><span class="line"><span class="meta">---</span></span><br></pre></td></tr></table></figure>
+<p>在新生成的source/tags/index.md文件中，同样添加type项：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">title:</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">date:</span> <span class="number">2021-01-29 10:17:44</span></span><br><span class="line"><span class="attr">type:</span> <span class="string">&#x27;tags&#x27;</span></span><br><span class="line"><span class="meta">---</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将2个页面添加到网站首页<br>修改next/_config.yml文件，加入tags和categories页：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">menu:</span></span><br><span class="line">  <span class="attr">home:</span> <span class="string">/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-home</span></span><br><span class="line">  <span class="attr">tags:</span> <span class="string">/tags/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-tags</span></span><br><span class="line">  <span class="attr">categories:</span> <span class="string">/categories/</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-th</span></span><br></pre></td></tr></table></figure>
+<p>其中，fa-tags等是图标样式，你可以在<a target="_blank" rel="noopener" href="https://fontawesome.com/v4.7.0/icons/">这里</a>找到所有可用的图标。</p>
+<h2 id="分隔文章摘要"><a href="#分隔文章摘要" class="headerlink" title="分隔文章摘要"></a>分隔文章摘要</h2></li>
+</ol>
+<p>Next主题有3种提取文章摘要在首页显示的方法，包括：</p>
+<ol>
+<li>最好用（也是官方推荐的）的，是在文章中用<code>&lt;!-- more --&gt;</code>分隔内容。虽然这样最灵活，但很难保证首页有限摘要中含有图片。</li>
+<li>在文章最前面的front-matter部分中添加description标签，标签中的内容会放在首页中以摘要方式显示。注意，这里添加图片时，不能使用markdown格式，而必须用&lt;img src=&quot;…&quot;/&gt;这种方式！</li>
+<li>由Next主题按照字符数自动形成摘要，比如：<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">auto_excerpt:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">length:</span> <span class="number">150</span></span><br></pre></td></tr></table></figure>
+这种配置会自动截断前150个字符，形成首页摘要。这个方法效果最差。</li>
+</ol>
+<p>另外，我们通常会希望将图片显示在首页，让用户更直观的看到文章内容。而more截断、description这两种方式都有些问题。此时，可以使用photos标签实现这一功能，比如：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">photos:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/2014/10/07/front-matter-photos/1000.png</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="SEO优化"><a href="#SEO优化" class="headerlink" title="SEO优化"></a>SEO优化</h2><p>为了提高站点的访问率，Next主题也已经帮我们做了很多工作。</p>
+<h3 id="增加百度统计"><a href="#增加百度统计" class="headerlink" title="增加百度统计"></a>增加百度统计</h3><p>可以借助百度或者谷歌的统计功能查看站点的访问情况（JS会将用户的访问数据传到谷歌、百度后台），<strong>比如了解下，我们的用户主要靠哪些关键词才搜索到站点</strong>。用法很简单，对于<a target="_blank" rel="noopener" href="https://tongji.baidu.com/">百度统计</a>，在注册好帐户后，可以从下图中获取脚本ID：<br><img src="/images/%E5%BB%BA%E7%AB%99/analytics-baidu-id.png"></p>
+<p>再修改next/_config.yml文件：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">baidu_analytics:</span> <span class="string">xxxxx</span></span><br></pre></td></tr></table></figure>
+<p>设置好脚本ID即可。</p>
+<h3 id="设置keywords关键字"><a href="#设置keywords关键字" class="headerlink" title="设置keywords关键字"></a>设置keywords关键字</h3><p>关键字对搜索引擎更友好，方便建立倒排索引时设置词汇权重。关键字分为站点与文章2类，设置方法如下：</p>
+<ol>
+<li>站点级关键字<br>站点配置文件_config.yml中可以设置keywords，多个关键字之间用英文逗号分隔。</li>
+<li>文章关键字<br>在文章最前方的front-matter中添加keywords项，其中填写关键字。</li>
+</ol>
+<h3 id="生成sitemap站点地图"><a href="#生成sitemap站点地图" class="headerlink" title="生成sitemap站点地图"></a>生成sitemap站点地图</h3><p>为了方便搜索引擎收录站点的所有文章，你可以通过以下2步提升收录速度：</p>
+<ol>
+<li>安装站点地图插件(详细用法见<a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo-generator-sitemap">这里</a>)：<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-sitemap --save</span><br></pre></td></tr></table></figure></li>
+<li>将站点地图链接加入首页<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">menu:</span></span><br><span class="line">  <span class="attr">sitemap:</span> <span class="string">/sitemap.xml</span> <span class="string">||</span> <span class="string">fa</span> <span class="string">fa-sitemap</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>这样，搜索引擎一经发现/sitemap.xml页面，就会迅速找到所有文章。</p>
+<h1 id="优化Next主题"><a href="#优化Next主题" class="headerlink" title="优化Next主题"></a>优化Next主题</h1><p>Next主题本身很美观也很强大，但如果想定制个性化的页面，还需要修改CSS样式。同时，Next集成了很多第三方平台的功能，这需要协同注册第三方平台才能达到效果。下面总结下常用的主题优化设置。</p>
+<h2 id="分享到微信、微博等平台"><a href="#分享到微信、微博等平台" class="headerlink" title="分享到微信、微博等平台"></a>分享到微信、微博等平台</h2><p>使用Next主题默认的<a target="_blank" rel="noopener" href="https://www.addthis.com/">AddThis</a>插件，注册帐号并排列分享顺序（比如默认Facebook、Twitter在最上方，国内用户可以将微博、微信优先级提前）。</p>
+<p>最后在Next主题的_config.yml文件中，将AddThis中的pubid填入AddThis中：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">add_this_id:</span> <span class="string">ra-xxxxxxxxxxxxxxxxx</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="添加侧边栏头像"><a href="#添加侧边栏头像" class="headerlink" title="添加侧边栏头像"></a>添加侧边栏头像</h2><p>修改/themes/next/layout/_partials/sidebar/site-overview.swig文件：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;div class=&quot;site-author motion-element&quot; itemprop=&quot;author&quot; itemscope itemtype=&quot;http://schema.org/Person&quot;&gt;</span><br><span class="line">  &#123;%- if theme.avatar.url %&#125;</span><br><span class="line">    &lt;a href=&quot;/关于陶辉/index.html&quot;&gt;&lt;img class=&quot;site-author-image&quot; itemprop=&quot;image&quot; alt=&quot;&#123;&#123; author &#125;&#125;&quot;</span><br><span class="line">      src=&quot;&#123;&#123; url_for(theme.avatar.url) &#125;&#125;&quot;&gt;&lt;/a&gt;</span><br><span class="line">  &#123;%- endif %&#125;</span><br><span class="line">  &lt;p class=&quot;site-author-name&quot; itemprop=&quot;name&quot;&gt;&#123;&#123; author &#125;&#125;&lt;/p&gt;</span><br><span class="line">  &lt;div class=&quot;site-description&quot; itemprop=&quot;description&quot;&gt;&#123;&#123; description &#125;&#125;&lt;/div&gt;</span><br><span class="line">&lt;/<span class="selector-tag">div</span>&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="显示页面的浏览进度"><a href="#显示页面的浏览进度" class="headerlink" title="显示页面的浏览进度"></a>显示页面的浏览进度</h2><p>修改主题_config.yaml文件，可以让右下角多出1个回到页头的图标，并且显示文章浏览进度：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">back2top:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="comment"># Back to top in sidebar.</span></span><br><span class="line">  <span class="attr">sidebar:</span> <span class="literal">false</span></span><br><span class="line">  <span class="comment"># Scroll percent label in b2t button.</span></span><br><span class="line">  <span class="attr">scrollpercent:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="开启文章底部的相关文章推荐"><a href="#开启文章底部的相关文章推荐" class="headerlink" title="开启文章底部的相关文章推荐"></a>开启文章底部的相关文章推荐</h2><p>将related_posts下的enable置为true即可：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">related_posts:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">params:</span></span><br><span class="line">    <span class="attr">maxCount:</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>maxCount可以设置最多推荐的文章数</p>
+<h2 id="开启文章版权声明"><a href="#开启文章版权声明" class="headerlink" title="开启文章版权声明"></a>开启文章版权声明</h2><p>编辑主题_config.yml配置文件，在footer中找到creative_commons，这里可以设置知识共享许可协议。creative_commons中含有以下版权许可声明：<br><img src="/images/%E5%BB%BA%E7%AB%99/%E7%9F%A5%E8%AF%86%E5%85%B1%E4%BA%AB%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE.JPG"></p>
+<p>如果你选择使用by-nc-sa，可以如下设置：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">creative_commons:</span></span><br><span class="line">  <span class="attr">license:</span> <span class="string">by-nc-sa</span></span><br><span class="line">  <span class="attr">sidebar:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">post:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">language:</span> <span class="string">zh-CN</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="首页加入圆角矩形分隔"><a href="#首页加入圆角矩形分隔" class="headerlink" title="首页加入圆角矩形分隔"></a>首页加入圆角矩形分隔</h2><p>首页多篇文章之间的分隔并不明显，我习惯将每篇文章以矩形框显示。此时，可以修改Next主题中的next/source/css/_common/components/post/post.styl文件，找到use-motion中修改post_block的CSS代码：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.use-motion</span> &#123;</span><br><span class="line">  if (hexo-config(&#x27;motion.transition.post_block&#x27;)) &#123;</span><br><span class="line">    <span class="selector-class">.post-block</span>, <span class="selector-class">.pagination</span>, <span class="selector-class">.comments</span> &#123;</span><br><span class="line">      <span class="attribute">opacity</span>: <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在post_block中加入矩形框，其中-webkit-box-shadow可以设置阴影的颜色和宽度，比如：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.use-motion</span> &#123;</span><br><span class="line">  if (hexo-config(&#x27;motion.transition.post_block&#x27;)) &#123;</span><br><span class="line">    <span class="selector-class">.post-block</span>&#123;</span><br><span class="line">      <span class="attribute">opacity</span>: <span class="number">1</span>;</span><br><span class="line">      <span class="attribute">border-radius</span>: <span class="number">20px</span>;</span><br><span class="line">      <span class="attribute">margin-top</span>: <span class="number">40px</span>;</span><br><span class="line">      <span class="attribute">margin-bottom</span>: <span class="number">20px</span>;</span><br><span class="line">      <span class="attribute">padding</span>: <span class="number">15px</span>;</span><br><span class="line">      <span class="attribute">-webkit-box-shadow</span>: <span class="number">0</span> <span class="number">0</span> <span class="number">5px</span> <span class="built_in">rgba</span>(<span class="number">51</span>, <span class="number">170</span>, <span class="number">51</span>, .<span class="number">5</span>);</span><br><span class="line">      <span class="attribute">-moz-box-shadow</span>: <span class="number">0</span> <span class="number">0</span> <span class="number">15px</span> <span class="built_in">rgba</span>(<span class="number">202</span>, <span class="number">203</span>, <span class="number">204</span>, .<span class="number">5</span>);</span><br><span class="line">    &#125;<span class="selector-class">.pagination</span>, <span class="selector-class">.comments</span> &#123;</span><br><span class="line">    <span class="attribute">opacity</span>: <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="开启文章字数统计及预估阅读时长"><a href="#开启文章字数统计及预估阅读时长" class="headerlink" title="开启文章字数统计及预估阅读时长"></a>开启文章字数统计及预估阅读时长</h2><p><a target="_blank" rel="noopener" href="https://github.com/theme-next/hexo-symbols-count-time">hexo-symbols-count-time插件</a>提供了这一功能，使用它首先要安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-symbols-count-time</span><br></pre></td></tr></table></figure>
+<p>接着，在主题的_config.yml中开启它：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">symbols_count_time:</span></span><br><span class="line">  <span class="attr">separated_meta:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">item_text_post:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">item_text_total:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="添加本地搜索功能"><a href="#添加本地搜索功能" class="headerlink" title="添加本地搜索功能"></a>添加本地搜索功能</h2><p><a target="_blank" rel="noopener" href="https://github.com/theme-next/hexo-generator-searchdb">hexo-generator-searchdb插件</a>提供了基于JS在本地内容中搜索的能力，使用时首先要安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-searchdb</span><br></pre></td></tr></table></figure>
+<p>接着修改Next主题的_config.yml配置文件，打开本地搜索功能：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">local_search:</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="修改备案ICP号"><a href="#修改备案ICP号" class="headerlink" title="修改备案ICP号"></a>修改备案ICP号</h2><p>国内的站点都需要备案号，并将公安备案号及图标放在网站的最底部。Next主题已经将这一功能内置，你可以在主题配置文件footer中的beian中，填入备案号和图标，比如：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">footer:</span></span><br><span class="line">  <span class="attr">beian:</span></span><br><span class="line">    <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">icp:</span> <span class="string">&lt;a</span> <span class="string">href=&quot;https://beian.miit.gov.cn&quot;&gt;浙ICP备xxxxxx号&lt;/a&gt;</span></span><br><span class="line">    <span class="attr">gongan_id:</span> <span class="string">3xxxxxxxxxx</span></span><br><span class="line">    <span class="attr">gongan_num:</span> <span class="string">浙公网安备</span> <span class="string">3xxxxxxxxx号</span></span><br><span class="line">    <span class="attr">gongan_icon_url:</span> <span class="string">/images/备案图标.png</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="部署静态站点"><a href="#部署静态站点" class="headerlink" title="部署静态站点"></a>部署静态站点</h1><p>接下来介绍静态站点的3种部署方式。</p>
+<h2 id="本地测试静态站点"><a href="#本地测试静态站点" class="headerlink" title="本地测试静态站点"></a>本地测试静态站点</h2><p>在部署到生产环境前，首先要在本机开发环境中验证页面功能。以下3项最为常用：</p>
+<ol>
+<li><p>生成静态站点文件<br>将.md文章在public文件夹下生成HTML站点，可以使用如下命令：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure>
+<p>需要注意，有时public下会有上一次生成的残留文件，可以用clean命令清理：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>部署本机测试环境</p>
+</li>
+</ol>
+<p>接着，就可以s命令在本机启动NodeJS服务，通过默认的4000端口测试内容了，比如<a href="http://localhost:4000，这样，在本机的浏览器访问即可调试，非常方便。当然，你可以通过-p选项修改监听端口，还可以通过--draft选项测试草稿箱中的文章：">http://localhost:4000，这样，在本机的浏览器访问即可调试，非常方便。当然，你可以通过-p选项修改监听端口，还可以通过--draft选项测试草稿箱中的文章：</a></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo s --draft -p 8080</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>发布到生产环境<br>测试通过后，就可以通过d命令部署站点了：<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>究竟将public文件夹部署到哪里，下面一一来看。</p>
+<h2 id="部署到免费的github-page上"><a href="#部署到免费的github-page上" class="headerlink" title="部署到免费的github page上"></a>部署到免费的github page上</h2><p>我们通常会将源代码部署到github上，但github还提供了一种功能，可以将静态页面部署在其上。当你用自己的github帐户名建立page仓库后，就可以通过hexo d命令一键部署站点了，非常方便。</p>
+<p>当然，部署前先要安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
+
+<p>接着，修改站点（不是Next主题）的_config.yml文件，填入仓库地址：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repository:</span> <span class="string">git@github.com:yourgithubname/yourgithubname.github.io</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+<p>** 注意：git不能是https协议，否则需要输入用户名、密码！**</p>
+<h2 id="部署到云服务器通过Nginx提供服务"><a href="#部署到云服务器通过Nginx提供服务" class="headerlink" title="部署到云服务器通过Nginx提供服务"></a>部署到云服务器通过Nginx提供服务</h2><p>如果你有Linux云服务器，可以用Nginx等Web服务器提供静态文件服务（通过root指令，具体的配置方式参见<a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">这里</a>）。此时部署方式可以通过Linux服务器默认就提供的sftp协议上传到服务器中。</p>
+<p>还是先安装插件：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-sftp --save</span><br></pre></td></tr></table></figure>
+
+<p>接着修改站点配置文件。注意，如果你想将静态站点一键部署到多个服务器上也是可以的，比如：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">sftp</span></span><br><span class="line">  <span class="attr">host:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">user:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">pass:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">remotePath:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">22</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repository:</span> <span class="string">git@github.com:yourgithubname/yourgithubname.github.io</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+<p>至此，每当你修改完文章，就可以通过hexo d完成站点部署，非常方便。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>静态站点不需要数据库，也不需要php、java等编程语言基于模板生成动态页面，所以其安全性非常高，部署时只需要将public文件夹拷贝到目标服务器即可。</p>
+<p>Hexo是基于Javscript+Nodejs软件生成静态站点的，它可以将Markdown等格式的文章渲染为HTML文件，还支持第三方插件，可以一键部署到远程服务器。</p>
+<p>Next主题是Hexo上的首选主题，集成了许多插件，将备案号、本地搜索、搜索引擎统计、站点地图、文章推荐、版权声明、浏览进度、文章字数统计等功能都集成了进去。而且，我们可以很方便地修改主题样式。如果你的站点没有动态内容，或者通过第三方插件可以完成相应功能，那么Hexo+Next是个很好的解决方案！</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\27\阿里云搭建wordpress生产级cms网站实践\" rel="bookmark">阿里云搭建wordpress生产级CMS网站实践</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" title="从wordpress迁移到hexo静态站点">https://www.taohui.tech/2021/02/15/从wordpress迁移到hexo静态站点/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/wordpress/" rel="tag"># wordpress</a>
+              <a href="/tags/nodejs/" rel="tag"># nodejs</a>
+              <a href="/tags/hexo/" rel="tag"># hexo</a>
+              <a href="/tags/next/" rel="tag"># next</a>
+              <a href="/tags/github/" rel="tag"># github</a>
+              <a href="/tags/%E5%85%8D%E8%B4%B9%E6%89%98%E7%AE%A1/" rel="tag"># 免费托管</a>
+              <a href="/tags/%E5%A4%87%E6%A1%88/" rel="tag"># 备案</a>
+              <a href="/tags/%E7%AE%A1%E5%B1%80/" rel="tag"># 管局</a>
+              <a href="/tags/sftp/" rel="tag"># sftp</a>
+              <a href="/tags/%E8%AF%84%E8%AE%BA/" rel="tag"># 评论</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/08/nginx/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90Nginx%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/" rel="prev" title="深入剖析Nginx负载均衡算法">
+      <i class="fa fa-chevron-left"></i> 深入剖析Nginx负载均衡算法
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" rel="next" title="Nginx怎样隐藏上游错误">
+      Nginx怎样隐藏上游错误 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#wordpress%E4%B8%8Ehexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9%E7%9A%84%E4%BC%98%E5%8A%A3%E6%AF%94%E8%BE%83"><span class="nav-number">1.</span> <span class="nav-text">wordpress与hexo静态站点的优劣比较</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%AD%E5%BB%BAhexo-Next%E4%B8%BB%E9%A2%98%E7%AB%99%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">搭建hexo Next主题站点</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8windows%E4%B8%8A%E5%AE%89%E8%A3%85%E7%94%9F%E6%88%90%E7%AB%99%E7%82%B9%E7%8E%AF%E5%A2%83"><span class="nav-number">2.1.</span> <span class="nav-text">在windows上安装生成站点环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B%E5%8D%9A%E5%AE%A2%E7%AB%99%E7%82%B9"><span class="nav-number">2.2.</span> <span class="nav-text">建立博客站点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E8%AF%B4%E6%98%8E"><span class="nav-number">2.2.1.</span> <span class="nav-text">目录说明</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AENext%E4%B8%BB%E9%A2%98"><span class="nav-number">2.3.</span> <span class="nav-text">设置Next主题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E4%B8%BB%E9%A2%98%E9%A3%8E%E6%A0%BC"><span class="nav-number">2.3.1.</span> <span class="nav-text">设置主题风格</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E5%BA%95%E9%83%A8LOGO"><span class="nav-number">2.3.2.</span> <span class="nav-text">去除底部LOGO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E7%AB%99%E7%82%B9%E8%AF%AD%E8%A8%80"><span class="nav-number">2.3.3.</span> <span class="nav-text">设置站点语言</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%81%E7%A7%BBwordpress%E5%8D%9A%E5%AE%A2%E5%86%85%E5%AE%B9"><span class="nav-number">3.</span> <span class="nav-text">迁移wordpress博客内容</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E6%95%B0%E6%8D%AE"><span class="nav-number">3.1.</span> <span class="nav-text">迁移数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E4%BB%A3%E7%A0%81%E5%9D%97%E6%A0%BC%E5%BC%8F"><span class="nav-number">3.2.</span> <span class="nav-text">更改代码块格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E8%A1%A8%E6%A0%BC%E6%A0%BC%E5%BC%8F"><span class="nav-number">3.3.</span> <span class="nav-text">更改表格格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E5%88%86%E7%B1%BB%E3%80%81%E6%A0%87%E7%AD%BE%E9%A1%B5"><span class="nav-number">3.4.</span> <span class="nav-text">增加分类、标签页</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%9A%94%E6%96%87%E7%AB%A0%E6%91%98%E8%A6%81"><span class="nav-number">3.5.</span> <span class="nav-text">分隔文章摘要</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SEO%E4%BC%98%E5%8C%96"><span class="nav-number">3.6.</span> <span class="nav-text">SEO优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E7%99%BE%E5%BA%A6%E7%BB%9F%E8%AE%A1"><span class="nav-number">3.6.1.</span> <span class="nav-text">增加百度统计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEkeywords%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">3.6.2.</span> <span class="nav-text">设置keywords关键字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90sitemap%E7%AB%99%E7%82%B9%E5%9C%B0%E5%9B%BE"><span class="nav-number">3.6.3.</span> <span class="nav-text">生成sitemap站点地图</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%98%E5%8C%96Next%E4%B8%BB%E9%A2%98"><span class="nav-number">4.</span> <span class="nav-text">优化Next主题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E4%BA%AB%E5%88%B0%E5%BE%AE%E4%BF%A1%E3%80%81%E5%BE%AE%E5%8D%9A%E7%AD%89%E5%B9%B3%E5%8F%B0"><span class="nav-number">4.1.</span> <span class="nav-text">分享到微信、微博等平台</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E4%BE%A7%E8%BE%B9%E6%A0%8F%E5%A4%B4%E5%83%8F"><span class="nav-number">4.2.</span> <span class="nav-text">添加侧边栏头像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E7%A4%BA%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%B5%8F%E8%A7%88%E8%BF%9B%E5%BA%A6"><span class="nav-number">4.3.</span> <span class="nav-text">显示页面的浏览进度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E6%96%87%E7%AB%A0%E5%BA%95%E9%83%A8%E7%9A%84%E7%9B%B8%E5%85%B3%E6%96%87%E7%AB%A0%E6%8E%A8%E8%8D%90"><span class="nav-number">4.4.</span> <span class="nav-text">开启文章底部的相关文章推荐</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E6%96%87%E7%AB%A0%E7%89%88%E6%9D%83%E5%A3%B0%E6%98%8E"><span class="nav-number">4.5.</span> <span class="nav-text">开启文章版权声明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A6%96%E9%A1%B5%E5%8A%A0%E5%85%A5%E5%9C%86%E8%A7%92%E7%9F%A9%E5%BD%A2%E5%88%86%E9%9A%94"><span class="nav-number">4.6.</span> <span class="nav-text">首页加入圆角矩形分隔</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E6%96%87%E7%AB%A0%E5%AD%97%E6%95%B0%E7%BB%9F%E8%AE%A1%E5%8F%8A%E9%A2%84%E4%BC%B0%E9%98%85%E8%AF%BB%E6%97%B6%E9%95%BF"><span class="nav-number">4.7.</span> <span class="nav-text">开启文章字数统计及预估阅读时长</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E6%9C%AC%E5%9C%B0%E6%90%9C%E7%B4%A2%E5%8A%9F%E8%83%BD"><span class="nav-number">4.8.</span> <span class="nav-text">添加本地搜索功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E5%A4%87%E6%A1%88ICP%E5%8F%B7"><span class="nav-number">4.9.</span> <span class="nav-text">修改备案ICP号</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9"><span class="nav-number">5.</span> <span class="nav-text">部署静态站点</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9"><span class="nav-number">5.1.</span> <span class="nav-text">本地测试静态站点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%88%B0%E5%85%8D%E8%B4%B9%E7%9A%84github-page%E4%B8%8A"><span class="nav-number">5.2.</span> <span class="nav-text">部署到免费的github page上</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%88%B0%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%80%9A%E8%BF%87Nginx%E6%8F%90%E4%BE%9B%E6%9C%8D%E5%8A%A1"><span class="nav-number">5.3.</span> <span class="nav-text">部署到云服务器通过Nginx提供服务</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

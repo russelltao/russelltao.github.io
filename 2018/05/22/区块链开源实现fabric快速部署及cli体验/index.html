@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文描述fabric快速部署的步骤，及演示基于官方example02的智能合约进行CLI命令行体验。区块链涉及服务很多，且大量使用docker容器技术，所以请严格遵守以下步骤去部署，以减少各种问题的出现，方便我们先对联盟链有个大概的感觉。本文描述环境是centos7操作系统，请其他版本更正相关的安装工具（如ubuntu操作系统请把yum命令换成apt-get）。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="区块链开源实现fabric快速部署及CLI体验">
+<meta property="og:url" content="https://www.taohui.tech/2018/05/22/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0fabric%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2%E5%8F%8Acli%E4%BD%93%E9%AA%8C/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="本文描述fabric快速部署的步骤，及演示基于官方example02的智能合约进行CLI命令行体验。区块链涉及服务很多，且大量使用docker容器技术，所以请严格遵守以下步骤去部署，以减少各种问题的出现，方便我们先对联盟链有个大概的感觉。本文描述环境是centos7操作系统，请其他版本更正相关的安装工具（如ubuntu操作系统请把yum命令换成apt-get）。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric_cliexe%E4%BE%8B%E5%AD%90-3.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric_cliexe-docker%E5%AE%9E%E4%BE%8B-1.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric-cli-example02-query-3.jpg">
+<meta property="article:published_time" content="2018-05-22T01:50:48.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.869Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="fabric">
+<meta property="article:tag" content="hyperledger">
+<meta property="article:tag" content="区块链">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2018/05/fabric_cliexe%E4%BE%8B%E5%AD%90-3.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2018/05/22/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0fabric%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2%E5%8F%8Acli%E4%BD%93%E9%AA%8C/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>区块链开源实现fabric快速部署及CLI体验 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/05/22/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0fabric%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2%E5%8F%8Acli%E4%BD%93%E9%AA%8C/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          区块链开源实现fabric快速部署及CLI体验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-22 09:50:48" itemprop="dateCreated datePublished" datetime="2018-05-22T09:50:48+08:00">2018-05-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文描述fabric快速部署的步骤，及演示基于官方example02的智能合约进行CLI命令行体验。区块链涉及服务很多，且大量使用docker容器技术，所以请严格遵守以下步骤去部署，以减少各种问题的出现，方便我们先对联盟链有个大概的感觉。本文描述环境是centos7操作系统，请其他版本更正相关的安装工具（如ubuntu操作系统请把yum命令换成apt-get）。</p>
+<span id="more"></span>
+<h1 id="1、搭建e2e-cli环境快速部署fabric的11个步骤："><a href="#1、搭建e2e-cli环境快速部署fabric的11个步骤：" class="headerlink" title="1、搭建e2e_cli环境快速部署fabric的11个步骤："></a>1、搭建e2e_cli环境快速部署fabric的11个步骤：</h1><p>1、安装docker_ce版。 如果已经安装了老版docker，请先卸载。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove docker docker-common docker-selinux docker-engine</span><br></pre></td></tr></table></figure>
+
+<p>再来安装docker：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install -y yum-utils device-mapper-persistent-data lvm2</span><br><span class="line">sudo yum-config-manager --add-repo \</span><br><span class="line">    https:&#x2F;&#x2F;download.docker.com&#x2F;linux&#x2F;centos&#x2F;docker-ce.repo</span><br><span class="line">sudo yum-config-manager --enable docker-ce-edge</span><br><span class="line">sudo yum-config-manager --enable docker-ce-test</span><br><span class="line">sudo yum-config-manager --disable docker-ce-edge</span><br><span class="line">sudo yum makecache fast</span><br><span class="line">sudo yum install docker-ce</span><br></pre></td></tr></table></figure>
+
+<p>最后启动docker服务：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">service docker start</span><br><span class="line">chkconfig docker on</span><br></pre></td></tr></table></figure>
+
+<p>2、配置好docker加速器。 官方docker非常慢，请一定在阿里云等提供docker仓库加速器的网站注册好帐户(比如<a target="_blank" rel="noopener" href="https://cr.console.aliyun.com/#/accelerator">https://cr.console.aliyun.com/#/accelerator</a>)，配置好加速器。 3、安装好pip。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install python-pip -y</span><br></pre></td></tr></table></figure>
+
+<p>4、用pip安装docker-compose。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install docker-compose</span><br></pre></td></tr></table></figure>
+
+<p>5、新建存放测试、部署代码的目录。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p &#x2F;opt&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;hyperledger</span><br></pre></td></tr></table></figure>
+
+<p>6、安装git。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install git -y</span><br></pre></td></tr></table></figure>
+
+<p>7、拉取fabric代码。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;opt&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;hyperledger</span><br><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;hyperledger&#x2F;fabric.git</span><br></pre></td></tr></table></figure>
+
+<p><strong>请切换到最新的1.1分支上。</strong> 8、拉取docker镜像（时间较长）及一些可执行文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;opt&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;hyperledger&#x2F;fabric&#x2F;scripts&#x2F;bootstrap.sh</span><br></pre></td></tr></table></figure>
+
+<p>9、安装go语言。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install golang -y</span><br></pre></td></tr></table></figure>
+
+<p>并通过在/etc/profile最后追加两行设置好工作目录：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export PATH&#x3D;$PATH:&#x2F;usr&#x2F;local&#x2F;go&#x2F;bin</span><br><span class="line">export GOPATH&#x3D;&#x2F;opt&#x2F;gopath</span><br></pre></td></tr></table></figure>
+
+<p>最后执行下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source &#x2F;etc&#x2F;profile</span><br></pre></td></tr></table></figure>
+
+<p>10、<strong>修改一个阻塞执行的bug</strong>。（注：fabric最新代码已修复该bug，若你拉取了最新代码，请忽略该步骤！） 修改/opt/gopath/src/github.com/hyperledger/fabric/examples/e2e_cli/base/peer-base.yaml文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">将：</span><br><span class="line">- CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE&#x3D;e2ecli_default</span><br><span class="line">修改为：</span><br><span class="line">- CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE&#x3D;e2e_cli_default</span><br></pre></td></tr></table></figure>
+
+<p>11、启动服务。 进入/opt/gopath/src/github.com/hyperledger/fabric/examples/e2e_cli目录，执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash network_setup.sh up</span><br></pre></td></tr></table></figure>
+
+<p>如果最后出现下图则部署成功： <img src="/2018/05/fabric_cliexe%E4%BE%8B%E5%AD%90-3.jpg"></p>
+<h1 id="2、体验fabric系统功能"><a href="#2、体验fabric系统功能" class="headerlink" title="2、体验fabric系统功能"></a>2、体验fabric系统功能</h1><p>当服务在一台server上启动后，可以看到以下docker实例： <img src="/2018/05/fabric_cliexe-docker%E5%AE%9E%E4%BE%8B-1.jpg"> 可以看到，默认安装了：4个peer（2个是org1的，2个是org2的）节点、4节点构成的kafka集群、3节点构成的zookeeper集群、1个orderer节点。这是因为：fabric提供的共识机制，PBFT目前还未达到生产级别的应用，只能靠kafka+zookeeper实现PAXOS算法下的共识机制（不能有作恶结点）。一般zookeeper是3或者5个结点， fabric提供了SDK和CLI两种交互方式，本文不讨论SDK。 可以进入cli里执行peer命令。如果cli长时间未用退出后，可先启动cli：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker start cli</span><br></pre></td></tr></table></figure>
+
+<p>再进入cli实例里：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker exec -it cli bash</span><br></pre></td></tr></table></figure>
+
+<p>接着可执行peer命令，体验区块链的命令行使用方式。</p>
+<h2 id="2-1、-peer命令"><a href="#2-1、-peer命令" class="headerlink" title="2.1、 peer命令"></a>2.1、 peer命令</h2><p>peer命令含有五个子命令，如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">peer chaincode [option] [flags]</span><br><span class="line">peer channel   [option] [flags]</span><br><span class="line">peer logging   [option] [flags]</span><br><span class="line">peer node      [option] [flags]</span><br><span class="line">peer version   [option] [flags]</span><br></pre></td></tr></table></figure>
+
+<p>每个子命令可使用–help查看详细帮助。 在fabric里，所有的交易必须通过智能合约才能操作，而chaincode链码就是智能合约。chaincode支持以下option操作：</p>
+<ul>
+<li>  package 智能合约需要打包后才能使用</li>
+<li>  install    智能合约必须安装后才能使用</li>
+<li>  instantiate   置初始状态。比如设系统一开始用户a有100元，用户b有200元</li>
+<li>  invoke  调用智能合约</li>
+<li>  query    查询状态</li>
+<li>  signpackage  包签名</li>
+<li>  upgrade    智能合约升级</li>
+<li>  list        显示智能合约</li>
+</ul>
+<p>智能合约需要先install才能使用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">peer chaincode install -n mycc -v 1.0 -p github.com&#x2F;hyperledger&#x2F;fabric&#x2F;examples&#x2F;chaincode&#x2F;go&#x2F;chaincode_example02</span><br></pre></td></tr></table></figure>
+
+<p>其中-n表示合约名字，-p指向合约文件目录路径，-v是版本号。</p>
+<h2 id="2-2-example02智能合约"><a href="#2-2-example02智能合约" class="headerlink" title="2.2 example02智能合约"></a>2.2 example02智能合约</h2><p>每个智能合约实现Init和Invoke两个方法，其中前者用于初始化，后者是日常调用。</p>
+<h3 id="2-2-1-初始化"><a href="#2-2-1-初始化" class="headerlink" title="2.2.1 初始化"></a>2.2.1 初始化</h3><p>example02的Init方法接收4个参数(<code>包括帐户A，余额pA，帐户B，余额pB</code>)，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">peer chaincode instantiate -o orderer.example.com:7050 -C mychannel -n mycc -v 1.0 -c &#39;&#123;&quot;Args&quot;:[&quot;init&quot;,&quot;a&quot;,&quot;100&quot;,&quot;b&quot;,&quot;200&quot;]&#125;&#39; -P &quot;OR    (&#39;Org1MSP.peer&#39;,&#39;Org2MSP.peer&#39;)&quot;</span><br></pre></td></tr></table></figure>
+
+<p>其中，-C指向channel名字，-c则是初始构造json格式的消息，-P是背书策略，-o指定共识节点。这里置帐户a初始余额为100，帐户b初始余额为200。其代码实现如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response &#123;</span><br><span class="line">fmt.Println(&quot;ex02 Init&quot;)</span><br><span class="line">        &#x2F;&#x2F;用args取得命令行的参数</span><br><span class="line">_, args :&#x3D; stub.GetFunctionAndParameters()</span><br><span class="line">var A, B string    &#x2F;&#x2F; Entities</span><br><span class="line">var Aval, Bval int &#x2F;&#x2F; Asset holdings</span><br><span class="line">var err error</span><br><span class="line">      </span><br><span class="line">        &#x2F;&#x2F;简单的例子么，只接收4个参数，包括帐户A，余额pA，帐户B，余额pB</span><br><span class="line">if len(args) !&#x3D; 4 &#123;</span><br><span class="line">return shim.Error(&quot;Incorrect number of arguments. Expecting 4&quot;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Initialize the chaincode</span><br><span class="line">A &#x3D; args[0]</span><br><span class="line">Aval, err &#x3D; strconv.Atoi(args[1])</span><br><span class="line">if err !&#x3D; nil &#123;</span><br><span class="line">return shim.Error(&quot;Expecting integer value for asset holding&quot;)</span><br><span class="line">&#125;</span><br><span class="line">B &#x3D; args[2]</span><br><span class="line">Bval, err &#x3D; strconv.Atoi(args[3])</span><br><span class="line">if err !&#x3D; nil &#123;</span><br><span class="line">return shim.Error(&quot;Expecting integer value for asset holding&quot;)</span><br><span class="line">&#125;</span><br><span class="line">fmt.Printf(&quot;Aval &#x3D; %d, Bval &#x3D; %d\n&quot;, Aval, Bval)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;将A及其余额写入状态数据库</span><br><span class="line">err &#x3D; stub.PutState(A, []byte(strconv.Itoa(Aval)))</span><br><span class="line">if err !&#x3D; nil &#123;</span><br><span class="line">return shim.Error(err.Error())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F;将B及其余额写入状态数据库</span><br><span class="line">err &#x3D; stub.PutState(B, []byte(strconv.Itoa(Bval)))</span><br><span class="line">if err !&#x3D; nil &#123;</span><br><span class="line">return shim.Error(err.Error())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">return shim.Success(nil)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-2-查询余额"><a href="#2-2-2-查询余额" class="headerlink" title="2.2.2 查询余额"></a>2.2.2 查询余额</h3><p>接着查询余额，例如查询a帐户的余额：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">peer chaincode query -C mychannel -n mycc -c &#39;&#123;&quot;Args&quot;:[&quot;query&quot;,&quot;a&quot;]&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p>这里需要说明，example02的Invoke共支持3种指令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response &#123;</span><br><span class="line">fmt.Println(&quot;ex02 Invoke&quot;)</span><br><span class="line">function, args :&#x3D; stub.GetFunctionAndParameters()</span><br><span class="line">if function &#x3D;&#x3D; &quot;invoke&quot; &#123;</span><br><span class="line">&#x2F;&#x2F; 从A向B帐户转账</span><br><span class="line">return t.invoke(stub, args)</span><br><span class="line">&#125; else if function &#x3D;&#x3D; &quot;delete&quot; &#123;</span><br><span class="line">&#x2F;&#x2F; 从状态数据库中删除帐户</span><br><span class="line">return t.delete(stub, args)</span><br><span class="line">&#125; else if function &#x3D;&#x3D; &quot;query&quot; &#123;</span><br><span class="line">&#x2F;&#x2F; 查询状态数据库中某帐户的余额</span><br><span class="line">return t.query(stub, args)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">return shim.Error(&quot;Invalid invoke function name. Expecting \&quot;invoke\&quot; \&quot;delete\&quot; \&quot;query\&quot;&quot;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因此，上述查询我们会得出类似结果： <img src="/2018/05/fabric-cli-example02-query-3.jpg"> 为何结果格式是这样的呢？看下t.query的实现：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string) pb.Response &#123;</span><br><span class="line">var A string &#x2F;&#x2F; Entities</span><br><span class="line">var err error</span><br><span class="line"></span><br><span class="line">if len(args) !&#x3D; 1 &#123;</span><br><span class="line">return shim.Error(&quot;Incorrect number of arguments. Expecting name of the person to query&quot;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">A &#x3D; args[0]  &#x2F;&#x2F;获取帐户的名字</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 从状态数据库中获取帐户的值</span><br><span class="line">Avalbytes, err :&#x3D; stub.GetState(A)</span><br><span class="line">if err !&#x3D; nil &#123;</span><br><span class="line">jsonResp :&#x3D; &quot;&#123;\&quot;Error\&quot;:\&quot;Failed to get state for &quot; + A + &quot;\&quot;&#125;&quot;</span><br><span class="line">return shim.Error(jsonResp)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if Avalbytes &#x3D;&#x3D; nil &#123;</span><br><span class="line">jsonResp :&#x3D; &quot;&#123;\&quot;Error\&quot;:\&quot;Nil amount for &quot; + A + &quot;\&quot;&#125;&quot;</span><br><span class="line">return shim.Error(jsonResp)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">jsonResp :&#x3D; &quot;&#123;\&quot;Name\&quot;:\&quot;&quot; + A + &quot;\&quot;,\&quot;Amount\&quot;:\&quot;&quot; + string(Avalbytes) + &quot;\&quot;&#125;&quot;</span><br><span class="line">        &#x2F;&#x2F;这里是显示在命令行的格式：Query Response:90</span><br><span class="line">fmt.Printf(&quot;Query Response:%s\n&quot;, jsonResp)</span><br><span class="line">return shim.Success(Avalbytes)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-3-转帐"><a href="#2-2-3-转帐" class="headerlink" title="2.2.3 转帐"></a>2.2.3 转帐</h3><p>比如由B向A转帐50：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile &#x2F;opt&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;hyperledger&#x2F;fabric&#x2F;peer&#x2F;crypto&#x2F;ordererOrganizations&#x2F;example.com&#x2F;orderers&#x2F;orderer.example.com&#x2F;msp&#x2F;tlscacerts&#x2F;tlsca.example.com-cert.pem  -C mychannel -n mycc -c &#39;&#123;&quot;Args&quot;:[&quot;invoke&quot;,&quot;b&quot;,&quot;a&quot;,&quot;50&quot;]&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p>成功后我们会在输屏结果中找到这一行：ESCC invoke result: version:1 response:&lt;status:200 message:”OK” &gt; 其实现为从A和B帐户下用GetStat方法从状态数据库取出余额，与query类似，接着加减相应的值50后，再调用PutStat方法写入状态数据库。 此时我们可以再次查询，可以获得正确结果。   小结：以上只适用于简单体验fabric的功能，对于智能合约、共识算法、世界状态等在接下来的文章中我们再分析。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2018\05\26\区块链开源实现hyperledger-fabric架构详解\" rel="bookmark">区块链开源实现hyperledger fabric架构详解</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\07\03\区块链技术学习笔记\" rel="bookmark">区块链技术学习笔记</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2018/05/22/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0fabric%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2%E5%8F%8Acli%E4%BD%93%E9%AA%8C/" title="区块链开源实现fabric快速部署及CLI体验">https://www.taohui.tech/2018/05/22/区块链开源实现fabric快速部署及cli体验/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/fabric/" rel="tag"># fabric</a>
+              <a href="/tags/hyperledger/" rel="tag"># hyperledger</a>
+              <a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag"># 区块链</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/04/21/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%BB%8E%E7%A0%81%E5%86%9C%E5%88%B0%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%9A%E5%8F%AA%E8%A6%81%E5%81%9A%E5%88%B0%E8%BF%996%E7%82%B9/" rel="prev" title="从码农到工程师：只要做到这6点">
+      <i class="fa fa-chevron-left"></i> 从码农到工程师：只要做到这6点
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/" rel="next" title="区块链开源实现hyperledger fabric架构详解">
+      区块链开源实现hyperledger fabric架构详解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#1%E3%80%81%E6%90%AD%E5%BB%BAe2e-cli%E7%8E%AF%E5%A2%83%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2fabric%E7%9A%8411%E4%B8%AA%E6%AD%A5%E9%AA%A4%EF%BC%9A"><span class="nav-number">1.</span> <span class="nav-text">1、搭建e2e_cli环境快速部署fabric的11个步骤：</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2%E3%80%81%E4%BD%93%E9%AA%8Cfabric%E7%B3%BB%E7%BB%9F%E5%8A%9F%E8%83%BD"><span class="nav-number">2.</span> <span class="nav-text">2、体验fabric系统功能</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1%E3%80%81-peer%E5%91%BD%E4%BB%A4"><span class="nav-number">2.1.</span> <span class="nav-text">2.1、 peer命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-example02%E6%99%BA%E8%83%BD%E5%90%88%E7%BA%A6"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 example02智能合约</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-1-%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.2.1 初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-2-%E6%9F%A5%E8%AF%A2%E4%BD%99%E9%A2%9D"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.2.2 查询余额</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-3-%E8%BD%AC%E5%B8%90"><span class="nav-number">2.2.3.</span> <span class="nav-text">2.2.3 转帐</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

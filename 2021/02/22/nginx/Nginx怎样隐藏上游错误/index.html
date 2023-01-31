@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="当上游出错时，作为负载均衡的Nginx可以实时更换Server，在客户端无感知的情况下重新转发HTTP请求。这一功能在Nginx指令中称为next upstream，本文将详细介绍其用法及实现原理。 在OSI网络模型中，传输层的TCP协议通过内核提供的系统调用向Nginx反馈错误，表示层的TLS&#x2F;SSL协议通过openssl库向Nginx返回错误，而应用层的HTTP协议（或者uwsgi、gRPC、">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Nginx怎样隐藏上游错误">
+<meta property="og:url" content="https://www.taohui.tech/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="当上游出错时，作为负载均衡的Nginx可以实时更换Server，在客户端无感知的情况下重新转发HTTP请求。这一功能在Nginx指令中称为next upstream，本文将详细介绍其用法及实现原理。 在OSI网络模型中，传输层的TCP协议通过内核提供的系统调用向Nginx反馈错误，表示层的TLS&#x2F;SSL协议通过openssl库向Nginx返回错误，而应用层的HTTP协议（或者uwsgi、gRPC、">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/images/nginx/next_upstream示意图.png">
+<meta property="og:image" content="https://www.taohui.tech/images/tcp/tcp_guide_超时重传.png">
+<meta property="og:image" content="https://www.taohui.tech/images/tls/TLS握手.png">
+<meta property="article:published_time" content="2021-02-22T02:32:01.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.846Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="nginx">
+<meta property="article:tag" content="upstream">
+<meta property="article:tag" content="next_upstream">
+<meta property="article:tag" content="tls">
+<meta property="article:tag" content="三次握手">
+<meta property="article:tag" content="ssl">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/images/nginx/next_upstream示意图.png">
+
+<link rel="canonical" href="https://www.taohui.tech/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Nginx怎样隐藏上游错误 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Nginx怎样隐藏上游错误
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-22 10:32:01" itemprop="dateCreated datePublished" datetime="2021-02-22T10:32:01+08:00">2021-02-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/nginx/next_upstream%E7%A4%BA%E6%84%8F%E5%9B%BE.png" itemprop="contentUrl">
+            <img src="/images/tcp/tcp_guide_%E8%B6%85%E6%97%B6%E9%87%8D%E4%BC%A0.png" itemprop="contentUrl">
+            <img src="/images/tls/TLS%E6%8F%A1%E6%89%8B.png" itemprop="contentUrl">
+        </div>
+        <p>当上游出错时，作为负载均衡的Nginx可以实时更换Server，在客户端无感知的情况下重新转发HTTP请求。这一功能在Nginx指令中称为next upstream，本文将详细介绍其用法及实现原理。</p>
+<p>在OSI网络模型中，传输层的TCP协议通过内核提供的<strong>系统调用</strong>向Nginx反馈错误，表示层的TLS/SSL协议通过<strong>openssl库</strong>向Nginx返回错误，而应用层的HTTP协议（或者uwsgi、gRPC、CGI、memcached等协议）通过Response的<strong>Decode解码流程</strong>返回错误。当Nginx能够通过重试解决这些错误时，<strong>我们可以使用next upstream机制对客户端隐藏个别上游Server由于宕机、网络异常产生的错误，这可以极大的提升整个分布式系统的可用性</strong>。</p>
+<span id="more"></span>
+<p>如果我们不清楚它处理协议错误及重试转发的原理，就很容易在实际场景中发现next upstream没有发挥作用，比如： </p>
+<ul>
+<li><strong>proxy_request_buffering功能关闭后</strong>，一旦Nginx转发了请求包体，它就会释放掉内存中缓存的内容，从而失去了next upstream的重试能力。</li>
+<li>从上游接收到完整的HTTP头部后Nginx就会向下游客户端转发，由于TCP协议是有序字符流，一经发出就无法更改，此时从<strong>HTTP语法层面</strong>上也会失去next upstream能力。</li>
+<li>POST方法属于idempotent<strong>非幂等方法</strong>，所以从<strong>HTTP语义层面</strong>上next upstream功能也不会开启（默认配置下）。<br>等等。可见，next upstream是否能够按预期工作（遵照proxy_next_upstream_tries、proxy_next_upstream_timeout等指令），需要我们对它有深入的理解。</li>
+</ul>
+<p>本文将介绍Nginx作为代理服务器转发请求时，next upstream机制检测错误并重新转发给上游的执行流程。虽然本文例子中的指令属于HTTP/1模块，但在最后我会将官方提供的6个代理模块放在一起做个比较，在对比中你会更深入的了解upstream机制。同时，本文也是<a target="_blank" rel="noopener" href="https://www.nginx.org.cn/course/series/22">Nginx开源社区基础培训系列课程第二季</a>，即7月23日晚第3次直播课的文字总结。</p>
+<h1 id="TCP传输层的错误处理"><a href="#TCP传输层的错误处理" class="headerlink" title="TCP传输层的错误处理"></a>TCP传输层的错误处理</h1><p>作为负载均衡，Nginx可以在OSI网络模型的多个层级中检测、处理错误，我们首先来看Nginx在TCP传输层是如何应用next upstram机制的。</p>
+<p>TCP层的错误主要体现在三次握手与数据传输中，是否能够及时接收到对方返回的ACK确认帧。由于TCP协议实现了有序字节流的可靠传输，所以HTTP、gRPC、CGI、memcached等协议都是基于TCP实现的。因此，Nginx向上游转发请求前，需要先通过三次握手建立TCP连接。关于3次握手的流程，你可以参见下图，这里不再详述。<br><img src="/images/tcp/tcp_guide_%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B.png"></p>
+<p>当Nginx作为客户端发起三次握手时，它会向上游Server监听的端口上发送SYN报文。在以下2种情况下，Nginx会认为3次握手建立失败：<br>    接收到对方返回的RST重置报文。通常，这发生在上游对应的应用程序未启动，或者进程没有监听相应的端口；<br>    在proxy_connect_timeout时间内（默认60秒），没有接收到对方返回的SYN+ACK报文。</p>
+<p>在以上场景中，Nginx默认会开启next upstream功能。这是因为，XXX_next_upstream指令拥有默认值error和timeout，其中error对应了协议层错误，而timeout则将Nginx指令定义的超时错误单独拎了出来。所有基于TCP的应用层协议都有这一特性，下面以HTTP/1代理模块为例，探究各指令的用法：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_next_upstream error | timeout | invalid_header | </span><br><span class="line"><span class="attribute">http_500</span> | http_502 | http_503 | http_504 | http_403 | http_404 | http_429 | </span><br><span class="line">non_idempotent | <span class="literal">off</span> ...;</span><br><span class="line">Default:	proxy_next_upstream error timeout;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>一旦连接建立成功，Nginx就会基于代理模块适配的应用层协议转发请求。TCP协议要求对于发送的每个字节，接收端都要通过ACK报文中的累计确认序列号进行反馈，一旦在RTO（TCP Retransmission Timeout）时间内未收到ACK确认，操作系统的内核就会重发TCP报文，如下图所示：<br><img src="/images/tcp/tcp_guide_%E8%B6%85%E6%97%B6%E9%87%8D%E4%BC%A0.png"></p>
+<p>内核会为每个socket建立发送、接收缓冲区。<strong>如果大量发送报文得不到确认，那么发送缓冲区（它是动态调整的，可通过tcp_wmem修改范围）就没有空闲位置，这样一旦Nginx中的epoll_wait函数在proxy_send_timeout秒内都没有返回写事件，就会触发timeout错误</strong>：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_send_timeout time;</span><br><span class="line">Default:	proxy_send_timeout 60s;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>当转发完请求，接收响应的过程中，<strong>如果epoll_wait两次返回读事件的间隔超过了proxy_read_timeout秒，也会触发timeout错误</strong>：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_read_timeout time;</span><br><span class="line">Default:	proxy_read_timeout 60s;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>当Nginx未完成完整的转发流程时，服务器接收到的RST或者FIN报文会试图关闭TCP连接，此时都会通过epoll_wait函数触发error错误。只要proxy_next_upstream指令后加入了error和timeout选项，且Nginx还拥有转发完整请求的能力，next upstream机制就会生效，Nginx会基于负载均衡规则，重新挑选1个可用Server转发请求。</p>
+<p>Nginx还提供了proxy_next_upstream_tries指令，用于限制重试次数（默认值是0，表示不加限制）：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_next_upstream_tries number;</span><br><span class="line">Default:	proxy_next_upstream_tries 0;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>通过proxy_next_upstream_timeout指令还可以限制更换上游Server转发请求的总时长（默认不加限制）。<strong>注意，该时长的起始时间是从首次转发请求算起（而不是每次更换上游Server时重新计算），而截止时间则是最后1次检测next upstream是否允许使用的时刻</strong>：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_next_upstream_timeout time;</span><br><span class="line">Default:	proxy_next_upstream_timeout 0;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>任何时候Nginx与下游的TCP连接出错时，next upstream机制都会失效，因为Nginx失去了转发HTTP响应的能力。</p>
+<h1 id="TLS表示层的错误处理"><a href="#TLS表示层的错误处理" class="headerlink" title="TLS表示层的错误处理"></a>TLS表示层的错误处理</h1><p>再来看Nginx如何处理表示层TLS/SSL协议的错误。TLS会话的建立需要通过握手完成，如下所示：<br><img src="/images/tls/TLS%E6%8F%A1%E6%89%8B.png"></p>
+<p><strong>TLS握手需要完成密钥协商和证书验证工作，通常需要2个RTT的时延（TLS1.3需要1个RTT），这一过程会复用proxy_connect_timeout指令标识的超时时间</strong>。一旦TLS握手超时，同样遵循timeout错误的处理方式。</p>
+<p>在TLS握手过程中，Nginx还可以核验上游Server返回的证书链，以及SNI（Server Name Indication）插件中的域名（参见RFC6066）。你可以在proxy_ssl_verify指令中打开这一功能：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_ssl_verify on | off;</span><br><span class="line">Default:	proxy_ssl_verify off;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>Nginx会将服务器发来证书中SNI插件中的域名，与proxy_ssl_name指令中的变量做比较：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_ssl_name name;</span><br><span class="line">Default:	proxy_ssl_name $proxy_host;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>proxy_ssl_name的默认值是proxy_host变量，它等于proxy_pass指令后的域名。<strong>需要注意，一旦证书链或者SNI域名验证失败，next upstream机制将按error错误处理</strong>。</p>
+<h1 id="应用层错误处理"><a href="#应用层错误处理" class="headerlink" title="应用层错误处理"></a>应用层错误处理</h1><p>一旦应用层在协议层面返回了正确的Response响应，但从语义上却是错误的，Nginx同样可以启用next upstream机制。下图是TCP层、TLS层与应用层结合在一起后，next upstream的工作流程示意图：<br><img src="/images/nginx/next_upstream%E7%A4%BA%E6%84%8F%E5%9B%BE.png"></p>
+<p>我们先以HTTP/1协议为例介绍应用层错误的处理方式，再通过它来对比其他应用层协议。对于符合REST规范的HTTP消息，响应码应当能够准确地描述应用层错误，比如，2xx错误码通常表示成功，4xx错误码表示请求参数有问题，而5xx错误码表示服务器出现故障。基于RFC中对各错误码的定义，Nginx允许对以下7种可以进行重试的错误码启用next upstream功能：</p>
+<table>
+<thead>
+<tr>
+<th>响应码</th>
+<th>字符串描述</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>403</td>
+<td>Forbidden</td>
+<td>服务器理解请求的含义，但没有权限执行此请求</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found</td>
+<td>服务器没有找到对应的资源</td>
+</tr>
+<tr>
+<td>429</td>
+<td>Too Many Requests</td>
+<td>客户端发送请求的速率过快（Nginx版本 &gt;= 1.11.13时提供）。</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Internal Server Error</td>
+<td>服务器内部错误，且不属于其他5xx错误类型</td>
+</tr>
+<tr>
+<td>502</td>
+<td>Bad Gateway</td>
+<td>代理服务器无法获取到合法响应</td>
+</tr>
+<tr>
+<td>503</td>
+<td>Server Unavailable</td>
+<td>服务器资源尚未准备好处理当前请求</td>
+</tr>
+<tr>
+<td>504</td>
+<td>Gateway Timeout</td>
+<td>代理服务器无法及时的从上游获得响应</td>
+</tr>
+</tbody></table>
+<p>当然， Nginx默认会将以上错误响应码及包体转发给客户端。有些时候，你可能只是想转换这些错误码，以另一种方式向用户体现业务的处理结果，而不是换一个上游Server重新转发请求。比如，当上游返回404错误时，改为通过200返回一张找不到资源的图片。此时，可以通过proxy_intercept_errors指令完成这一功能：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_intercept_errors on | off;</span><br><span class="line">Default:	proxy_intercept_errors off;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>当proxy_intercept_errors开启后，对于上游返回的大于等于300响应码的请求，都可以基于error_page指令继续处理：<br>Syntax:    error_page code … [=[response] uri;<br>Default:    -<br>Context:    http, server, location, if in location</p>
+<p>比如，对于上游返回的404错误码，以200的方式返回一个本地文件404_not_found.html，就可以做如下配置：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">location</span> /ih &#123;</span><br><span class="line">        <span class="attribute">proxy_pass</span> http://ihBackend;</span><br><span class="line">        <span class="attribute">proxy_intercept_errors</span> <span class="literal">on</span>;</span><br><span class="line">        <span class="attribute">error_page</span> <span class="number">404</span> = /<span class="number">404</span>.html;</span><br><span class="line">&#125;</span><br><span class="line"><span class="attribute">location</span> = /<span class="number">404</span>.html &#123;</span><br><span class="line">        <span class="attribute">alias</span> html/404_not_found.html;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果你希望对这7个错误码启用next upstream机制，可以在proxy_next_upstream指令的选项中添加相应的错误码，比如http_500就表示上游Server返回的500错误码：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Syntax:	proxy_next_upstream error | timeout | invalid_header | </span><br><span class="line"><span class="attribute">http_500</span> | http_502 | http_503 | http_504 | http_403 | http_404 | http_429 | </span><br><span class="line">non_idempotent | <span class="literal">off</span> ...;</span><br><span class="line">Default:	proxy_next_upstream error timeout;</span><br><span class="line">Context:	http, server, location</span><br></pre></td></tr></table></figure>
+
+<p>由于HTTP协议分为头部和包体两部分，对于头部有特定的格式要求，如果上游返回的HTTP头部不符合规范（在error.log日志中可以看到“upstream sent invalid header”字样的log），你可以通过invalid_header选项开启next upstream功能。另外，服务器需要在内存中缓存完整的HTTP头部，才能决定包体的处理方式，如果上游返回的HTTP头部体积超过了proxy_buffer_size指令设置的值（在error.log日志中可以看到“upstream sent too big header”字样的log），也会遵照invalid_header选项的处理方式。</p>
+<p>对于HTTP请求方法而言，如果严格遵照REST架构，那么如GET/HEAD这样获取资源的方法是具备幂等性idempotent（参见<a target="_blank" rel="noopener" href="https://tools.ietf.org/html/rfc7231">RFC7231</a>）的，即无论执行多少次，都会获得相同的结果。PUT方法会整体覆盖资源，DELETE是删除资源，这两个方法也具有幂等性。对于在语义上具备幂等性的请求，Nginx默认会启动next upstream功能。</p>
+<p>然而，POST方法通过FORM表单修改资源属性，PATCH方法以补丁方式修改资源的部分内容，LOCK方法基于WebDAV规范对资源加锁，这3个方法都不具备幂等性，所以Nginx默认并不会对这3个方法启用next upstream机制。你可以通过proxy_next_upstream中的non_idempotent选项对非幂等方法启用该功能。</p>
+<p>官方提供的七层反向代理除了HTTP/1协议外，还有fastcgi、scgi、uwsgi、memcached、grpc这5个模块，它们都使用了TCP协议，且可以与HTTP协议互相转换，因此它们的next upstream与上述HTTP协议的指令极为相似。唯一的差别在于_next_upstream指令后的选项，我把它们的差别列在下表中：</p>
+<table>
+<thead>
+<tr>
+<th>_next_upstream</th>
+<th>http</th>
+<th>fastcgi</th>
+<th>scgi</th>
+<th>uwsgi</th>
+<th>memcached</th>
+<th>grpc</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>error</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>timeout</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>invalid_header</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;/invalid_response</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_500</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_502</td>
+<td>&radic;</td>
+<td>x</td>
+<td>x</td>
+<td>x</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_503</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_504</td>
+<td>&radic;</td>
+<td>x</td>
+<td>x</td>
+<td>x</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_403</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_404</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;/not_found</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>http_429</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+<tr>
+<td>non_idempotent</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>&radic;</td>
+<td>x</td>
+<td>&radic;</td>
+</tr>
+</tbody></table>
+<p>这里&radic;表示纵轴对应的协议具有proxy_next_upstream选项中的功能，而x则因为协议做过转换后，不再提供这一选项。其中，memcached由于不存在HTTP头部，所以通过invalid_response选项表示invalide_header错误，并以not_found表示了与HTTP_404同样的含义。而fastcgi、scgi、uwsgi通常是与本机进程通讯，所以没有502、504这两种与网络密切相关的错误码。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>最后对本文内容做个总结。</p>
+<p>当Nginx检测到系统调用返回的传输层错误、openssl返回的表示层错误或者协议解码返回的应用层错误时，在逻辑上允许重试的前提下，可以通过next upstream机制更换上游Server，在客户端无感知的情况下完成请求的转发，大大提升了系统可用性。</p>
+<p>HTTP/1、gRPC、scgi、fastcgi、uwsgi、memcached等所有Nginx代理模块，都支持next upstream机制，但由于它们基于不同的通讯协议，所以在语法、语义上有不同的表现，这些会反映在_next_upstream指令的选项上。当你熟悉了1种协议的next upstream工作原理，可以触类旁通地理解其他协议。</p>
+<p>下一篇，我们将讨论如何在应用层实时控制Nginx代理的行为。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\01\08\网络协议\http性能极限优化\" rel="bookmark">HTTP性能极限优化</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\05\06\网络协议\为什么要出web协议这门课\" rel="bookmark">为什么要出web协议这门课</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2021/02/22/nginx/Nginx%E6%80%8E%E6%A0%B7%E9%9A%90%E8%97%8F%E4%B8%8A%E6%B8%B8%E9%94%99%E8%AF%AF/" title="Nginx怎样隐藏上游错误">https://www.taohui.tech/2021/02/22/nginx/Nginx怎样隐藏上游错误/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+              <a href="/tags/upstream/" rel="tag"># upstream</a>
+              <a href="/tags/next-upstream/" rel="tag"># next_upstream</a>
+              <a href="/tags/tls/" rel="tag"># tls</a>
+              <a href="/tags/%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B/" rel="tag"># 三次握手</a>
+              <a href="/tags/ssl/" rel="tag"># ssl</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" rel="prev" title="从wordpress迁移到hexo静态站点">
+      <i class="fa fa-chevron-left"></i> 从wordpress迁移到hexo静态站点
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/17/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9AK8S-Ingress-Controller%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82%E6%8E%A2%E8%AE%A8/" rel="next" title="公开课：K8S Ingress Controller技术细节探讨">
+      公开课：K8S Ingress Controller技术细节探讨 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP%E4%BC%A0%E8%BE%93%E5%B1%82%E7%9A%84%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">TCP传输层的错误处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TLS%E8%A1%A8%E7%A4%BA%E5%B1%82%E7%9A%84%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">TLS表示层的错误处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%B1%82%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">应用层错误处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

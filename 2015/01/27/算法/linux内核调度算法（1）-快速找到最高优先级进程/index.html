@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="为什么要了解内核的调度策略呢？呵呵，因为它值得我们学习，不算是废话吧。内核调度程序很先进很强大，管理你的Linux上跑的大量的乱七八糟的进程，同时还保持着对用户操作的高灵敏响应，如果可能，为什么不把这种思想放到自己的应用程序里呢？或者，有没有可能更好的实现自己的应用，使得操作系统能够以自己的意志来分配资源给自己的进程？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux内核调度算法（1）--快速找到最高优先级进程">
+<meta property="og:url" content="https://www.taohui.tech/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%881%EF%BC%89-%E5%BF%AB%E9%80%9F%E6%89%BE%E5%88%B0%E6%9C%80%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E8%BF%9B%E7%A8%8B/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="为什么要了解内核的调度策略呢？呵呵，因为它值得我们学习，不算是废话吧。内核调度程序很先进很强大，管理你的Linux上跑的大量的乱七八糟的进程，同时还保持着对用户操作的高灵敏响应，如果可能，为什么不把这种思想放到自己的应用程序里呢？或者，有没有可能更好的实现自己的应用，使得操作系统能够以自己的意志来分配资源给自己的进程？">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2015-01-27T08:47:01.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.888Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="kernel">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="调度算法">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.taohui.tech/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%881%EF%BC%89-%E5%BF%AB%E9%80%9F%E6%89%BE%E5%88%B0%E6%9C%80%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E8%BF%9B%E7%A8%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>linux内核调度算法（1）--快速找到最高优先级进程 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%881%EF%BC%89-%E5%BF%AB%E9%80%9F%E6%89%BE%E5%88%B0%E6%9C%80%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E8%BF%9B%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          linux内核调度算法（1）--快速找到最高优先级进程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-01-27 16:47:01" itemprop="dateCreated datePublished" datetime="2015-01-27T16:47:01+08:00">2015-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>为什么要了解内核的调度策略呢？呵呵，因为它值得我们学习，不算是废话吧。内核调度程序很先进很强大，管理你的<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/linux" title="Linux知识库">Linux</a>上跑的大量的乱七八糟的进程，同时还保持着对用户操作的高灵敏响应，如果可能，为什么不把这种思想放到自己的应用程序里呢？或者，有没有可能更好的实现自己的应用，使得<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/operatingsystem" title="操作系统知识库">操作系统</a>能够以自己的意志来分配资源给自己的进程？ </p>
+<span id="more"></span>
+<p>带着这两个问题来看看KERNEL。首先回顾上我们开发应用程序，基本上就两种类型，</p>
+<ul>
+<li>1、IO消耗型：比如hadoop上的trunk服务，很明显它的消耗主要在IO上，包括网络IO磁盘IO等等。</li>
+<li>2、CPU消耗型，比如mapreduce或者其他的需要对大量数据进行计算处理的组件，就象对高清视频压缩成适合手机观看分辨率的进程，他们的消耗主要在CPU上。</li>
+</ul>
+<p>当两类进程都在一台SERVER上运行时，操作系统会如何调度它们呢？现在的服务器都是SMP多核的，那么一个进程在多CPU时会来回切换吗？如果我有一个程序，既有IO消耗又有CPU消耗，怎么让多核更好的调度我的程序呢？ </p>
+<p>又多了几个问题。来看看内核调度程序吧，我们先从它的优先队列谈起吧。调度程序代码就在内核源码的kernel/sched.c的schedule函数中。 首先看下面的优先级队列，每一个runqueue都有。runqueue是什么？下面会详细说下，现在大家可以理解为，内核为每一颗CPU分配了一个runqueue，用于维护这颗CPU可以运行的进程。runqueue里，有几个成员是prio_array类型，这个东东就是优先队列，先看看它的定义：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">struct prio_array &#123;  </span><br><span class="line">    unsigned int nr_active;    表示等待执行的进程总数  </span><br><span class="line">    unsigned long bitmap[BITMAP_SIZE];    一个unsigned long在内核中只有32位哈，大家要跟64位OS上的C程序中的long区分开，那个是64位的。那么这个bitmap是干什么的呢？它是用位的方式，表示某个优先级上有没有待处理的队列，是实现快速找到最高待处理优先进程的关键。如果我定义了四种优先级，我只需要四位就能表示某个优先级上有没有进程要运行，例如优先级是2和3上有进程，那么就应该是0110.......非常省空间，效率也快，不是吗？  </span><br><span class="line">    struct list_head queue[MAX_PRIO];     与上面的bitmap是对应的，它存储所有等待运行的进程。  </span><br><span class="line">&#125;;  </span><br></pre></td></tr></table></figure>
+
+<p>看看BITMAP_SIZE是怎么算出来的：#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long)) 那么，LINUX默认配置（如果你用默认选项编译内核的话）MAX_PRIO是140，就是说一共内核对进程一共定义了140种优先级。等待某个CPU来处理的进程中，可能包含许多种优先级的进程，但，LINUX是个抢占式调度算法的操作系统，就是说，需要调度时一定是找到最高优先级的进程执行。上面的BITMAP_SIZE值根据MAX_PRIO算出来为5，那么bitmap实际是32*5=160位，这样就包含了MAX_PRIO的140位。优先级队列是怎么使用的？看2649行代码：idx = sched_find_first_bit(array-&gt;bitmap);这个方法就用来快速的找到优先级最高的队列。看看它的实现可以方便我们理解这个优先级位的设计：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">static inline int sched_find_first_bit(unsigned long *b)  </span><br><span class="line">&#123;  </span><br><span class="line">    if (unlikely(b[0]))  </span><br><span class="line">        return __ffs(b[0]);  </span><br><span class="line">    if (unlikely(b[1]))  </span><br><span class="line">        return __ffs(b[1]) + 32;  </span><br><span class="line">    if (unlikely(b[2]))  </span><br><span class="line">        return __ffs(b[2]) + 64;  </span><br><span class="line">    if (b[3])  </span><br><span class="line">        return __ffs(b[3]) + 96;  </span><br><span class="line">    return __ffs(b[4]) + 128;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>那么__ffs是干什么的？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">static inline int __ffs(int x)  </span><br><span class="line">&#123;  </span><br><span class="line">    int r &#x3D; 0;  </span><br><span class="line">  </span><br><span class="line">    if (!x)  </span><br><span class="line">        return 0;  </span><br><span class="line">    if (!(x &amp; 0xffff)) &#123;  </span><br><span class="line">        x &gt;&gt;&#x3D; 16;  </span><br><span class="line">        r +&#x3D; 16;  </span><br><span class="line">    &#125;  </span><br><span class="line">    if (!(x &amp; 0xff)) &#123;  </span><br><span class="line">        x &gt;&gt;&#x3D; 8;  </span><br><span class="line">        r +&#x3D; 8;  </span><br><span class="line">    &#125;  </span><br><span class="line">    if (!(x &amp; 0xf)) &#123;  </span><br><span class="line">        x &gt;&gt;&#x3D; 4;  </span><br><span class="line">        r +&#x3D; 4;  </span><br><span class="line">    &#125;  </span><br><span class="line">    if (!(x &amp; 3)) &#123;  </span><br><span class="line">        x &gt;&gt;&#x3D; 2;  </span><br><span class="line">        r +&#x3D; 2;  </span><br><span class="line">    &#125;  </span><br><span class="line">    if (!(x &amp; 1)) &#123;  </span><br><span class="line">        x &gt;&gt;&#x3D; 1;  </span><br><span class="line">        r +&#x3D; 1;  </span><br><span class="line">    &#125;  </span><br><span class="line">    return r;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>sched_find_first_bit返回值就是最高优先级所在队列的序号，与queue是对应使用的哈，queue = array-&gt;queue + idx;这样就取到了要处理的进程队列。这个设计在查找优先级时是非常快的，非常值得我们学习。 好，优先级队列搞明白了，现在来看看runqueue，每个runqueue包含三个优先级队列。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">struct runqueue &#123;  </span><br><span class="line">    spinlock_t lock;   这是个自旋锁，nginx里解决惊群现象时也是用这个。与普通锁的区别就是，使用普通锁时，你去试图拿一把锁，结果发现已经被别人拿走了，你就在那睡觉，等别人锁用完了叫你起来。所以如果有一个人拿住锁了，一百个人都在门前睡觉等。当之前的人用完锁回来后，会叫醒所有100个等锁的人，然后这些人开始互相抢，抢到的人拿锁进去，其他的人继续等。自旋锁不同，当他去拿锁发现锁被别人拿走了，他在那不睡觉的等，稍打个盹就看看自己主动看看锁有没有还回来。大家比较出优劣了吗？  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * nr_running and cpu_load should be in the same cacheline because </span><br><span class="line">     * remote CPUs use both these fields when doing load calculation. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    unsigned long nr_running;  </span><br><span class="line">#ifdef CONFIG_SMP  </span><br><span class="line">    unsigned long cpu_load;  </span><br><span class="line">#endif  </span><br><span class="line">    unsigned long long nr_switches;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * This is part of a global counter where only the total sum </span><br><span class="line">     * over all CPUs matters. A task can increase this counter on </span><br><span class="line">     * one CPU and if it got migrated afterwards it may decrease </span><br><span class="line">     * it on another CPU. Always updated under the runqueue lock: </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    unsigned long nr_uninterruptible;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    unsigned long expired_timestamp;  </span><br><span class="line">    unsigned long long timestamp_last_tick;  </span><br><span class="line">    task_t *curr, *idle;  </span><br><span class="line">    struct mm_struct *prev_mm;  </span><br><span class="line">    prio_array_t *active, *expired, arrays[2];上面说了半天的优先级队列在这里，但是在runqueue里，为什么不只一个呢？这个在下面讲。  </span><br><span class="line">    int best_expired_prio;  </span><br><span class="line">    atomic_t nr_iowait;  </span><br><span class="line">    ... ...  </span><br><span class="line">&#125;;  </span><br></pre></td></tr></table></figure>
+
+<p>  LINUX是一个时间多路复用的系统，就是说，通过把CPU执行时间分成许多片，再分配给进程们使用，造成即使单CPU系统，也貌似允许多个任务在同时执行。那么，时间片大小假设为100ms，过短过长，过长了有些不灵敏，过短了，连切换进程时可能都要消耗几毫秒的时间。分给100个进程执行，在所有进程都用完自己的时间片后，需要重新给所有的进程重新分配时间片，怎么分配呢？for循环遍历所有的run状态进程，重设时间片？这个性能无法容忍！太慢了，跟当前系统进程数相关。那么2.6内核怎么做的呢？它用了上面提到的两个优先级队列active和expired，顾名思义，active是还有时间片的进程队列，而expired是时间片耗尽必须重新分配时间片的进程队列。 这么设计的好处就是不用再循环一遍所有进程重设时间片了，看看调度函数是怎么玩的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">array &#x3D; rq-&gt;active;  </span><br><span class="line">if (unlikely(!array-&gt;nr_active)) &#123;  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * Switch the active and expired arrays. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    schedstat_inc(rq, sched_switch);  </span><br><span class="line">    rq-&gt;active &#x3D; rq-&gt;expired;  </span><br><span class="line">    rq-&gt;expired &#x3D; array;  </span><br><span class="line">    array &#x3D; rq-&gt;active;  </span><br><span class="line">    rq-&gt;expired_timestamp &#x3D; 0;  </span><br><span class="line">    rq-&gt;best_expired_prio &#x3D; MAX_PRIO;  </span><br><span class="line">&#125; else  </span><br><span class="line">    schedstat_inc(rq, sched_noswitch);  </span><br></pre></td></tr></table></figure>
+
+<p>  当所有运行进程的时间片都用完时，就把active和expired队列互换指针，没有遍历哦，而时间片耗尽的进程在出acitve队列入expired队列时，已经单独的重新分配好新时间片了。 再看一下schedule(void)调度函数，当某个进程休眠或者被抢占时，系统就开始调试schedule(void)决定接下来运行哪个进程。上面说过的东东都在这个函数里有体现哈。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br></pre></td><td class="code"><pre><span class="line">asmlinkage void __sched schedule(void)  </span><br><span class="line">&#123;  </span><br><span class="line">    long *switch_count;  </span><br><span class="line">    task_t *prev, *next;  </span><br><span class="line">    runqueue_t *rq;  </span><br><span class="line">    prio_array_t *array;  </span><br><span class="line">    struct list_head *queue;  </span><br><span class="line">    unsigned long long now;  </span><br><span class="line">    unsigned long run_time;  </span><br><span class="line">    int cpu, idx;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * Test if we are atomic.  Since do_exit() needs to call into </span><br><span class="line">     * schedule() atomically, we ignore that path for now. </span><br><span class="line">     * Otherwise, whine if we are scheduling when we should not be. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    if (likely(!(current-&gt;exit_state &amp; (EXIT_DEAD  EXIT_ZOMBIE)))) &#123;先看看当前运行进程的状态  </span><br><span class="line">        if (unlikely(in_atomic())) &#123;  </span><br><span class="line">            printk(KERN_ERR &quot;scheduling while atomic: &quot;  </span><br><span class="line">                &quot;%s&#x2F;0x%08x&#x2F;%d\n&quot;,  </span><br><span class="line">                current-&gt;comm, preempt_count(), current-&gt;pid);  </span><br><span class="line">            dump_stack();  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">    profile_hit(SCHED_PROFILING, __builtin_return_address(0));  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">need_resched:  </span><br><span class="line">    preempt_disable();  </span><br><span class="line">    prev &#x3D; current;  </span><br><span class="line">    release_kernel_lock(prev);  </span><br><span class="line">need_resched_nonpreemptible:  </span><br><span class="line">    rq &#x3D; this_rq();      这行找到这个CPU对应的runqueue，再次强调，每个CPU有一个自己的runqueue  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * The idle thread is not allowed to schedule! </span><br><span class="line">     * Remove this check after it has been exercised a bit. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    if (unlikely(current &#x3D;&#x3D; rq-&gt;idle) &amp;&amp; current-&gt;state !&#x3D; TASK_RUNNING) &#123;  </span><br><span class="line">        printk(KERN_ERR &quot;bad: scheduling from the idle thread!\n&quot;);  </span><br><span class="line">        dump_stack();  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    schedstat_inc(rq, sched_cnt);  </span><br><span class="line">    now &#x3D; sched_clock();  </span><br><span class="line">    if (likely(now - prev-&gt;timestamp &lt; NS_MAX_SLEEP_AVG))  </span><br><span class="line">        run_time &#x3D; now - prev-&gt;timestamp;  </span><br><span class="line">    else  </span><br><span class="line">        run_time &#x3D; NS_MAX_SLEEP_AVG;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * Tasks with interactive credits get charged less run_time </span><br><span class="line">     * at high sleep_avg to delay them losing their interactive </span><br><span class="line">     * status </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    if (HIGH_CREDIT(prev))  </span><br><span class="line">        run_time &#x2F;&#x3D; (CURRENT_BONUS(prev) ? : 1);  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    spin_lock_irq(&amp;rq-&gt;lock);  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    if (unlikely(current-&gt;flags &amp; PF_DEAD))  </span><br><span class="line">        current-&gt;state &#x3D; EXIT_DEAD;  </span><br><span class="line">    &#x2F;* </span><br><span class="line">     * if entering off of a kernel preemption go straight </span><br><span class="line">     * to picking the next task. </span><br><span class="line">     *&#x2F;  </span><br><span class="line">    switch_count &#x3D; &amp;prev-&gt;nivcsw;  </span><br><span class="line">    if (prev-&gt;state &amp;&amp; !(preempt_count() &amp; PREEMPT_ACTIVE)) &#123;  </span><br><span class="line">        switch_count &#x3D; &amp;prev-&gt;nvcsw;  </span><br><span class="line">        if (unlikely((prev-&gt;state &amp; TASK_INTERRUPTIBLE) &amp;&amp;  </span><br><span class="line">                unlikely(signal_pending(prev))))  </span><br><span class="line">            prev-&gt;state &#x3D; TASK_RUNNING;  </span><br><span class="line">        else &#123;  </span><br><span class="line">            if (prev-&gt;state &#x3D;&#x3D; TASK_UNINTERRUPTIBLE)  </span><br><span class="line">                rq-&gt;nr_uninterruptible++;  </span><br><span class="line">            deactivate_task(prev, rq);  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    cpu &#x3D; smp_processor_id();  </span><br><span class="line">    if (unlikely(!rq-&gt;nr_running)) &#123;  </span><br><span class="line">go_idle:  </span><br><span class="line">        idle_balance(cpu, rq);  </span><br><span class="line">        if (!rq-&gt;nr_running) &#123;  </span><br><span class="line">            next &#x3D; rq-&gt;idle;  </span><br><span class="line">            rq-&gt;expired_timestamp &#x3D; 0;  </span><br><span class="line">            wake_sleeping_dependent(cpu, rq);  </span><br><span class="line">            &#x2F;* </span><br><span class="line">             * wake_sleeping_dependent() might have released </span><br><span class="line">             * the runqueue, so break out if we got new </span><br><span class="line">             * tasks meanwhile: </span><br><span class="line">             *&#x2F;  </span><br><span class="line">            if (!rq-&gt;nr_running)  </span><br><span class="line">                goto switch_tasks;  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125; else &#123;  </span><br><span class="line">        if (dependent_sleeper(cpu, rq)) &#123;  </span><br><span class="line">            next &#x3D; rq-&gt;idle;  </span><br><span class="line">            goto switch_tasks;  </span><br><span class="line">        &#125;  </span><br><span class="line">        &#x2F;* </span><br><span class="line">         * dependent_sleeper() releases and reacquires the runqueue </span><br><span class="line">         * lock, hence go into the idle loop if the rq went </span><br><span class="line">         * empty meanwhile: </span><br><span class="line">         *&#x2F;  </span><br><span class="line">        if (unlikely(!rq-&gt;nr_running))  </span><br><span class="line">            goto go_idle;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    array &#x3D; rq-&gt;active;  </span><br><span class="line">    if (unlikely(!array-&gt;nr_active)) &#123;       上面说过的，需要重新计算时间片时，就用已经计算好的expired队列了  </span><br><span class="line">        &#x2F;* </span><br><span class="line">         * Switch the active and expired arrays. </span><br><span class="line">         *&#x2F;  </span><br><span class="line">        schedstat_inc(rq, sched_switch);  </span><br><span class="line">        rq-&gt;active &#x3D; rq-&gt;expired;  </span><br><span class="line">        rq-&gt;expired &#x3D; array;  </span><br><span class="line">        array &#x3D; rq-&gt;active;  </span><br><span class="line">        rq-&gt;expired_timestamp &#x3D; 0;  </span><br><span class="line">        rq-&gt;best_expired_prio &#x3D; MAX_PRIO;  </span><br><span class="line">    &#125; else  </span><br><span class="line">        schedstat_inc(rq, sched_noswitch);  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    idx &#x3D; sched_find_first_bit(array-&gt;bitmap);         找到优先级最高的队列  </span><br><span class="line">    queue &#x3D; array-&gt;queue + idx;  </span><br><span class="line">    next &#x3D; list_entry(queue-&gt;next, task_t, run_list);  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    if (!rt_task(next) &amp;&amp; next-&gt;activated &gt; 0) &#123;  </span><br><span class="line">        unsigned long long delta &#x3D; now - next-&gt;timestamp;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">        if (next-&gt;activated &#x3D;&#x3D; 1)  </span><br><span class="line">            delta &#x3D; delta * (ON_RUNQUEUE_WEIGHT * 128 &#x2F; 100) &#x2F; 128;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">        array &#x3D; next-&gt;array;  </span><br><span class="line">        dequeue_task(next, array);  </span><br><span class="line">        recalc_task_prio(next, next-&gt;timestamp + delta);  </span><br><span class="line">        enqueue_task(next, array);  </span><br><span class="line">    &#125;  </span><br><span class="line">    next-&gt;activated &#x3D; 0;  </span><br><span class="line">switch_tasks:  </span><br><span class="line">    if (next &#x3D;&#x3D; rq-&gt;idle)  </span><br><span class="line">        schedstat_inc(rq, sched_goidle);  </span><br><span class="line">    prefetch(next);  </span><br><span class="line">    clear_tsk_need_resched(prev);  </span><br><span class="line">    rcu_qsctr_inc(task_cpu(prev));  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    prev-&gt;sleep_avg -&#x3D; run_time;  </span><br><span class="line">    if ((long)prev-&gt;sleep_avg &lt;&#x3D; 0) &#123;  </span><br><span class="line">        prev-&gt;sleep_avg &#x3D; 0;  </span><br><span class="line">        if (!(HIGH_CREDIT(prev)  LOW_CREDIT(prev)))  </span><br><span class="line">            prev-&gt;interactive_credit--;  </span><br><span class="line">    &#125;  </span><br><span class="line">    prev-&gt;timestamp &#x3D; prev-&gt;last_ran &#x3D; now;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    sched_info_switch(prev, next);  </span><br><span class="line">    if (likely(prev !&#x3D; next)) &#123;              表面现在正在执行的进程，不是选出来的优先级最高的进程  </span><br><span class="line">        next-&gt;timestamp &#x3D; now;  </span><br><span class="line">        rq-&gt;nr_switches++;  </span><br><span class="line">        rq-&gt;curr &#x3D; next;  </span><br><span class="line">        ++*switch_count;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">        prepare_arch_switch(rq, next);  </span><br><span class="line">        prev &#x3D; context_switch(rq, prev, next);              所以需要完成进程上下文切换，把之前的进程信息CACHE住  </span><br><span class="line">        barrier();  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">        finish_task_switch(prev);  </span><br><span class="line">    &#125; else  </span><br><span class="line">        spin_unlock_irq(&amp;rq-&gt;lock);  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">    prev &#x3D; current;  </span><br><span class="line">    if (unlikely(reacquire_kernel_lock(prev) &lt; 0))  </span><br><span class="line">        goto need_resched_nonpreemptible;  </span><br><span class="line">    preempt_enable_no_resched();  </span><br><span class="line">    if (unlikely(test_thread_flag(TIF_NEED_RESCHED)))  </span><br><span class="line">        goto need_resched;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>当然，在我们程序中，也可以通过执行以下系统调用来改变自己进程的优先级。nice系统调用可以改变某个进程的基本优先级，setpriority可以改变一组进程的优先级。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2015\01\27\算法\linux内核调度算法（2）-cpu时间片如何分配\" rel="bookmark">linux内核调度算法（2）--CPU时间片如何分配</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2015\01\27\算法\linux内核调度算法（3）-多核系统的负载均衡\" rel="bookmark">linux内核调度算法（3）--多核系统的负载均衡</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2016\01\26\网络协议\高性能网络编程3-tcp消息的接收\" rel="bookmark">高性能网络编程3----TCP消息的接收</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%881%EF%BC%89-%E5%BF%AB%E9%80%9F%E6%89%BE%E5%88%B0%E6%9C%80%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E8%BF%9B%E7%A8%8B/" title="linux内核调度算法（1）--快速找到最高优先级进程">https://www.taohui.tech/2015/01/27/算法/linux内核调度算法（1）-快速找到最高优先级进程/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kernel/" rel="tag"># kernel</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/" rel="tag"># 调度算法</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2015/01/25/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E4%B8%A4%E7%A7%8D%E6%88%98%E4%BA%89/" rel="prev" title="两种战争">
+      <i class="fa fa-chevron-left"></i> 两种战争
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2015/01/27/%E7%AE%97%E6%B3%95/linux%E5%86%85%E6%A0%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%882%EF%BC%89-cpu%E6%97%B6%E9%97%B4%E7%89%87%E5%A6%82%E4%BD%95%E5%88%86%E9%85%8D/" rel="next" title="linux内核调度算法（2）--CPU时间片如何分配">
+      linux内核调度算法（2）--CPU时间片如何分配 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

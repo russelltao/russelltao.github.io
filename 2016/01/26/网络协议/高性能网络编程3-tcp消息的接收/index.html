@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="这篇文章将试图说明应用程序如何接收网络上发送过来的TCP消息流，由于篇幅所限，暂时忽略ACK报文的回复和接收窗口的滑动。 为了快速掌握本文所要表达的思想，我们可以带着以下问题阅读： 1、应用程序调用read、recv等方法时，socket套接字可以设置为阻塞或者非阻塞，这两种方式是如何工作的？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能网络编程3----TCP消息的接收">
+<meta property="og:url" content="https://www.taohui.tech/2016/01/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="这篇文章将试图说明应用程序如何接收网络上发送过来的TCP消息流，由于篇幅所限，暂时忽略ACK报文的回复和接收窗口的滑动。 为了快速掌握本文所要表达的思想，我们可以带着以下问题阅读： 1、应用程序调用read、recv等方法时，socket套接字可以设置为阻塞或者非阻塞，这两种方式是如何工作的？">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-2.jpg">
+<meta property="og:image" content="https://www.taohui.tech/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-3.jpg">
+<meta property="article:published_time" content="2016-01-26T14:38:31.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.907Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="tcp">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="SO_RCVLOWAT">
+<meta property="article:tag" content="SO_RCVTIMEO">
+<meta property="article:tag" content="tcp_low_latency">
+<meta property="article:tag" content="阻塞">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2016/01/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高性能网络编程3----TCP消息的接收 | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2016/01/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高性能网络编程3----TCP消息的接收
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-01-26 22:38:31" itemprop="dateCreated datePublished" datetime="2016-01-26T22:38:31+08:00">2016-01-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>15k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>13 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这篇文章将试图说明应用程序如何接收网络上发送过来的TCP消息流，由于篇幅所限，暂时忽略ACK报文的回复和接收窗口的滑动。</p>
+<p>为了快速掌握本文所要表达的思想，我们可以带着以下问题阅读：</p>
+<p>1、应用程序调用read、recv等方法时，socket套接字可以设置为阻塞或者非阻塞，这两种方式是如何工作的？</p>
+<span id="more"></span>
+<p>2、若socket为默认的阻塞套接字，此时recv方法传入的len参数，是表示必须超时（SO_RCVTIMEO）或者接收到len长度的消息，recv方法才会返回吗？而且，socket上可以设置一个属性叫做SO_RCVLOWAT，它会与len产生什么样的交集，又是决定recv等接收方法什么时候返回？</p>
+<p>3、应用程序开始收取TCP消息，与程序所在的机器网卡上接收到网络里发来的TCP消息，这是两个独立的流程。它们之间是如何互相影响的？例如，应用程序正在收取消息时，内核通过网卡又在这条TCP连接上收到消息时，究竟是如何处理的？若应用程序没有调用read或者recv时，内核收到TCP连接上的消息后又是怎样处理的？</p>
+<p>4、recv这样的接收方法还可以传入各种flags，例如MSG_WAITALL、MSG_PEEK、MSG_TRUNK等等。它们是如何工作的？</p>
+<p>5、1个socket套接字可能被多个进程在使用，出现并发访问时，内核是怎么处理这种状况的？</p>
+<p>6、linux的sysctl系统参数中，有类似tcp_low_latency这样的开关，默认为0或者配置为1时是如何影响TCP消息处理流程的？</p>
+<p>书接上文。本文将通过三幅图讲述三种典型的接收TCP消息场景，理清内核为实现TCP消息的接收所实现的4个队列容器。当然，了解内核的实现并不是目的，而是如何使用socket接口、如何配置操作系统内核参数，才能使TCP传输消息更高效，这才是最终目的。</p>
+<p>很多同学不希望被内核代码扰乱了思维，如何阅读本文呢？</p>
+<p>我会在图1的步骤都介绍完了才来从代码上说明tcp_v4_rcv等主要方法。像flags参数、非阻塞套接字会产生怎样的效果我是在代码介绍中说的。然后我会介绍图2、图3，介绍它们的步骤时我会穿插一些上文没有涉及的少量代码。不喜欢了解内核代码的同学请直接看完图1的步骤后，请跳到图2、图3中，我认为这3幅图覆盖了主要的TCP接收场景，能够帮助你理清其流程。</p>
+<p>接收消息时调用的系统方法要比上一篇发送TCP消息复杂许多。接收TCP消息的过程可以一分为二：首先是PC上的网卡接收到网线传来的报文，通过软中断内核拿到并且解析其为TCP报文，然后TCP模块决定如何处理这个TCP报文。其次，用户进程调用read、recv等方法获取TCP消息，则是将内核已经从网卡上收到的消息流拷贝到用户进程里的内存中。</p>
+<p>第一幅图描述的场景是，TCP连接上将要收到的消息序号是S1（TCP上的每个报文都有序号，详见《TCP/IP协议详解》），此时操作系统内核依次收到了序号S1-S2的报文、S3-S4、S2-S3的报文，注意后两个包乱序了。之后，用户进程分配了一段len大小的内存用于接收TCP消息，此时，len是大于S4-S1的。另外，用户进程始终没有对这个socket设置过SO_RCVLOWAT参数，因此，接收阀值SO_RCVLOWAT使用默认值1。另外，系统参数tcp_low_latency设置为0，即从操作系统的总体效率出发，使用prequeue队列提升吞吐量。当然，由于用户进程收消息时，并没有新包来临，所以此图中prequeue队列始终为空。先不细表。</p>
+<p>图1如下：</p>
+<p><a href="/2016/01/26/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3/"><img src="/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3.jpg"></a></p>
+<p>上图中有13个步骤，应用进程使用了阻塞套接字，调用recv等方法时flag标志位为0，用户进程读取套接字时没有发生进程睡眠。内核在处理接收到的TCP报文时使用了4个队列容器（当链表理解也可），分别为receive、out_of_order、prequeue、backlog队列，本文会说明它们存在的意义。下面详细说明这13个步骤。</p>
+<p>1、当网卡接收到报文并判断为TCP协议后，将会调用到内核的tcp_v4_rcv方法。此时，这个TCP连接上需要接收的下一个报文序号恰好就是S1，而这一步里，网卡上收到了S1-S2的报文，所以，tcp_v4_rcv方法会把这个报文直接插入到receive队列中。</p>
+<p>注意：receive队列是允许用户进程直接读取的，它是将已经接收到的TCP报文，去除了TCP头部、排好序放入的、用户进程可以直接按序读取的队列。由于socket不在进程上下文中（也就是没有进程在读socket），由于我们需要S1序号的报文，而恰好收到了S1-S2报文，因此，它进入了receive队列。</p>
+<p>2、接着，我们收到了S3-S4报文。在第1步结束后，这时我们需要收到的是S2序号，但到来的报文却是S3打头的，怎么办呢？进入out_of_order队列！从这个队列名称就可以看出来，所有乱序的报文都会暂时放在这。</p>
+<p>3、仍然没有进入来读取socket，但又过来了我们期望的S2-S3报文，它会像第1步一样，直接进入receive队列。不同的时，由于此时out_of_order队列不像第1步是空的，所以，引发了接来的第4步。</p>
+<p>4、每次向receive队列插入报文时都会检查out_of_order队列。由于收到S2-S3报文后，期待的序号成为了S3，这样，out_of_order队列里的唯一报文S3-S4报文将会移出本队列而插入到receive队列中（这件事由tcp_ofo_queue方法完成）。</p>
+<p>5、终于有用户进程开始读取socket了。做过应用端编程的同学都知道，先要在进程里分配一块内存，接着调用read或者recv等方法，把内存的首地址和内存长度传入，再把建立好连接的socket也传入。当然，对这个socket还可以配置其属性。这里，假定没有设置任何属性，都使用默认值，因此，此时socket是阻塞式，它的SO_RCVLOWAT是默认的1。当然，recv这样的方法还会接收一个flag参数，它可以设置为MSG_WAITALL、MSG_PEEK、MSG_TRUNK等等，这里我们假定为最常用的0。进程调用了recv方法。</p>
+<p>6、无论是何种接口，C库和内核经过层层封装，接收TCP消息最终一定会走到tcp_recvmsg方法。下面介绍代码细节时，它会是重点。</p>
+<p>7、在tcp_recvmsg方法里，会首先锁住socket。为什么呢？因此socket是可以被多进程同时使用的，同时，内核中断也会操作它，而下面的代码都是核心的、操作数据的、有状态的代码，不可以被重入的，锁住后，再有用户进程进来时拿不到锁就要休眠在这了。内核中断看到被锁住后也会做不同的处理，参见图2、图3。</p>
+<p>8、此时，第1-4步已经为receive队列里准备好了3个报文。最上面的报文是S1-S2，将它拷贝到用户态内存中。由于第5步flag参数并没有携带MSG_PEEK这样的标志位，因此，再将S1-S2报文从receive队列的头部移除，从内核态释放掉。反之，MSG_PEEK标志位会导致receive队列不会删除报文。所以，MSG_PEEK主要用于多进程读取同一套接字的情形。</p>
+<p>9、如第8步，拷贝S2-S3报文到用户态内存中。当然，执行拷贝前都会检查用户态内存的剩余空间是否足以放下当前这个报文，不足以时会直接返回已经拷贝的字节数。</p>
+<p>10、同上。</p>
+<p>11、receive队列为空了，此时会先来检查SO_RCVLOWAT这个阀值。如果已经拷贝的字节数到现在还小于它，那么可能导致进程会休眠，等待拷贝更多的数据。第5步已经说明过了，socket套接字使用的默认的SO_RCVLOWAT，也就是1，这表明，只要读取到报文了，就认为可以返回了。</p>
+<p>做完这个检查了，再检查backlog队列。backlog队列是进程正在拷贝数据时，网卡收到的报文会进这个队列。此时若backlog队列有数据，就顺带处理下。图3会覆盖这种场景。</p>
+<p>12、在本图对应的场景中，backlog队列是没有数据的，已经拷贝的字节数为S4-S1，它是大于1的，因此，释放第7步里加的锁，准备返回用户态了。</p>
+<p>13、用户进程代码开始执行，此时recv等方法返回的就是S4-S1，即从内核拷贝的字节数。</p>
+<p>图1描述的场景是最简单的1种场景，下面我们来看看上述步骤是怎样通过内核代码实现的（以下代码为2.6.18内核代码）。</p>
+<p>我们知道，linux对中断的处理是分为上半部和下半部的，这是处于系统整体效率的考虑。我们将要介绍的都是在网络软中断的下半部里，例如这个tcp_v4_rcv方法。图1中的第1-4步都是在这个方法里完成的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">tcp_v4_rcv</span><span class="params">(struct sk_buff *skb)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">        ... ...  </span><br><span class="line">    <span class="comment">//是否有进程正在使用这个套接字，将会对处理流程产生影响  </span></span><br><span class="line">        <span class="comment">//或者从代码层面上，只要在tcp_recvmsg里，执行lock_sock后只能进入else，而release_sock后会进入if  </span></span><br><span class="line">    <span class="keyword">if</span> (!sock_owned_by_user(sk)) &#123;  </span><br><span class="line">        &#123;  </span><br><span class="line">            <span class="comment">//当 tcp_prequeue 返回0时，表示这个函数没有处理该报文  </span></span><br><span class="line">            <span class="keyword">if</span> (!tcp_prequeue(sk, skb))<span class="comment">//如果报文放在prequeue队列，即表示延后处理，不占用软中断过长时间  </span></span><br><span class="line">                ret = tcp_v4_do_rcv(sk, skb);<span class="comment">//不使用prequeue或者没有用户进程读socket时（图3进入此分支），立刻开始处理这个报文  </span></span><br><span class="line">        &#125;  </span><br><span class="line">    &#125; <span class="keyword">else</span>  </span><br><span class="line">        sk_add_backlog(sk, skb);<span class="comment">//如果进程正在操作套接字，就把skb指向的TCP报文插入到backlog队列（图3涉及此分支）  </span></span><br><span class="line">        ... ...  </span><br><span class="line">｝  </span><br></pre></td></tr></table></figure>
+
+<p>图1第1步里，我们从网络上收到了序号为S1-S2的包。此时，没有用户进程在读取套接字，因此，sock_owned_by_user(sk)会返回0。所以，tcp_prequeue方法将得到执行。简单看看它：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">tcp_prequeue</span><span class="params">(struct sock *sk, struct sk_buff *skb)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tcp_sock</span> *<span class="title">tp</span> =</span> tcp_sk(sk);  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//检查tcp_low_latency，默认其为0，表示使用prequeue队列。tp-&gt;ucopy.task不为0，表示有进程启动了拷贝TCP消息的流程  </span></span><br><span class="line">    <span class="keyword">if</span> (!sysctl_tcp_low_latency &amp;&amp; tp-&gt;ucopy.task) &#123;  </span><br><span class="line">        <span class="comment">//到这里，通常是用户进程读数据时没读到指定大小的数据，休眠了。直接将报文插入prequeue队列的末尾，延后处理  </span></span><br><span class="line">        __skb_queue_tail(&amp;tp-&gt;ucopy.prequeue, skb);  </span><br><span class="line">        tp-&gt;ucopy.memory += skb-&gt;truesize;  </span><br><span class="line">        <span class="comment">//当然，虽然通常是延后处理，但如果TCP的接收缓冲区不够用了，就会立刻处理prequeue队列里的所有报文  </span></span><br><span class="line">        <span class="keyword">if</span> (tp-&gt;ucopy.memory &gt; sk-&gt;sk_rcvbuf) &#123;  </span><br><span class="line">            <span class="keyword">while</span> ((skb1 = __skb_dequeue(&amp;tp-&gt;ucopy.prequeue)) != <span class="literal">NULL</span>) &#123;  </span><br><span class="line">                                <span class="comment">//sk_backlog_rcv就是下文将要介绍的tcp_v4_do_rcv方法  </span></span><br><span class="line">                sk-&gt;sk_backlog_rcv(sk, skb1);  </span><br><span class="line">            &#125;  </span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (skb_queue_len(&amp;tp-&gt;ucopy.prequeue) == <span class="number">1</span>) &#123;  </span><br><span class="line">                        <span class="comment">//prequeue里有报文了，唤醒正在休眠等待数据的进程，让进程在它的上下文中处理这个prequeue队列的报文  </span></span><br><span class="line">            wake_up_interruptible(sk-&gt;sk_sleep);  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="comment">//prequeue没有处理  </span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>由于tp-&gt;ucopy.task此时是NULL，所以我们收到的第1个报文在tcp_prequeue函数里直接返回了0，因此，将由 tcp_v4_do_rcv方法处理。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">tcp_v4_do_rcv</span><span class="params">(struct sock *sk, struct sk_buff *skb)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="keyword">if</span> (sk-&gt;sk_state == TCP_ESTABLISHED) &#123; <span class="comment">/* Fast path */</span>  </span><br><span class="line">        <span class="comment">//当TCP连接已经建立好时，是由tcp_rcv_established方法处理接收报文的  </span></span><br><span class="line">        <span class="keyword">if</span> (tcp_rcv_established(sk, skb, skb-&gt;h.th, skb-&gt;len))  </span><br><span class="line">            <span class="keyword">goto</span> reset;  </span><br><span class="line">  </span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">        ... ...  </span><br><span class="line">｝  </span><br></pre></td></tr></table></figure>
+
+<p>tcp_rcv_established方法在图1里，主要调用tcp_data_queue方法将报文放入队列中，继续看看它又干了些什么事：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">tcp_data_queue</span><span class="params">(struct sock *sk, struct sk_buff *skb)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tcp_sock</span> *<span class="title">tp</span> =</span> tcp_sk(sk);  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//如果这个报文是待接收的报文（看seq），它有两个出路：进入receive队列，正如图1；直接拷贝到用户内存中，如图3  </span></span><br><span class="line">    <span class="keyword">if</span> (TCP_SKB_CB(skb)-&gt;seq == tp-&gt;rcv_nxt) &#123;  </span><br><span class="line">                <span class="comment">//滑动窗口外的包暂不考虑，篇幅有限，下次再细谈  </span></span><br><span class="line">        <span class="keyword">if</span> (tcp_receive_window(tp) == <span class="number">0</span>)  </span><br><span class="line">            <span class="keyword">goto</span> out_of_window;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//如果有一个进程正在读取socket，且正准备要拷贝的序号就是当前报文的seq序号  </span></span><br><span class="line">        <span class="keyword">if</span> (tp-&gt;ucopy.task == current &amp;&amp;  </span><br><span class="line">            tp-&gt;copied_seq == tp-&gt;rcv_nxt &amp;&amp; tp-&gt;ucopy.len &amp;&amp;  </span><br><span class="line">            sock_owned_by_user(sk) &amp;&amp; !tp-&gt;urg_data) &#123;  </span><br><span class="line">            <span class="comment">//直接将报文内容拷贝到用户态内存中，参见图3  </span></span><br><span class="line">            <span class="keyword">if</span> (!skb_copy_datagram_iovec(skb, <span class="number">0</span>, tp-&gt;ucopy.iov, chunk)) &#123;  </span><br><span class="line">                tp-&gt;ucopy.len -= chunk;  </span><br><span class="line">                tp-&gt;copied_seq += chunk;  </span><br><span class="line">            &#125;  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="keyword">if</span> (eaten &lt;= <span class="number">0</span>) &#123;  </span><br><span class="line">queue_and_out:  </span><br><span class="line">                        <span class="comment">//如果没有能够直接拷贝到用户内存中，那么，插入receive队列吧，正如图1中的第1、3步  </span></span><br><span class="line">            __skb_queue_tail(&amp;sk-&gt;sk_receive_queue, skb);  </span><br><span class="line">        &#125;  </span><br><span class="line">                <span class="comment">//更新待接收的序号，例如图1第1步中，更新为S2  </span></span><br><span class="line">        tp-&gt;rcv_nxt = TCP_SKB_CB(skb)-&gt;end_seq;  </span><br><span class="line">  </span><br><span class="line">                <span class="comment">//正如图1第4步，这时会检查out_of_order队列，若它不为空，需要处理它  </span></span><br><span class="line">        <span class="keyword">if</span> (!skb_queue_empty(&amp;tp-&gt;out_of_order_queue)) &#123;  </span><br><span class="line">                        <span class="comment">//tcp_ofo_queue方法会检查out_of_order队列中的所有报文  </span></span><br><span class="line">            tcp_ofo_queue(sk);  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">        ... ...  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//这个包是无序的，又在接收滑动窗口内，那么就如图1第2步，把报文插入到out_of_order队列吧  </span></span><br><span class="line">    <span class="keyword">if</span> (!skb_peek(&amp;tp-&gt;out_of_order_queue)) &#123;  </span><br><span class="line">        __skb_queue_head(&amp;tp-&gt;out_of_order_queue,skb);  </span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">                    ... ...  </span><br><span class="line">            __skb_append(skb1, skb, &amp;tp-&gt;out_of_order_queue);  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>图1第4步时，正是通过tcp_ofo_queue方法把之前乱序的S3-S4报文插入receive队列的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">tcp_ofo_queue</span><span class="params">(struct sock *sk)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tcp_sock</span> *<span class="title">tp</span> =</span> tcp_sk(sk);  </span><br><span class="line">    __u32 dsack_high = tp-&gt;rcv_nxt;  </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sk_buff</span> *<span class="title">skb</span>;</span>  </span><br><span class="line">        <span class="comment">//遍历out_of_order队列  </span></span><br><span class="line">    <span class="keyword">while</span> ((skb = skb_peek(&amp;tp-&gt;out_of_order_queue)) != <span class="literal">NULL</span>) &#123;  </span><br><span class="line">        ... ...  </span><br><span class="line">                <span class="comment">//若这个报文可以按seq插入有序的receive队列中，则将其移出out_of_order队列  </span></span><br><span class="line">        __skb_unlink(skb, &amp;tp-&gt;out_of_order_queue);  </span><br><span class="line">                <span class="comment">//插入receive队列  </span></span><br><span class="line">        __skb_queue_tail(&amp;sk-&gt;sk_receive_queue, skb);  </span><br><span class="line">                <span class="comment">//更新socket上待接收的下一个有序seq  </span></span><br><span class="line">        tp-&gt;rcv_nxt = TCP_SKB_CB(skb)-&gt;end_seq;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>下面再介绍图1第6步提到的tcp_recvmsg方法。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//参数里的len就是read、recv方法里的内存长度，flags正是方法的flags参数，nonblock则是阻塞、非阻塞标志位  </span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">tcp_recvmsg</span><span class="params">(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,  </span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">size_t</span> len, <span class="keyword">int</span> nonblock, <span class="keyword">int</span> flags, <span class="keyword">int</span> *addr_len)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    <span class="comment">//锁住socket，防止多进程并发访问TCP连接，告知软中断目前socket在进程上下文中  </span></span><br><span class="line">    lock_sock(sk);  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//初始化errno这个错误码  </span></span><br><span class="line">    err = -ENOTCONN;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//如果socket是阻塞套接字，则取出SO_RCVTIMEO作为读超时时间；若为非阻塞，则timeo为0。下面会看到timeo是如何生效的  </span></span><br><span class="line">    timeo = sock_rcvtimeo(sk, nonblock);  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//获取下一个要拷贝的字节序号  </span></span><br><span class="line">    <span class="comment">//注意：seq的定义为u32 *seq;，它是32位指针。为何？因为下面每向用户态内存拷贝后，会更新seq的值，这时就会直接更改套接字上的copied_seq  </span></span><br><span class="line">    seq = &amp;tp-&gt;copied_seq;  </span><br><span class="line">    <span class="comment">//当flags参数有MSG_PEEK标志位时，意味着这次拷贝的内容，当再次读取socket时（比如另一个进程）还能再次读到  </span></span><br><span class="line">    <span class="keyword">if</span> (flags &amp; MSG_PEEK) &#123;  </span><br><span class="line">        <span class="comment">//所以不会更新copied_seq，当然，下面会看到也不会删除报文，不会从receive队列中移除报文  </span></span><br><span class="line">        peek_seq = tp-&gt;copied_seq;  </span><br><span class="line">        seq = &amp;peek_seq;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//获取SO_RCVLOWAT最低接收阀值，当然，target实际上是用户态内存大小len和SO_RCVLOWAT的最小值  </span></span><br><span class="line">    <span class="comment">//注意：flags参数中若携带MSG_WAITALL标志位，则意味着必须等到读取到len长度的消息才能返回，此时target只能是len  </span></span><br><span class="line">    target = sock_rcvlowat(sk, flags &amp; MSG_WAITALL, len);  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//以下开始读取消息  </span></span><br><span class="line">    <span class="keyword">do</span> &#123;  </span><br><span class="line">        <span class="comment">//从receive队列取出1个报文  </span></span><br><span class="line">        skb = skb_peek(&amp;sk-&gt;sk_receive_queue);  </span><br><span class="line">        <span class="keyword">do</span> &#123;  </span><br><span class="line">            <span class="comment">//没取到退出当前循环  </span></span><br><span class="line">            <span class="keyword">if</span> (!skb)  </span><br><span class="line">                <span class="keyword">break</span>;  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">            <span class="comment">//offset是待拷贝序号在当前这个报文中的偏移量，在图1、2、3中它都是0，只有因为用户内存不足以接收完1个报文时才为非0  </span></span><br><span class="line">            offset = *seq - TCP_SKB_CB(skb)-&gt;seq;  </span><br><span class="line">            <span class="comment">//有些时候，三次握手的SYN包也会携带消息内容的，此时seq是多出1的（SYN占1个序号），所以offset减1  </span></span><br><span class="line">            <span class="keyword">if</span> (skb-&gt;h.th-&gt;syn)  </span><br><span class="line">                offset--;  </span><br><span class="line">            <span class="comment">//若偏移量还有这个报文之内，则认为它需要处理  </span></span><br><span class="line">            <span class="keyword">if</span> (offset &lt; skb-&gt;len)  </span><br><span class="line">                <span class="keyword">goto</span> found_ok_skb;  </span><br><span class="line">  </span><br><span class="line">            skb = skb-&gt;next;  </span><br><span class="line">        &#125; <span class="keyword">while</span> (skb != (struct sk_buff *)&amp;sk-&gt;sk_receive_queue);  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//如果receive队列为空，则检查已经拷贝的字节数，是否达到了SO_RCVLOWAT或者长度len。满足了，且backlog队列也为空，则可以返回用户态了，正如图1的第11步  </span></span><br><span class="line">        <span class="keyword">if</span> (copied &gt;= target &amp;&amp; !sk-&gt;sk_backlog.tail)  </span><br><span class="line">            <span class="keyword">break</span>;  </span><br><span class="line">  </span><br><span class="line">                <span class="comment">//在tcp_recvmsg里，copied就是已经拷贝的字节数  </span></span><br><span class="line">        <span class="keyword">if</span> (copied) &#123;  </span><br><span class="line">            ... ...  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">                        <span class="comment">//一个字节都没拷贝到，但如果shutdown关闭了socket，一样直接返回。当然，本文不涉及关闭连接  </span></span><br><span class="line">            <span class="keyword">if</span> (sk-&gt;sk_shutdown &amp; RCV_SHUTDOWN)  </span><br><span class="line">                <span class="keyword">break</span>;  </span><br><span class="line">  </span><br><span class="line">            <span class="comment">//如果使用了非阻塞套接字，此时timeo为0  </span></span><br><span class="line">            <span class="keyword">if</span> (!timeo) &#123;  </span><br><span class="line">                                <span class="comment">//非阻塞套接字读取不到数据时也会返回，错误码正是EAGAIN  </span></span><br><span class="line">                copied = -EAGAIN;  </span><br><span class="line">                <span class="keyword">break</span>;  </span><br><span class="line">            &#125;  </span><br><span class="line">                        ... ...  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//tcp_low_latency默认是关闭的，图1、图2都是如此，图3则例外，即图3不会走进这个if  </span></span><br><span class="line">        <span class="keyword">if</span> (!sysctl_tcp_low_latency &amp;&amp; tp-&gt;ucopy.task == user_recv) &#123;  </span><br><span class="line">            <span class="comment">//prequeue队列就是为了提高系统整体效率的，即prequeue队列有可能不为空，这是因为进程休眠等待时可能有新报文到达prequeue队列  </span></span><br><span class="line">            <span class="keyword">if</span> (!skb_queue_empty(&amp;tp-&gt;ucopy.prequeue))  </span><br><span class="line">                <span class="keyword">goto</span> do_prequeue;  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//如果已经拷贝了的字节数超过了最低阀值  </span></span><br><span class="line">        <span class="keyword">if</span> (copied &gt;= target) &#123;  </span><br><span class="line">            <span class="comment">//release_sock这个方法会遍历、处理backlog队列中的报文  </span></span><br><span class="line">            release_sock(sk);  </span><br><span class="line">            lock_sock(sk);  </span><br><span class="line">        &#125; <span class="keyword">else</span>  </span><br><span class="line">            sk_wait_data(sk, &amp;timeo);<span class="comment">//没有读取到足够长度的消息，因此会进程休眠，如果没有被唤醒，最长睡眠timeo时间  </span></span><br><span class="line">  </span><br><span class="line">        <span class="keyword">if</span> (user_recv) &#123;  </span><br><span class="line">            <span class="keyword">if</span> (tp-&gt;rcv_nxt == tp-&gt;copied_seq &amp;&amp;  </span><br><span class="line">                !skb_queue_empty(&amp;tp-&gt;ucopy.prequeue)) &#123;  </span><br><span class="line">do_prequeue:  </span><br><span class="line">                                <span class="comment">//接上面代码段，开始处理prequeue队列里的报文  </span></span><br><span class="line">                tcp_prequeue_process(sk);  </span><br><span class="line">            &#125;  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//继续处理receive队列的下一个报文  </span></span><br><span class="line">        <span class="keyword">continue</span>;  </span><br><span class="line">  </span><br><span class="line">    found_ok_skb:  </span><br><span class="line">        <span class="comment">/* Ok so how much can we use? */</span>  </span><br><span class="line">        <span class="comment">//receive队列的这个报文从其可以使用的偏移量offset，到总长度len之间，可以拷贝的长度为used  </span></span><br><span class="line">        used = skb-&gt;len - offset;  </span><br><span class="line">        <span class="comment">//len是用户态空闲内存，len更小时，当然只能拷贝len长度消息，总不能导致内存溢出吧  </span></span><br><span class="line">        <span class="keyword">if</span> (len &lt; used)  </span><br><span class="line">            used = len;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//MSG_TRUNC标志位表示不要管len这个用户态内存有多大，只管拷贝数据吧  </span></span><br><span class="line">        <span class="keyword">if</span> (!(flags &amp; MSG_TRUNC)) &#123;  </span><br><span class="line">            &#123;  </span><br><span class="line">                <span class="comment">//向用户态拷贝数据  </span></span><br><span class="line">                err = skb_copy_datagram_iovec(skb, offset,  </span><br><span class="line">                        msg-&gt;msg_iov, used);  </span><br><span class="line">            &#125;  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//因为是指针，所以同时更新copied_seq--下一个待接收的序号  </span></span><br><span class="line">        *seq += used;  </span><br><span class="line">        <span class="comment">//更新已经拷贝的长度  </span></span><br><span class="line">        copied += used;  </span><br><span class="line">        <span class="comment">//更新用户态内存的剩余空闲空间长度  </span></span><br><span class="line">        len -= used;  </span><br><span class="line">  </span><br><span class="line">                ... ...  </span><br><span class="line">    &#125; <span class="keyword">while</span> (len &gt; <span class="number">0</span>);  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//已经装载了接收器  </span></span><br><span class="line">    <span class="keyword">if</span> (user_recv) &#123;  </span><br><span class="line">        <span class="comment">//prequeue队列不为空则处理之  </span></span><br><span class="line">        <span class="keyword">if</span> (!skb_queue_empty(&amp;tp-&gt;ucopy.prequeue)) &#123;  </span><br><span class="line">            tcp_prequeue_process(sk);  </span><br><span class="line">        &#125;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//准备返回用户态，socket上不再装载接收任务  </span></span><br><span class="line">        tp-&gt;ucopy.task = <span class="literal">NULL</span>;  </span><br><span class="line">        tp-&gt;ucopy.len = <span class="number">0</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">//释放socket时，还会检查、处理backlog队列中的报文  </span></span><br><span class="line">    release_sock(sk);  </span><br><span class="line">    <span class="comment">//向用户返回已经拷贝的字节数  </span></span><br><span class="line">    <span class="keyword">return</span> copied;  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>图2给出了第2种场景，这里涉及到prequeue队列。用户进程调用recv方法时，连接上没有任何接收并缓存到内核的报文，而socket是阻塞的，所以进程睡眠了。然后网卡中收到了TCP连接上的报文，此时prequeue队列开始产生作用。图2中tcp_low_latency为默认的0，套接字socket的SO_RCVLOWAT是默认的1，仍然是阻塞socket，如下图：</p>
+<p><a href="/2016/01/26/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-2/"><img src="/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-2.jpg"></a></p>
+<p>简单描述上述11个步骤：</p>
+<p>1、用户进程分配了一块len大小的内存，将其传入recv这样的函数，同时socket参数皆为默认，即阻塞的、SO_RCVLOWAT为1。调用接收方法，其中flags参数为0。</p>
+<p>2、C库和内核最终调用到tcp_recvmsg方法来处理。</p>
+<p>3、锁住socket。</p>
+<p>4、由于此时receive、prequeue、backlog队列都是空的，即没有拷贝1个字节的消息到用户内存中，而我们的最低要求是拷贝至少SO_RCVLOWAT为1长度的消息。此时，开始进入阻塞式套接字的等待流程。最长等待时间为SO_RCVTIMEO指定的时间。</p>
+<p>这个等待函数叫做sk_wait_data，有必要看下其实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sk_wait_data</span><span class="params">(struct sock *sk, <span class="keyword">long</span> *timeo)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">        <span class="comment">//注意，它的自动唤醒条件有两个，要么timeo时间到达，要么receive队列不为空  </span></span><br><span class="line">    rc = sk_wait_event(sk, timeo, !skb_queue_empty(&amp;sk-&gt;sk_receive_queue));  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>sk_wait_event也值得我们简单看下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> sk_wait_event(__sk, __timeo, __condition)       \  </span></span><br><span class="line">(&#123;  <span class="keyword">int</span> rc;                         \  </span><br><span class="line">    release_sock(__sk);                 \  </span><br><span class="line">    rc = __condition;                   \  </span><br><span class="line">    <span class="keyword">if</span> (!rc) &#123;                      \  </span><br><span class="line">        *(__timeo) = schedule_timeout(*(__timeo));  \  </span><br><span class="line">    &#125;                           \  </span><br><span class="line">    lock_sock(__sk);                    \  </span><br><span class="line">    rc = __condition;                   \  </span><br><span class="line">    rc;                         \  </span><br><span class="line">&#125;)  </span><br></pre></td></tr></table></figure>
+
+<p>注意，它在睡眠前会调用release_sock，这个方法会释放socket锁，使得下面的第5步中，新到的报文不再只能进入backlog队列。</p>
+<p>5、这个套接字上期望接收的序号也是S1，此时网卡恰好收到了S1-S2的报文，在tcp_v4_rcv方法中，通过调用tcp_prequeue方法把报文插入到prequeue队列中。</p>
+<p>6、插入prequeue队列后，此时会接着调用wake_up_interruptible方法，唤醒在socket上睡眠的进程。参见tcp_prequque方法。</p>
+<p>7、用户进程被唤醒后，重新调用lock_sock接管了这个socket，此后再进来的报文都只能进入backlog队列了。</p>
+<p>8、进程醒来后，先去检查receive队列，当然仍然是空的；再去检查prequeue队列，发现有一个报文S1-S2，正好是socket连接待拷贝的起始序号S1，于是，从prequeue队列中取出这个报文并把内容复制到用户内存中，再释放内核中的这个报文。</p>
+<p>9、目前已经拷贝了S2-S1个字节到用户态，检查这个长度是否超过了最低阀值（即len和SO_RCVLOWAT的最小值）。</p>
+<p>10、由于SO_RCVLOWAT使用了默认的1，所以准备返回用户。此时会顺带再看看backlog队列中有没有数据，若有，则检查这个无序的队列中是否有可以直接拷贝给用户的报文。当然，此时是没有的。所以准备返回，释放socket锁。</p>
+<p>11、返回用户已经拷贝的字节数。</p>
+<p>图3给出了第3种场景。这个场景中，我们把系统参数tcp_low_latency设为1，socket上设置了SO_RCVLOWAT属性的值。服务器先是收到了S1-S2这个报文，但S2-S1的长度是小于SO_RCVLOWAT的，用户进程调用recv方法读套接字时，虽然读到了一些，但没有达到最小阀值，所以进程睡眠了，与此同时，在睡眠前收到的乱序的S3-S4包直接进入backlog队列。此时先到达了S2-S3包，由于没有使用prequeue队列，而它起始序号正是下一个待拷贝的值，所以直接拷贝到用户内存中，总共拷贝字节数已满足SO_RCVLOWAT的要求！最后在返回用户前把backlog队列中S3-S4报文也拷贝给用户了。如下图：</p>
+<p><a href="/2016/01/26/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-3/"><img src="/2016/01/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-3.jpg"></a></p>
+<p>简明描述上述15个步骤：</p>
+<p>1、内核收到报文S1-S2，S1正是这个socket连接上待接收的序号，因此，直接将它插入有序的receive队列中。</p>
+<p>2、用户进程所处的linux操作系统上，将sysctl中的tcp_low_latency设置为1。这意味着，这台服务器希望TCP进程能够更及时的接收到TCP消息。用户调用了recv方法接收socket上的消息，这个socket上设置了SO_RCVLOWAT属性为某个值n，这个n是大于S2-S1，也就是第1步收到的报文大小。这里，仍然是阻塞socket，用户依然是分配了足够大的len长度内存以接收TCP消息。</p>
+<p>3、通过tcp_recvmsg方法来完成接收工作。先锁住socket，避免并发进程读取同一socket的同时，也在告诉内核网络软中断处理到这一socket时要有不同行为，如第6步。</p>
+<p>4、准备处理内核各个接收队列中的报文。</p>
+<p>5、receive队列中的有序报文可直接拷贝，在检查到S2-S1是小于len之后，将报文内容拷贝到用户态内存中。</p>
+<p>6、在第5步进行的同时，socket是被锁住的，这时内核又收到了一个S3-S4报文，因此报文直接进入backlog队列。注意，这个报文不是有序的，因为此时连接上期待接收序号为S2。</p>
+<p>7、在第5步，拷贝了S2-S1个字节到用户内存，它是小于SO_RCVLOWAT的，因此，由于socket是阻塞型套接字（超时时间在本文中忽略），进程将不得不转入睡眠。转入睡眠之前，还会干一件事，就是处理backlog队列里的报文，图2的第4步介绍过休眠方法sk_wait_data，它在睡眠前会执行release_sock方法，看看是如何实现的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> fastcall <span class="title">release_sock</span><span class="params">(struct sock *sk)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">    mutex_release(&amp;sk-&gt;sk_lock.dep_map, <span class="number">1</span>, _RET_IP_);  </span><br><span class="line">  </span><br><span class="line">    spin_lock_bh(&amp;sk-&gt;sk_lock.slock);  </span><br><span class="line">        <span class="comment">//这里会遍历backlog队列中的每一个报文  </span></span><br><span class="line">    <span class="keyword">if</span> (sk-&gt;sk_backlog.tail)  </span><br><span class="line">        __release_sock(sk);  </span><br><span class="line">        <span class="comment">//这里是网络中断执行时，告诉内核，现在socket并不在进程上下文中  </span></span><br><span class="line">    sk-&gt;sk_lock.owner = <span class="literal">NULL</span>;  </span><br><span class="line">    <span class="keyword">if</span> (waitqueue_active(&amp;sk-&gt;sk_lock.wq))  </span><br><span class="line">        wake_up(&amp;sk-&gt;sk_lock.wq);  </span><br><span class="line">    spin_unlock_bh(&amp;sk-&gt;sk_lock.slock);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>再看看__release_sock方法是如何遍历backlog队列的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __release_sock(struct sock *sk)  </span><br><span class="line">&#123;  </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sk_buff</span> *<span class="title">skb</span> =</span> sk-&gt;sk_backlog.head;  </span><br><span class="line">  </span><br><span class="line">        <span class="comment">//遍历backlog队列  </span></span><br><span class="line">    <span class="keyword">do</span> &#123;  </span><br><span class="line">        sk-&gt;sk_backlog.head = sk-&gt;sk_backlog.tail = <span class="literal">NULL</span>;  </span><br><span class="line">        bh_unlock_sock(sk);  </span><br><span class="line">  </span><br><span class="line">        <span class="keyword">do</span> &#123;  </span><br><span class="line">            <span class="class"><span class="keyword">struct</span> <span class="title">sk_buff</span> *<span class="title">next</span> =</span> skb-&gt;next;  </span><br><span class="line">  </span><br><span class="line">            skb-&gt;next = <span class="literal">NULL</span>;  </span><br><span class="line">                        <span class="comment">//处理报文，其实就是tcp_v4_do_rcv方法，上文介绍过，不再赘述  </span></span><br><span class="line">            sk-&gt;sk_backlog_rcv(sk, skb);  </span><br><span class="line">  </span><br><span class="line">            cond_resched_softirq();  </span><br><span class="line">  </span><br><span class="line">            skb = next;  </span><br><span class="line">        &#125; <span class="keyword">while</span> (skb != <span class="literal">NULL</span>);  </span><br><span class="line">  </span><br><span class="line">        bh_lock_sock(sk);  </span><br><span class="line">    &#125; <span class="keyword">while</span>((skb = sk-&gt;sk_backlog.head) != <span class="literal">NULL</span>);  </span><br><span class="line">&#125;  </span><br></pre></td></tr></table></figure>
+
+<p>此时遍历到S3-S4报文，但因为它是失序的，所以从backlog队列中移入out_of_order队列中（参见上文说过的tcp_ofo_queue方法）。</p>
+<p>8、进程休眠，直到超时或者receive队列不为空。</p>
+<p>9、内核接收到了S2-S3报文。注意，这里由于打开了tcp_low_latency标志位，这个报文是不会进入prequeue队列以待进程上下文处理的。</p>
+<p>10、此时，由于S2是连接上正要接收的序号，同时，有一个用户进程正在休眠等待接收数据中，且它要等待的数据起始序号正是S2，于是，这种种条件下，使得这一步同时也是网络软中断执行上下文中，把S2-S3报文直接拷贝进用户内存。</p>
+<p>11、上文介绍tcp_data_queue方法时大家可以看到，每处理完1个有序报文（无论是拷贝到receive队列还是直接复制到用户内存）后都会检查out_of_order队列，看看是否有报文可以处理。那么，S3-S4报文恰好是待处理的，于是拷贝进用户内存。然后唤醒用户进程。</p>
+<p>12、用户进程被唤醒了，当然唤醒后会先来拿到socket锁。以下执行又在进程上下文中了。</p>
+<p>13、此时会检查已拷贝的字节数是否大于SO_RCVLOWAT，以及backlog队列是否为空。两者皆满足，准备返回。</p>
+<p>14、释放socket锁，退出tcp_recvmsg方法。</p>
+<p>15、返回用户已经复制的字节数S4-S1。</p>
+<p>好了，这3个场景读完，想必大家对于TCP的接收流程是怎样的已经非常清楚了，本文起始的6个问题也在这一大篇中都涉及到了。下一篇我们来讨论TCP连接的关闭。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\专访阿里陶辉：大规模分布式系统、高性能服务器\" rel="bookmark">专访阿里陶辉：大规模分布式系统、高性能服务器设计经验分享</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\27\这16年来我是如何做系统性能优化的\" rel="bookmark">这16年来我是如何做系统性能优化的</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2016/01/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B3-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E6%8E%A5%E6%94%B6/" title="高性能网络编程3----TCP消息的接收">https://www.taohui.tech/2016/01/26/网络协议/高性能网络编程3-tcp消息的接收/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/tcp/" rel="tag"># tcp</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/SO-RCVLOWAT/" rel="tag"># SO_RCVLOWAT</a>
+              <a href="/tags/SO-RCVTIMEO/" rel="tag"># SO_RCVTIMEO</a>
+              <a href="/tags/tcp-low-latency/" rel="tag"># tcp_low_latency</a>
+              <a href="/tags/%E9%98%BB%E5%A1%9E/" rel="tag"># 阻塞</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2016/01/25/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B2-tcp%E6%B6%88%E6%81%AF%E7%9A%84%E5%8F%91%E9%80%81/" rel="prev" title="高性能网络编程2----TCP消息的发送">
+      <i class="fa fa-chevron-left"></i> 高性能网络编程2----TCP消息的发送
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2016/01/27/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E9%AB%98%E6%80%A7%E8%83%BD%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B4-tcp%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%85%B3%E9%97%AD/" rel="next" title="高性能网络编程4--TCP连接的关闭">
+      高性能网络编程4--TCP连接的关闭 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

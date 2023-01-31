@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="django是一套开发成本低、迭代周期快的python web框架，而如mysql等关系数据库则是网站的必备组件，django通过设计一套python对象与数据库表的映射系统ORM，使得开发者不用写一行SQL语句就能实现极其复杂的关系数据库操作，特别是关联多张表的SQL操作。这让开发者的精力可以放在业务的迭代实现中，忽略SQL细节，同时提供了还不错的SQL语句性能。本文主要分析该ORM系统的实现原">
+<meta property="og:type" content="article">
+<meta property="og:title" content="详解python django面向关系数据库的ORM对象映射系统（1）">
+<meta property="og:url" content="https://www.taohui.tech/2017/12/23/419/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="django是一套开发成本低、迭代周期快的python web框架，而如mysql等关系数据库则是网站的必备组件，django通过设计一套python对象与数据库表的映射系统ORM，使得开发者不用写一行SQL语句就能实现极其复杂的关系数据库操作，特别是关联多张表的SQL操作。这让开发者的精力可以放在业务的迭代实现中，忽略SQL细节，同时提供了还不错的SQL语句性能。本文主要分析该ORM系统的实现原">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.tech/2017/12/django-ORM%E7%B1%BB%E5%9B%BE-1.jpg">
+<meta property="article:published_time" content="2017-12-23T07:35:05.000Z">
+<meta property="article:modified_time" content="2022-06-22T03:17:59.832Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="django">
+<meta property="article:tag" content="model">
+<meta property="article:tag" content="ORM">
+<meta property="article:tag" content="元类">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.tech/2017/12/django-ORM%E7%B1%BB%E5%9B%BE-1.jpg">
+
+<link rel="canonical" href="https://www.taohui.tech/2017/12/23/419/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>详解python django面向关系数据库的ORM对象映射系统（1） | 个人笔记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QV58YDCE3Z"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-QV58YDCE3Z');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?23d67e3c79a676920cb63580c2f35407";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2017/12/23/419/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          详解python django面向关系数据库的ORM对象映射系统（1）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-12-23 15:35:05" itemprop="dateCreated datePublished" datetime="2017-12-23T15:35:05+08:00">2017-12-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>django是一套开发成本低、迭代周期快的python web框架，而如mysql等关系数据库则是网站的必备组件，django通过设计一套python对象与数据库表的映射系统ORM，使得开发者不用写一行SQL语句就能实现极其复杂的关系数据库操作，特别是关联多张表的SQL操作。这让开发者的精力可以放在业务的迭代实现中，忽略SQL细节，同时提供了还不错的SQL语句性能。本文主要分析该ORM系统的实现原理及其设计思路，顺带描述python<strong>元类</strong>这个“黑魔法”。接下来，我们首先描述django model的一般用法，再说明ORM系统的结构，以及为何如此设计。 </p>
+<span id="more"></span>
+
+<p>关系数据库相对于hbase等面向海量数据的列式存储数据库而言，大多为<strong>行式存储</strong>数据库。所以这里我们主要关注表、行，django的ORM系统中，允许让应用开发者定义一个继承django.db.models.Model（事实上是django.db.models.base.Model）的类对应着表，而该类的实例对应着行的方式操作关系数据库。其中，<strong>类中的静态成员对应着列名称，而实例中的同名成员则对应着一行数据中的列</strong>。例如： class Article(models.Model): title = models.CharField(verbose_name=’标题’, max_length=255) content = HTMLField(verbose_name=’内容’) 这里的Article代表着表，Article.title是列名。若有实例article = Article()，此时article.title则表示一行中的title列的数据。所以，类和实例都会有同名的静态与对象成员title哦。 </p>
+<p>ORM框架为每个表对应的类都生成了objects对象（如果你没有显式指定表的Manager的话），而这个objects对象拥有操作表的所有方法，诸如批量查询filter、单次查询get、更新update等。所以当我们执行SQL操作时，比如查询整表，可以如下： articles = Article.objects.all() 当我们查询时，大多会查询到多行数据，比如上面的all方法返回的是整张表的全部行。所以我们需要一个容器，保存着SQL操作返回的全部Article实例，它就是models.QuerySet。QuerySet是一个很强大的类，它与objects对象共用操作表的方法，这些方法支持非常复杂的参数，不只有==、&gt;、&lt;、in、like等操作，还支持含有外键等方式的多表关联查询，这些下一篇文章再细说。 </p>
+<p>为了方便快速开发复杂的SQL操作，QuerySet的SQL操作方法返回的还是QuerySet对象，这样就可以<strong>嵌套叠加</strong>着、由多个QuerySet方法组合完成一个SQL操作。例如： Article.objects.filter(title=’xxx’).filter(type=1).distinct() 同时，QuerySet对象还具有“<strong>懒执行</strong>”的效果，只要没有真的使用查询出的行中数据时，查询就不会被django执行。这意味着我们尽可以写下大量的QuerySet方法，其返回的对象可以被多个条件分支反复使用。关于这一部分的实现也将在下一篇说明。 </p>
+<p>本文主要讲述ORM的总体框架，以下开始说明其实现方法。 </p>
+<p>当我们想通过类、对象这套OO系统映射关系数据库时，用类映射表、类成员映射列、实例映射行、实例成员映射行中的列，这是很自然的做法。作为中间件的实现者，最自然的基于OO的想法是实现一个强大的Model基类，其含有操作表的所有方法，由应用开发者继承基类后，自己定义列以及行中的列变量。然而这却是行不通的，因为： </p>
+<ol>
+<li>空表没有一行数据，此时Model类没有实例，但却要有表结构，所以用户不能自己定义self下的行中的列成员； </li>
+<li>Model类实例只表示一行，而“一行”是没有办法包含所有SQL操作的； </li>
+<li>Model类只能表示“表”这个结构，同样没有办法包含所有SQL操作； </li>
+<li>只有“多行”这个概念可以适配表中的任意数据，也就是QuerySet容器，所以，由Model基类提供所有表操作方法是行不通的。 </li>
+</ol>
+<p>因此，由QuerySet实现几乎所有SQL操作方法是可行的，且由于QuerySet对象表示的若干行数据，SQL方法就可以被用户轻易的理解为操作这些行数据，也容易实现，而Django也确实是这么干的。那么，当未执行过查询时，QuerySet对象还不存在，这些表方法如何提供给用户呢？通常，我们可以在Model基类中提供一个方法或者成员，返回一个包含QuerySet中方法的对象（QuerySet表示若干行，所以此时不能直接返回QuerySet），而django选择提供一个成员叫objects，它是models.Manage类的实例，而这个Manager类虽然其定义中没有SQL操作方法，但被Django框架悄悄的通过“元类”的方式，将QuerySet中的所有方法都注入到Manager类中了。以上所述的内容如下图所示： <img src="/2017/12/django-ORM%E7%B1%BB%E5%9B%BE-1.jpg"> </p>
+<p>如果查看django源代码会发现上图中的红色类BaseManagerFromQuerySet并不存在，它是由type元类生成的，也就是由它将QuerySet类里的方法注入到Manager类中的，从而让objects对象拥有了操作表的方法。这套系统依赖于python元类才能实现，那么，什么是元类呢？ </p>
+<p>类是用于生成对象的，大部分编程语言都需要提前把类定义好才能编写基于“类”生成对象的代码。然而，python是个例外：一切皆对象，包括类也是对象，那么生成“类”这个对象的“类”称呼什么呢？元类！python允许开发者使用元类在运行时更改生成“类”的方式。 </p>
+<p>就像object是所有类的基类，而type是所有元类的基类。任何类都是由type生成的，哪怕我们显式定义的类也会由type默认的生成。所以，我们自然也可以由type隐式得生成类，type生成类的方式如下： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cls = <span class="built_in">type</span>(name, base, attrs) </span><br></pre></td></tr></table></figure>
+<p>name也就是类名，base是基类，而attrs就是属性，所有的成员和方法都在其中。type返回的则是类。而上图中的BaseManagerFromQuerySet类就是这么生成的，如下所示： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">from</span>\<span class="title">_queryset</span>(<span class="params">cls, queryset\_class, <span class="keyword">class</span>\_name=<span class="literal">None</span></span>):</span> </span><br><span class="line"><span class="keyword">if</span> <span class="class"><span class="keyword">class</span>\<span class="title">_name</span> <span class="title">is</span> <span class="title">None</span>:</span> </span><br><span class="line">class\_name = &#x27;%sFrom%s&#x27; % (cls.\_\_name\_\_, queryset\_class.\_\_name\_\_) </span><br><span class="line">class\_dict = &#123; &#x27;\_queryset\_class&#x27;: queryset\_class, &#125; </span><br><span class="line"><span class="class"><span class="keyword">class</span>\<span class="title">_dict</span>.<span class="title">update</span>(<span class="params">cls.\_get\_queryset\_methods(<span class="params">queryset\_class</span>)</span>) </span></span><br><span class="line"><span class="class"><span class="title">return</span> <span class="title">type</span>(<span class="params"><span class="keyword">class</span>\_name, (<span class="params">cls,</span>), <span class="keyword">class</span>\_dict</span>) </span></span><br></pre></td></tr></table></figure>
+<p>所以，这里通常queryset_class就是QuerySet类，而cls就是BaseManager类。BaseManager的_get_queryset_methods方法负责把QuerySet中的方法注入到class_dict属性中，进而让BaseManagerFromQuerySet类具备了SQL操作方法。而Manager类就是继承上面构造出的类，如下所示： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Manager</span>(<span class="params">BaseManager.<span class="keyword">from</span>\_queryset(<span class="params">QuerySet</span>)</span>):</span> <span class="keyword">pass</span> </span><br></pre></td></tr></table></figure>
+<p>python中的类生成对象时，都是先由__new__方法生成对象，再通过__init__方法初始化对象。由于python并不需要用户管理内存，所以我们定义类时往往只重载__init__方法。元类生成类时也一样，只不过类不需要__init__方法初始化，所以我们通常定义元类时需要重载__new__方法。 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ModelBase</span>(<span class="params"><span class="built_in">type</span></span>):</span> <span class="string">&quot;&quot;&quot; Metaclass for all models. &quot;&quot;&quot;</span> </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_new</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">cls, name, bases, attrs</span>):</span> </span><br><span class="line">    <span class="built_in">super</span>\_new = <span class="built_in">super</span>(ModelBase, cls).\_\_new\_\_ new\_attrs = &#123;...&#125; new\_class = <span class="built_in">super</span>\_new(cls, name, bases, new\_attrs)   ...   manager = Manager() manager.auto\_created = <span class="literal">True</span> cls.add\_to\_class(<span class="string">&#x27;objects&#x27;</span>, manager)   <span class="keyword">return</span> new\_class </span><br></pre></td></tr></table></figure>
+<p>上面的ModelBase方法就是生成所有Model类的方法。同时，objects也是在生成类的时候就自动插入的。这里要插一句：python使用meta元类的规则是首先在当前类中查找是否使用元类，如果没有，再依次去父类中查看是否使用元类，若查找到显式指定的元类，则直接使用该元类创建类，若未找到，则使用默认的type元类生成类。所以，虽然用户描述表的Model类并没有使用元类，但仍然隐式得通过基类django.db.models.base.Model类使用了上面的ModelBase元类。而Model使用元类的方法也不太一样： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Model</span>(<span class="params">six.<span class="keyword">with</span>\_metaclass(<span class="params">ModelBase</span>)</span>):</span> </span><br></pre></td></tr></table></figure>
+<p>而通常我们可能是这么使用的： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Model</span>(<span class="params"><span class="built_in">object</span>, metaclass=ModelBase</span>):</span> </span><br></pre></td></tr></table></figure>
+<p>这是因为，six这个库又基于上面的<strong>查找元类也会从父类找一遍</strong>规则套了一层： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">with</span>\<span class="title">_metaclass</span>(<span class="params">meta, \*bases</span>):</span> <span class="class"><span class="keyword">class</span> <span class="title">metaclass</span>(<span class="params">meta</span>):</span> </span><br><span class="line"><span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_new</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">cls, name, this\_bases, d</span>):</span> <span class="keyword">return</span> meta(name, bases, d) </span><br><span class="line"><span class="keyword">return</span> <span class="built_in">type</span>.\_\_new\_\_(metaclass, <span class="string">&#x27;temporary\_class&#x27;</span>, (), &#123;&#125;) </span><br></pre></td></tr></table></figure>
+<p>Model是继承自动生成的父类temporary_class，而temporary_class，则使用了元类ModelBase生成。而上文的add_to_class实际调用了setattr方法，它可以向一个python object添加一个属性或者方法，如下 ： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">setattr</span>(<span class="params">p\_object, name, value</span>) </span></span><br></pre></td></tr></table></figure>
+<p>这里name就是目标属性的变量名，value是其值。实际上，类成员中代表的是列，而代表行的Model实例是在Model父类的__init__方法中设置的，如下： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fields\_iter = <span class="built_in">iter</span>(opts.fields) <span class="keyword">for</span> val, field <span class="keyword">in</span> <span class="built_in">zip</span>(args, fields\_iter): <span class="keyword">if</span> val <span class="keyword">is</span> \_DEFERRED: <span class="keyword">continue</span> <span class="built_in">setattr</span>(self, field.attname, val) kwargs.pop(field.name, <span class="literal">None</span>)   </span><br></pre></td></tr></table></figure>
+<p>还需要注意的是objects其实是由ManagerDescripter作为descripter包装了Manager对象，如下所示： </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ManagerDescriptor</span>(<span class="params"><span class="built_in">object</span></span>):</span> </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_init</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">self, manager</span>):</span> </span><br><span class="line">    self.manager = manager   </span><br><span class="line">  <span class="function"><span class="keyword">def</span> \<span class="title">_</span>\<span class="title">_get</span>\<span class="title">_</span>\<span class="title">_</span>(<span class="params">self, instance, cls=<span class="literal">None</span></span>):</span> </span><br><span class="line">    <span class="keyword">if</span> instance <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>: </span><br><span class="line">      <span class="keyword">raise</span> AttributeError(<span class="string">&quot;Manager isn&#x27;t accessible via %s instances&quot;</span> % cls.\_\_name\_\_)   </span><br><span class="line">    <span class="keyword">if</span> cls.\_meta.abstract: </span><br><span class="line">      <span class="keyword">raise</span> AttributeError(<span class="string">&quot;Manager isn&#x27;t available; %s is abstract&quot;</span> % ( cls.\_meta.<span class="built_in">object</span>\_name, ))   </span><br><span class="line">    <span class="keyword">return</span> cls.\_meta.managers\_map\[self.manager.name\] </span><br></pre></td></tr></table></figure>
+<p>因为__get__方法的instance其实是调用objects的对象，如果通过类调用，例如Article.objects时，则instance参数为None。所以，这个descripter就是起到只允许非abstract类调用的目的。 以上就是ORM整体架构，下一篇我们再详述QuerySet是如何支持复杂查询的。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\05\29\api的接口变迁\" rel="bookmark">API的接口变迁</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2017\01\25\django中modelform多表单组合的解决方案\" rel="bookmark">django中ModelForm多表单组合的解决方案</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.tech/2017/12/23/419/" title="详解python django面向关系数据库的ORM对象映射系统（1）">https://www.taohui.tech/2017/12/23/419/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/django/" rel="tag"># django</a>
+              <a href="/tags/model/" rel="tag"># model</a>
+              <a href="/tags/ORM/" rel="tag"># ORM</a>
+              <a href="/tags/%E5%85%83%E7%B1%BB/" rel="tag"># 元类</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/" rel="prev" title="BDTC2017北京大数据技术大会参会心得">
+      <i class="fa fa-chevron-left"></i> BDTC2017北京大数据技术大会参会心得
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/04/07/%E7%94%9F%E6%B4%BB%E6%84%9F%E6%82%9F/%E3%80%8A%E8%A7%81%E8%AF%86%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%EF%BC%9A%E5%A4%A7%E5%AE%B6%E6%99%BA%E6%85%A7/" rel="next" title="《见识》读书笔记：大家智慧">
+      《见识》读书笔记：大家智慧 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">345k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:14</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
