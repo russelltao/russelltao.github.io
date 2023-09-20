@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.taohui.tech/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/</loc>
+    
+    <lastmod>2023-09-20</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.taohui.tech/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/</loc>
     
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-06-20</lastmod>
     
   </url>
   
@@ -536,2101 +543,2101 @@
 
   <url>
     <loc>https://www.taohui.tech/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   
   <url>
-    <loc>https://www.taohui.tech/tags/Nginx/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/django/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/model/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ORM/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%85%83%E7%B1%BB/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/api/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/webapp/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/websocket/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/gpu/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/form/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/git/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/git-stats/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ruby/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://www.taohui.tech/tags/nginx/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/tcp/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CSDI/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/wordpress/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/nodejs/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/hexo/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/next/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/github/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%85%8D%E8%B4%B9%E6%89%98%E7%AE%A1/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%A4%87%E6%A1%88/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%AE%A1%E5%B1%80/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/sftp/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%AF%84%E8%AE%BA/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ALU/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cpu/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cpu-cache-line/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cpu%E7%BC%93%E5%AD%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/intel/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/perf/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/smart-cache/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%A4%9A%E6%A0%B8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/fabric/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/hyperledger/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/chaincode/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/channel/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/MSP/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/PKI/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%85%AC%E9%92%A5/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%AF%94%E7%89%B9%E5%B8%81/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%A7%81%E9%92%A5/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ipsec/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/openswan/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/vpn/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/gmock/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/c/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/vtbl/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/grpc/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/kafka/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/mapreduce/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/protobuf/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/storm/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%BC%98%E5%8C%96/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%86%85%E5%AD%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%88%86%E5%B8%83%E5%BC%8F/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%93%88%E5%B8%8C%E8%A1%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%80%A7%E8%83%BD/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%AE%97%E6%B3%95%E5%A4%8D%E6%9D%82%E5%BA%A6/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/docker/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/jmeter/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/kubernates/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ingress/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ingress-controller/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/client-go/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/dashboard/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/k8s/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/kubeadm/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/unit/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cgroup/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%B8%89%E5%9B%BD%E6%BC%94%E4%B9%89/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%AF%B8%E8%91%9B%E4%BA%AE/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%B0%8D%E6%88%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%A3%8E%E8%B5%B7%E9%99%87%E8%A5%BF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%A9%AC%E4%BC%AF%E5%BA%B8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%B8%A4%E5%88%86%E9%92%9F%E6%B3%95%E5%88%99/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%8E%9F%E5%88%99/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%BC%80%E4%BC%9A/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%B4%A3%E4%BB%BB%E5%88%86%E6%95%A3/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%B7%91%E9%A2%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%BE%BE%E5%88%A9%E6%AC%A7/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%80%BB%E8%BE%91%E6%80%A7/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%AB%98%E6%95%88%E4%BC%9A%E8%AE%AE/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/configure/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/man/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/server-name/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%9F%9F%E5%90%8D/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/upstream/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/next-upstream/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/tls/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ssl/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/MVP/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/SWOT/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%B8%89%E5%A0%82%E8%AF%BE/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%BA%A7%E5%93%81%E6%80%9D%E7%BB%B4/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%BA%A7%E5%93%81%E7%BB%8F%E7%90%86/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%BE%AE%E7%AC%91%E4%BB%B7%E5%80%BC/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%98%A6%E7%8B%97%E9%87%91%E7%89%9B/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%85%A8%E6%A0%88/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%89%8D%E7%AB%AF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%90%8E%E7%AB%AF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/10000%E5%B0%8F%E6%97%B6/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%B7%A5%E7%A8%8B%E5%B8%88/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%A0%81%E5%86%9C/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%AE%A4%E8%AF%86/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/URI/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Trie%E6%A0%91/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%89%8D%E7%BC%80%E6%A0%91/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/location/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/rewrite/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%A8%A1%E5%9D%97%E5%8C%96/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%9E%81%E5%AE%A2%E6%97%B6%E9%97%B4/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%9E%81%E5%AE%A2%E9%82%A6/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/proxy/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/session/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/udp/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%97%B6%E9%97%B4%E5%8D%95%E4%BD%8D/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%A9%BA%E9%97%B4%E5%8D%95%E4%BD%8D/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%85%8D%E7%BD%AE%E8%AF%AD%E6%B3%95/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/waf/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ddos/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%99%90%E6%B5%81%E9%99%90%E9%80%9F/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CSRF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/XXE/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/XXS/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%82%B9%E5%87%BB%E5%8A%AB%E6%8C%81/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CRLF%E6%94%BB%E5%87%BB/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/AKF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CDN/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/F5/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/http/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/http2/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/http3/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Lua/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86150%E8%AE%B2/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Nginx%E6%A8%A1%E5%9D%97/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/openresty/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/rest/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/RFC%E8%A7%84%E8%8C%83/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/slice/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Web%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3%E4%B8%8E%E6%8A%93%E5%8C%85%E5%AE%9E%E6%88%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%90%88%E5%B9%B6%E5%9B%9E%E6%BA%90/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%9D%A1%E4%BB%B6%E8%AF%B7%E6%B1%82/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%AD%A3%E5%90%91%E4%BB%A3%E7%90%86/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%B5%81%E9%87%8F%E9%A3%8E%E6%9A%B4/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%BD%91%E7%BB%9C%E6%95%88%E7%8E%87/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%84%9A%E6%9C%AC%E5%BC%95%E6%93%8E/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%BF%87%E6%BB%A4%E6%A8%A1%E5%9D%97/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Igor-Sysoev/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/C10M/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Nginx/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/api/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/django/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/webapp/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/websocket/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/model/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ORM/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%85%83%E7%B1%BB/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/git/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/git-stats/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ruby/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/gpu/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/tcp/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/CSDI/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ALU/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cpu/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cpu-cache-line/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cpu%E7%BC%93%E5%AD%98/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/intel/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/perf/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/smart-cache/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%A4%9A%E6%A0%B8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/fabric/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/hyperledger/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ipsec/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/openswan/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/vpn/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/gmock/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/c/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/vtbl/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/jmeter/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/docker/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/wordpress/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/grpc/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/kafka/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/mapreduce/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/protobuf/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/storm/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%BC%98%E5%8C%96/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%86%85%E5%AD%98/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%88%86%E5%B8%83%E5%BC%8F/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%93%88%E5%B8%8C%E8%A1%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%80%A7%E8%83%BD/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%AE%97%E6%B3%95%E5%A4%8D%E6%9D%82%E5%BA%A6/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/kubernates/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ingress/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ingress-controller/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/client-go/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/unit/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cgroup/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/server-name/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%9F%9F%E5%90%8D/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/configure/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/man/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/upstream/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/next-upstream/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/tls/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ssl/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/URI/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Trie%E6%A0%91/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%89%8D%E7%BC%80%E6%A0%91/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/location/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/rewrite/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/proxy/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/session/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/udp/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%9E%81%E5%AE%A2%E6%97%B6%E9%97%B4/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%9E%81%E5%AE%A2%E9%82%A6/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/GOPS/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E9%AB%98%E6%95%88%E8%BF%90%E7%BB%B4/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/module/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/waf/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/RoundRobin/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/ddos/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E6%9C%80%E5%B0%91%E8%BF%9E%E6%8E%A5%E6%95%B0/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E9%99%90%E6%B5%81%E9%99%90%E9%80%9F/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/CSRF/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/kernel/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/XXE/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/linux/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/XXS/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E7%82%B9%E5%87%BB%E5%8A%AB%E6%8C%81/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/CRLF%E6%94%BB%E5%87%BB/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%97%B6%E9%97%B4%E5%8D%95%E4%BD%8D/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%A9%BA%E9%97%B4%E5%8D%95%E4%BD%8D/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%85%8D%E7%BD%AE%E8%AF%AD%E6%B3%95/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/F5/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Igor-Sysoev/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E5%8D%97%E9%9D%9E%E8%9C%98%E8%9B%9B/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E8%BF%90%E7%BB%B4%E4%B8%96%E7%95%8C%E5%A4%A7%E4%BC%9A/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E8%BF%90%E7%BB%B4%E5%B8%AE/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/cpu%E7%BB%91%E5%AE%9A/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/module/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/redis/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/reuseport/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/nice/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/paxos/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E6%A8%A1%E5%9D%97%E5%8C%96/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/adapter%E6%A8%A1%E5%BC%8F/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/strategy%E6%A8%A1%E5%BC%8F/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cpu%E7%BB%91%E5%AE%9A/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/redis/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/reuseport/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E8%BF%9B%E9%98%B6/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E9%AB%98%E6%89%8B/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/CDMA/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E4%B8%89%E5%9B%BD%E6%BC%94%E4%B9%89/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/FDMA/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E8%AF%B8%E8%91%9B%E4%BA%AE/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/GB2312/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E8%B0%8D%E6%88%98/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/PageRank/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E9%A3%8E%E8%B5%B7%E9%99%87%E8%A5%BF/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/TDMA/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E9%A9%AC%E4%BC%AF%E5%BA%B8/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/TF-IDF/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/MVP/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E4%BA%94%E7%AC%94%E5%AD%97%E5%9E%8B/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/SWOT/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E4%BD%99%E5%BC%A6%E7%9B%B8%E4%BC%BC%E5%BA%A6/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E4%B8%89%E5%A0%82%E8%AF%BE/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E4%BF%A1%E6%81%AF%E7%86%B5/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E4%BA%A7%E5%93%81%E6%80%9D%E7%BB%B4/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E4%BA%A7%E5%93%81%E7%BB%8F%E7%90%86/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E5%90%89%E6%99%AE%E8%B5%9B%E7%BA%B8%E7%89%8C/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%BE%AE%E7%AC%91%E4%BB%B7%E5%80%BC/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E5%90%B4%E5%86%9B/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E7%98%A6%E7%8B%97%E9%87%91%E7%89%9B/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E6%8B%BC%E9%9F%B3%E8%BE%93%E5%85%A5%E6%B3%95/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/10000%E5%B0%8F%E6%97%B6/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E6%95%B0%E5%AD%A6%E4%B9%8B%E7%BE%8E/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%B7%A5%E7%A8%8B%E5%B8%88/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E6%97%B6%E5%88%86%E5%A4%9A%E5%9D%80/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E7%A0%81%E5%86%9C/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E6%9D%A1%E4%BB%B6%E6%A6%82%E7%8E%87/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E8%AE%A4%E8%AF%86/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E6%AC%A7%E6%B0%8F%E8%B7%9D%E7%A6%BB/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/kernel/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E7%94%A8%E6%88%B7%E7%82%B9%E5%87%BB%E7%8E%87/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/nice/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E7%A0%81%E5%88%86%E5%A4%9A%E5%9D%80/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E4%B8%A4%E5%88%86%E9%92%9F%E6%B3%95%E5%88%99/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E7%BB%B4%E7%89%B9%E6%AF%94%E7%AE%97%E6%B3%95/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%8E%9F%E5%88%99/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E7%BD%91%E7%BB%9C%E7%88%AC%E8%99%AB/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%BC%80%E4%BC%9A/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E8%AF%AF%E7%AE%97%E7%8E%87/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E8%B4%A3%E4%BB%BB%E5%88%86%E6%95%A3/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E9%A2%91%E5%88%86%E5%A4%9A%E5%9D%80/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E8%B7%91%E9%A2%98/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E9%A9%AC%E5%B0%94%E5%8F%AF%E5%A4%AB%E6%A8%A1%E5%9E%8B/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E8%BE%BE%E5%88%A9%E6%AC%A7/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/BBR/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E9%80%BB%E8%BE%91%E6%80%A7/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/brotli/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cache/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Cork/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CUBIC/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/freak/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/google/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/gzip/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/hpack/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/huffman/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/MSS/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/Nagle/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/openssl/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/QUIC/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/RTO/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/spdy/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/timestamp/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%BC%93%E5%AD%98/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cookie/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/http-2-0/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ip/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ipv6/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/web/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/wireshark/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%90%8C%E6%BA%90%E7%AD%96%E7%95%A5/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%9E%B6%E6%9E%84/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%89%A9%E8%81%94%E7%BD%91/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%BC%96%E7%A8%8B/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%B7%A8%E5%9F%9F/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/BDP/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/BtlBW/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CDF%E7%B4%AF%E7%A7%AF%E6%A6%82%E7%8E%87%E5%88%86%E5%B8%83%E5%87%BD%E6%95%B0/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/pacing-gain/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/RTprop/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/RTT/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/youtube/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%B8%A2%E5%8C%85/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%BF%AB%E9%80%9F%E6%81%A2%E5%A4%8D/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%BF%AB%E9%80%9F%E9%87%8D%E4%BC%A0/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%85%A2%E5%90%AF%E5%8A%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%8B%A5%E5%A1%9E%E9%81%BF%E5%85%8D/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E8%B7%AF%E7%94%B1%E5%99%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ABNF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/ajax/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/BPF/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/chrome/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/CORS/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/curl/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/dns/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/OSI/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/TCP-IP/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/telnet/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%8A%93%E5%8C%85/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E9%87%8D%E5%AE%9A%E5%90%91/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/cnn%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/tensorflow/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E9%AB%98%E6%95%88%E4%BC%9A%E8%AE%AE/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/CoreOS/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/etcd/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/paxos/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/Raft/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E4%B8%80%E8%87%B4%E6%80%A7/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/alder32/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/rsync/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/SO-RCVLOWAT/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%85%A8%E6%A0%88/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/SO-RCVTIMEO/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%89%8D%E7%AB%AF/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/tcp-low-latency/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%90%8E%E7%AB%AF/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E9%98%BB%E5%A1%9E/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/BBR/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/HTTP3/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/BDP/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/HOL/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/BtlBW/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/CDF%E7%B4%AF%E7%A7%AF%E6%A6%82%E7%8E%87%E5%88%86%E5%B8%83%E5%87%BD%E6%95%B0/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/TLS/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/CUBIC/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/HPACK/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/pacing-gain/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/QPACK/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/RTprop/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E8%BF%9E%E6%8E%A5%E8%BF%81%E7%A7%BB/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/RTT/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/%E9%9D%99%E6%80%81%E8%A1%A8/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/youtube/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%B8%A2%E5%8C%85/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%BF%AB%E9%80%9F%E6%81%A2%E5%A4%8D/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%BF%AB%E9%80%9F%E9%87%8D%E4%BC%A0/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%85%A2%E5%90%AF%E5%8A%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%8B%A5%E5%A1%9E%E9%81%BF%E5%85%8D/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%B7%AF%E7%94%B1%E5%99%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cookie/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/http/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/http-2-0/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ip/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ipv6/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/rest/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/web/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/wireshark/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%90%8C%E6%BA%90%E7%AD%96%E7%95%A5/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%9E%B6%E6%9E%84/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%89%A9%E8%81%94%E7%BD%91/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%BC%96%E7%A8%8B/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%B7%A8%E5%9F%9F/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ABNF/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/ajax/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/BPF/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/chrome/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/CORS/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/curl/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/dns/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/OSI/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/TCP-IP/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/telnet/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%8A%93%E5%8C%85/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%BC%93%E5%AD%98/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%87%8D%E5%AE%9A%E5%90%91/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/so-linger/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/tags/%E5%8D%8F%E8%AE%AE%E6%A0%88/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/epoll/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E8%BE%B9%E7%BC%98%E8%A7%A6%E5%8F%91/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/reactor/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/tags/tcp-rmem/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/tags/%E5%8D%8F%E8%AE%AE%E6%A0%88/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/form/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/nodejs/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/hexo/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/next/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/github/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%85%8D%E8%B4%B9%E6%89%98%E7%AE%A1/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%A4%87%E6%A1%88/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%AE%A1%E5%B1%80/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/sftp/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%AF%84%E8%AE%BA/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/chaincode/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/channel/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/MSP/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/PKI/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%85%AC%E9%92%A5/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%AF%94%E7%89%B9%E5%B8%81/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%A7%81%E9%92%A5/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/dashboard/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/k8s/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/kubeadm/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/apisix/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/tags/%E7%BD%91%E5%85%B3/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/AKF/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/CDN/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/http2/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/http3/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Lua/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Nginx%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86150%E8%AE%B2/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Nginx%E6%A8%A1%E5%9D%97/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/openresty/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/RFC%E8%A7%84%E8%8C%83/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/slice/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Web%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3%E4%B8%8E%E6%8A%93%E5%8C%85%E5%AE%9E%E6%88%98/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%90%88%E5%B9%B6%E5%9B%9E%E6%BA%90/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%9D%A1%E4%BB%B6%E8%AF%B7%E6%B1%82/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%AD%A3%E5%90%91%E4%BB%A3%E7%90%86/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%B5%81%E9%87%8F%E9%A3%8E%E6%9A%B4/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%BD%91%E7%BB%9C%E6%95%88%E7%8E%87/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%84%9A%E6%9C%AC%E5%BC%95%E6%93%8E/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%BF%87%E6%BB%A4%E6%A8%A1%E5%9D%97/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/RoundRobin/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%9C%80%E5%B0%91%E8%BF%9E%E6%8E%A5%E6%95%B0/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/linux/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cnn%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/tensorflow/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/CDMA/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/FDMA/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/GB2312/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/PageRank/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/TDMA/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/TF-IDF/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%BA%94%E7%AC%94%E5%AD%97%E5%9E%8B/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%BD%99%E5%BC%A6%E7%9B%B8%E4%BC%BC%E5%BA%A6/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E4%BF%A1%E6%81%AF%E7%86%B5/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%90%89%E6%99%AE%E8%B5%9B%E7%BA%B8%E7%89%8C/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%90%B4%E5%86%9B/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%8B%BC%E9%9F%B3%E8%BE%93%E5%85%A5%E6%B3%95/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%95%B0%E5%AD%A6%E4%B9%8B%E7%BE%8E/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%97%B6%E5%88%86%E5%A4%9A%E5%9D%80/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%9D%A1%E4%BB%B6%E6%A6%82%E7%8E%87/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E6%AC%A7%E6%B0%8F%E8%B7%9D%E7%A6%BB/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%94%A8%E6%88%B7%E7%82%B9%E5%87%BB%E7%8E%87/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%A0%81%E5%88%86%E5%A4%9A%E5%9D%80/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%BB%B4%E7%89%B9%E6%AF%94%E7%AE%97%E6%B3%95/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E7%BD%91%E7%BB%9C%E7%88%AC%E8%99%AB/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%AF%AF%E7%AE%97%E7%8E%87/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%A2%91%E5%88%86%E5%A4%9A%E5%9D%80/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%A9%AC%E5%B0%94%E5%8F%AF%E5%A4%AB%E6%A8%A1%E5%9E%8B/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/brotli/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/cache/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Cork/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/freak/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/google/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/gzip/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/hpack/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/huffman/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/MSS/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/Nagle/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/openssl/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/QUIC/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/RTO/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/spdy/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/timestamp/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/HTTP3/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/HOL/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/TLS/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/HPACK/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/QPACK/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E8%BF%9E%E6%8E%A5%E8%BF%81%E7%A7%BB/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%9D%99%E6%80%81%E8%A1%A8/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/tcp-rmem/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/SO-RCVLOWAT/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/SO-RCVTIMEO/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/tcp-low-latency/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/tags/%E9%98%BB%E5%A1%9E/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2639,63 +2646,63 @@
   
   <url>
     <loc>https://www.taohui.tech/categories/nginx/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/categories/web/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/</loc>
-    <lastmod>2023-01-31</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.taohui.tech/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.taohui.tech/categories/%E7%AE%97%E6%B3%95/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <loc>https://www.taohui.tech/categories/web/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/</loc>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://www.taohui.tech/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/</loc>
-    <lastmod>2023-01-31</lastmod>
+    <lastmod>2023-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.taohui.tech/categories/%E7%AE%97%E6%B3%95/</loc>
+    <lastmod>2023-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>

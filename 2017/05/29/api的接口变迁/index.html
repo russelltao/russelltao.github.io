@@ -33,8 +33,8 @@
 <meta property="article:published_time" content="2017-05-29T04:00:54.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.833Z">
 <meta property="article:author" content="陶辉">
-<meta property="article:tag" content="django">
 <meta property="article:tag" content="api">
+<meta property="article:tag" content="django">
 <meta property="article:tag" content="webapp">
 <meta property="article:tag" content="websocket">
 <meta name="twitter:card" content="summary">
@@ -301,7 +301,7 @@
 <p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
 <p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
 <p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
-<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#x68;&#114;&#x40;&#122;&#108;&#x64;&#100;&#x61;&#116;&#97;&#x2e;&#99;&#110;">&#x68;&#114;&#x40;&#122;&#108;&#x64;&#100;&#x61;&#116;&#97;&#x2e;&#99;&#110;</a>。</p>
+<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#104;&#x72;&#64;&#x7a;&#108;&#100;&#x64;&#97;&#x74;&#97;&#46;&#99;&#x6e;">&#104;&#x72;&#64;&#x7a;&#108;&#100;&#x64;&#97;&#x74;&#97;&#46;&#99;&#x6e;</a>。</p>
 
     </div>
 
@@ -339,8 +339,8 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/django/" rel="tag"># django</a>
               <a href="/tags/api/" rel="tag"># api</a>
+              <a href="/tags/django/" rel="tag"># django</a>
               <a href="/tags/webapp/" rel="tag"># webapp</a>
               <a href="/tags/websocket/" rel="tag"># websocket</a>
           </div>
@@ -436,7 +436,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-count">74</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -475,6 +475,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节转发限速原理</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -485,9 +488,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="2021&#x2F;05&#x2F;19&#x2F;nginx&#x2F;在线课程：用nginx搭建waf防火墙的实践&#x2F;">公开课：用nginx搭建waf防火墙的实践</a>
         </li>
     </ul>
   </div>
@@ -523,13 +523,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">345k</span>
+    <span title="站点总字数">349k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:14</span>
+    <span title="站点阅读时长">5:17</span>
 </div>
 
         
