@@ -14,9 +14,9 @@
 
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
-  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
-  <script src="/lib/pace/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
+  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -226,7 +226,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" class="post-title-link" itemprop="url">Nginx的字节转发限速原理</a>
+            <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" class="post-title-link" itemprop="url">Nginx的字节级限速原理</a>
         </h2>
 
         <div class="post-meta">
@@ -243,7 +243,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-09-20 10:22:49" itemprop="dateModified" datetime="2023-09-20T10:22:49+08:00">2023-09-20</time>
+                <time title="修改时间：2023-09-20 15:43:55" itemprop="dateModified" datetime="2023-09-20T15:43:55+08:00">2023-09-20</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -261,14 +261,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>3.6k</span>
+              <span>6k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
+              <span>5 分钟</span>
             </span>
 
         </div>
@@ -281,9 +281,10 @@
 
       
           <p>有同学反馈：在配置Nginx四层限速时，proxy_upload_rate和proxy_download_rate有一定的概率不生效。我按照他的步骤也能复现，但这与官方Nginx很稳定（相对其他开源软件）的印象并不相符，是不是Nginx的官方BUG呢？这里的真实原因，其实是Nginx字节限速机制与时间更新频率的协商导致的，这篇文章我们就来研究下Nginx的字节限速。</p>
-<p>首先我们看下测试场景：基于UDP协议搭建四层代理（UDP协议更简单，更容易复现BUG），在nginx.conf中配置每秒最大上传10个字节：</p>
+<p>首先看下测试场景：基于UDP协议搭建四层代理（UDP协议更简单，更容易复现BUG），在nginx.conf中配置每秒最大上传10个字节：</p>
 <figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">proxy_upload_rate</span> <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
-<p>客户端先发送10字节，服务器接收到后（用回包触发）客户端立刻再次发送10字节，原本预期服务器将在1秒后收到第2个报文，但服务器有可能立刻收到报文，即proxy_upload_rate没有起作用。一旦proxy_upload_rate的生效机制就不可控了，或者说这个指令处于不可解释的状态，这对于严谨的场景下是不可接受的。而这里的原因，本质上是目前的Nginx无法实现上述严格的测试场景所致！接下来我会基于1.21版本的源码上解释其原理。<br><img src="/images/nginx/nginx%E5%AD%97%E8%8A%82%E9%99%90%E9%80%9F%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="nginx字节限速流程图"></p>
+<p>客户端先发送10字节，服务器接收到后（用回包触发）客户端立刻再次发送10字节，预期服务器将在1秒后收到第2个报文，但实际上服务器有可能立刻收到报文，即proxy_upload_rate未生效或者不可控！一旦配置项处于不可解释的状态，这对于严谨的应用场景是不可接受的。而这个现象的原因，本质上是目前Nginx实现机制所致，接下来我会基于1.21版本的源码上解释其原理。</p>
+<h1 id="基于字节的限速实现原理"><a href="#基于字节的限速实现原理" class="headerlink" title="基于字节的限速实现原理"></a>基于字节的限速实现原理</h1><p>首先，我们要明确上例属于Nginx中的哪种限速。由于Nginx使用了内核协议栈，因此Nginx既不能对Packet级别的报文、也不能对TCP连接建立进行限速，而是只能在用户态基于调用socket编程API的时机，在字节转发速率、应用层协议的HTTP请求上（如官方的limit_req）做限制。<br><img src="/images/tcp/socket%E4%B8%8ETCP%E5%8D%8F%E8%AE%AE%E6%A0%88.png" alt="socket与TCP协议栈"></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/#more" rel="contents">
@@ -794,7 +795,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">299</span>
+        <span class="site-state-item-count">303</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -820,7 +821,7 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
-          <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节转发限速原理</a>
+          <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节级限速原理</a>
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
@@ -868,13 +869,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">349k</span>
+    <span title="站点总字数">352k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:17</span>
+    <span title="站点阅读时长">5:20</span>
 </div>
 
         
@@ -891,10 +892,10 @@
   </div>
 
   
-  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script size="300" alpha="0.6" zIndex="-1" src="//fastly.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-ribbon.min.js"></script>
   <script src="/lib/anime.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
-  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
   <script src="/lib/velocity/velocity.min.js"></script>
   <script src="/lib/velocity/velocity.ui.min.js"></script>
 
