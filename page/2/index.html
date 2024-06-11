@@ -212,6 +212,103 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" class="post-title-link" itemprop="url">URL是如何关联Nginx location配置块的？</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-08-09 20:31:51" itemprop="dateCreated datePublished" datetime="2021-08-09T20:31:51+08:00">2021-08-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>上一篇文章介绍了HTTP请求匹配server{ }配置块的过程，接着请求会继续匹配location{ }配置块，并最终决定哪些指令及Nginx模块处理请求。本文将介绍location的匹配规则，以及rewrite指令与location匹配顺序的关系。<br><img src="/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png"><br>生产环境中的nginx.conf往往含有上百条location，这是因为Nginx常常身兼多职：充当提供静态资源CDN、作为负载均衡为分布式集群提供扩展性、作为API gateway提供接口服务等等。location一旦配置错误，Nginx上巨大的并发连接数会将错误放大上万倍，很容易导致严重的线上事故。</p>
+<p>而location也很容易配置错误，它既支持前缀匹配，也支持正则表达式匹配，当二者同时出现时，为了获得更高的性能，Nginx设计了复杂的location匹配优先级。这是因为前缀匹配是对静态的location多叉树检索完成的，它的性能要比正则表达式高得多，唯有搞清楚具体的匹配流程，我们才能设计出匹配速度更快的location。</p>
+<p>而且rewrite指令修改URL的功能也让location匹配变得更为复杂。特别是rewrite出现在server{ }和location{ } 里，会导致完全不同的结果。设计location时，我们还需要考虑到rewrite的效率，以及它是否会导致循环重定向。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/05/19/nginx/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E7%94%A8nginx%E6%90%AD%E5%BB%BAwaf%E9%98%B2%E7%81%AB%E5%A2%99%E7%9A%84%E5%AE%9E%E8%B7%B5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -600,109 +697,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/" class="post-title-link" itemprop="url">从wordpress迁移到hexo静态站点</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-02-15 21:01:01" itemprop="dateCreated datePublished" datetime="2021-02-15T21:01:01+08:00">2021-02-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>8.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-            <img src="/images/%E5%BB%BA%E7%AB%99/%E7%9F%A5%E8%AF%86%E5%85%B1%E4%BA%AB%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE.JPG" itemprop="contentUrl">
-            <img src="/images/%E5%BB%BA%E7%AB%99/hexo%E6%A0%87%E7%AD%BE%E9%A1%B5.JPG" itemprop="contentUrl">
-            <img src="/images/%E5%BB%BA%E7%AB%99/analytics-baidu-id.png" itemprop="contentUrl">
-        </div>
-          <blockquote>
-<p>接管局通知，个人站点不得有评论功能，原先wordpress+mysql的博客站点（搭建方式见<a href="">这里</a>）需要重构。干脆基于hexo搭建了静态站点，原先的文章已经迁移了过来，大家的评论只能放弃了。本文介绍hexo静态站点的搭建方法。</p>
-</blockquote>
-<h1 id="wordpress与hexo静态站点的优劣比较"><a href="#wordpress与hexo静态站点的优劣比较" class="headerlink" title="wordpress与hexo静态站点的优劣比较"></a>wordpress与hexo静态站点的优劣比较</h1><p>静态站点的优点在于部署简单、性能优异，比如你可以将其部署在免费的github page上，甚至无须购买域名即可对外提供服务（你可以点击<a target="_blank" rel="noopener" href="https://russelltao.github.io/">russelltao.github.io</a>查看我的github页面）。再比如，公有云提供的静态站点服务，可以将其自动部署到CDN站点上（腾讯云的Hexo部署插件见<a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/1210/43365">这里</a>），用户体验非常好。文章、图片等资源的备份也很简单，可以直接连同代码一起存放在git仓库中。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/02/15/%E4%BB%8Ewordpress%E8%BF%81%E7%A7%BB%E5%88%B0hexo%E9%9D%99%E6%80%81%E7%AB%99%E7%82%B9/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -774,7 +768,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">74</span>
+          <span class="site-state-item-count">75</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -787,7 +781,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">303</span>
+        <span class="site-state-item-count">305</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -813,6 +807,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/06/11/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E8%BF%9E%E6%8E%A5%E6%8C%91%E6%88%98%EF%BC%9Awrk%E7%9A%84%E9%AB%98%E5%B9%B6%E5%8F%91%E6%B5%8B%E8%AF%95%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" title="2024&#x2F;06&#x2F;11&#x2F;网络协议&#x2F;百万并发连接挑战：wrk的高并发测试深度解析&#x2F;">百万并发连接挑战：wrk的高并发测试深度解析</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节级限速原理</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -823,9 +820,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
         </li>
     </ul>
   </div>
@@ -851,7 +845,7 @@
 <div class="copyright">
   
   &copy; 2013 – 
-  <span itemprop="copyrightYear">2023</span>
+  <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
@@ -861,13 +855,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">352k</span>
+    <span title="站点总字数">356k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:20</span>
+    <span title="站点阅读时长">5:24</span>
 </div>
 
         

@@ -212,6 +212,101 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/" class="post-title-link" itemprop="url">详解rsync算法--如何减少同步文件时的网络传输量</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2014-01-27 09:38:31" itemprop="dateCreated datePublished" datetime="2014-01-27T09:38:31+08:00">2014-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>先看下图中的场景，客户端A和B，以及服务器server都保存了同一个文件，最初，A、B和server上的文件内容都是相同的（记为File.1）。某一时刻，B修改了文件内容，上传到SERVER上（记为File.2）。客户端A这时试图向服务器SERVER更新文件到最新内容，也就是File.1更新为File.2。 <img src="/2017/01/0_1330418966gvnq-1-1.png"> </p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2013/01/27/nginx/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%9C%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8-%E8%AF%BBnginx%E6%BA%90%E7%A0%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -665,7 +760,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">74</span>
+          <span class="site-state-item-count">75</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -678,7 +773,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">303</span>
+        <span class="site-state-item-count">305</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -704,6 +799,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/06/11/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E8%BF%9E%E6%8E%A5%E6%8C%91%E6%88%98%EF%BC%9Awrk%E7%9A%84%E9%AB%98%E5%B9%B6%E5%8F%91%E6%B5%8B%E8%AF%95%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" title="2024&#x2F;06&#x2F;11&#x2F;网络协议&#x2F;百万并发连接挑战：wrk的高并发测试深度解析&#x2F;">百万并发连接挑战：wrk的高并发测试深度解析</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节级限速原理</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -714,9 +812,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;HTTP请求是如何关联Nginx-server-块的？&#x2F;">HTTP请求是如何关联Nginx server{}块的？</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/" title="2021&#x2F;08&#x2F;09&#x2F;nginx&#x2F;URL是如何关联location配置块的？&#x2F;">URL是如何关联Nginx location配置块的？</a>
         </li>
     </ul>
   </div>
@@ -742,7 +837,7 @@
 <div class="copyright">
   
   &copy; 2013 – 
-  <span itemprop="copyrightYear">2023</span>
+  <span itemprop="copyrightYear">2024</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
@@ -752,13 +847,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">352k</span>
+    <span title="站点总字数">356k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:20</span>
+    <span title="站点阅读时长">5:24</span>
 </div>
 
         
