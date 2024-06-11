@@ -237,7 +237,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-06-11 13:51:03 / 修改时间：16:04:21" itemprop="dateCreated datePublished" datetime="2024-06-11T13:51:03+08:00">2024-06-11</time>
+              <time title="创建时间：2024-06-11 13:51:03 / 修改时间：17:34:38" itemprop="dateCreated datePublished" datetime="2024-06-11T13:51:03+08:00">2024-06-11</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -255,14 +255,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>4.5k</span>
+              <span>5.4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
+              <span>5 分钟</span>
             </span>
 
         </div>
@@ -274,9 +274,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>当下性能测试已成为确保软件质量的关键环节。其中，wrk作为一款轻量级、高性能的HTTP基准测试工具，以其简洁的命令行界面和出色的测试能力，迅速在程序员中流行开来。wrk通过-c参数能够模拟高并发的网络请求，帮助我们评估服务器在极端负载下的表现。如果你打算做10万并发这个量级的性能测试，相比ab/jmeter等工具wrk都要合适得多，然而，如果你想尝试进行数百万级别的高并发测试时，官方wrk就无能为力了。</p>
-<p>首先，wrk不支持自定义源IP地址，这在需要模拟来自不同客户端的请求时尤为不便，做并发测试时TCP连接数也上不去。其次，wrk在每个连接上预分配的内存相对较大，这在单机上尝试建立大量连接时，会导致内存资源迅速耗尽，wrk进程会因为OOM被内核杀掉。这些限制对于需要评估高性能服务的开发者来说，无疑是一个不小的障碍。</p>
-<p>在接下来的内容中，我将从源码层面探讨wrk在高并发测试中面临的挑战，并提出可能的解决方案和优化策略，以期帮助读者更好地利用wrk进行高效的性能测试。</p>
+          <p>当下性能测试已成为确保软件质量的关键环节。其中，wrk作为一款轻量级、高性能的HTTP基准测试工具，以其简洁的命令行界面和出色的性能著称。wrk通过-c参数能够模拟高并发的网络请求，帮助我们评估服务器在极端负载下的表现。如果你打算做C10K数万并发连接这个量级的测试，wrk是合适的（相比ab/jmeter等工具），然而，如果你想尝试进行数百万级别的高并发测试时，官方wrk就无能为力了。</p>
+<p>首先，wrk不支持自定义源IP地址，这在需要模拟来自不同客户端的请求时尤为不便，做并发测试时TCP连接数也上不去（此时你在curl命令中验证会看到类似Cannot assign request address的错误）。其次，wrk在每个连接上预分配的内存相对较大，这在单机上尝试建立大量连接时，会导致内存资源迅速耗尽，wrk进程会因为OOM被内核杀掉（如果wrk进程突然消失，你通常可以在/var/log/messages中看到形如Out of memory的日志）。这些限制对于需要评估高性能服务的开发者来说，无疑是一个不小的障碍。</p>
+<p>在接下来的内容中，我将探讨如何通过修改wrk源码解决上述问题，以期帮助读者更好地利用wrk进行极限并发测试。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2024/06/11/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E8%BF%9E%E6%8E%A5%E6%8C%91%E6%88%98%EF%BC%9Awrk%E7%9A%84%E9%AB%98%E5%B9%B6%E5%8F%91%E6%B5%8B%E8%AF%95%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/#more" rel="contents">
@@ -863,7 +863,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">356k</span>
+    <span title="站点总字数">357k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
