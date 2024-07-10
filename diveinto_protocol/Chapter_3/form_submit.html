@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表单提交示例</title>
+    <style>
+        /* 标题样式 */
+        .form-title {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 24px; /* 根据需要调整字体大小 */
+        }
+        /* 描述样式 */
+        .form-description {
+            text-align: center;
+            margin-top: 20px; /* 调整描述与标题的间距 */
+            font-size: 14px; /* 较小的字体大小，以示区别 */
+            color: #666; /* 字体颜色，可根据需要调整 */
+        }
+        .main-container {
+            display: flex; /* 应用到包含表单和图片容器的父级 */
+        }
+        .form-container, .image-container {
+            width: calc(50% - 20px); /* 减去间隙以保持两侧对齐 */
+            padding: 20px;
+        }
+        .form-container {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<h1 class="form-title">定长包体编码示例：表单提交</h1>
+<p class="form-description">《深入理解网络协议》第3章示例，点击提交前，请先打开network抓包面板，提交url是当前页面，响应失败请忽略，重点观察包体编码</p>
+
+<div class="main-container">
+    <div class="form-container">
+        <form action="#" method="post" enctype="multipart/form-data">
+            <!-- 文本输入框 -->
+            <label for="留言">留言:</label>
+            <textarea id="msg" name="msg" required></textarea><br><br>
+
+            <!-- 文件上传按钮 -->
+            <label for="fileUpload">上传文件:</label>
+            <input type="file" id="fileUpload" name="fileToUpload" accept=".txt,.pdf,.doc,.docx,.jpg,.png"><br><br>
+
+            <label for="username">用户名:</label>
+            <input type="text" id="username" name="username" required><br><br>
+        
+            <!-- 密码输入框 -->
+            <label for="password">密码:</label>
+            <input type="password" id="password" name="password" required><br><br>
+        
+            <!-- 单选按钮 -->
+            <p>性别:</p>
+            <input type="radio" id="male" name="gender" value="male" required>
+            <label for="male">男</label>
+            <input type="radio" id="female" name="gender" value="female">
+            <label for="female">女</label><br><br>
+        
+            <!-- 复选框 -->
+            <p>兴趣爱好:</p>
+            <input type="checkbox" id="hobby1" name="hobbies[]" value="阅读">
+            <label for="hobby1">阅读</label>
+            <input type="checkbox" id="hobby2" name="hobbies[]" value="旅行">
+            <label for="hobby2">旅行</label>
+            <input type="checkbox" id="hobby3" name="hobbies[]" value="音乐">
+            <label for="hobby3">音乐</label><br><br>
+        
+            <!-- 下拉选择菜单 -->
+            <label for="country">国家:</label>
+            <select id="country" name="country">
+                <option value="中国">中国</option>
+                <option value="美国">美国</option>
+                <option value="英国">英国</option>
+                <option value="日本">日本</option>
+            </select><br><br>
+
+            <!-- 提交按钮 -->
+            <input type="submit" value="提交">
+        </form>
+    </div>
+    <div class="image-container">
+        <p class="form-description">右边表单的编码方式是multipart/form-data，请关注Content-Type头部boundary的值，它会在包体中出现</p>
+        <img src="表单上传抓包截图content-type.png" alt="表单上传抓包截图content-type">
+        <p class="form-description">请注意，浏览器中抓包后，network图形界面不会显示文件内容</p>
+        <img src="表单上传抓包截图chrome.png" alt="表单上传抓包截图chrome">
+        <p class="form-description">wireshark中抓包，可以看到文件内容是在报文中同时上传的</p>
+        <img src="表单上传抓包截图wireshark.png" alt="表单上传抓包截图wireshark">
+    </div>
+</div>
+</body>
+</html>
