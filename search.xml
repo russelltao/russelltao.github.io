@@ -5082,8 +5082,12 @@
       </categories>
       <tags>
         <tag>负载均衡</tag>
+        <tag>OSI</tag>
         <tag>分布式负载</tag>
         <tag>DevOps</tag>
+        <tag>可观测性</tag>
+        <tag>弹性</tag>
+        <tag>TCO</tag>
       </tags>
   </entry>
 </search>
