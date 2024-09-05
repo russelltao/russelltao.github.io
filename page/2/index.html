@@ -194,6 +194,113 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" class="post-title-link" itemprop="url">NGINX网络协议栈优化</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-30 18:14:21" itemprop="dateCreated datePublished" datetime="2023-01-30T18:14:21+08:00">2023-01-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-20 17:01:02" itemprop="dateModified" datetime="2023-06-20T17:01:02+08:00">2023-06-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p><strong>文章简介</strong>： 本文是我在《F5 NGINX Sprint 2022》大会分享的文字版整理。《NGINX网络协议栈优化》有两个关键词，第一个是网络协议，因此不涉及 NGINX 的业务模块。第二个关键词是性能优化，目标是让NGINX的性能达到目前硬件架构的极限。</p>
+</blockquote>
+<p>很高兴大家回到这次深潜之旅，让我们继续挖掘 NGINX 的潜力。今天我的分享包括四个部分。首先从整体上来看一下 NGINX的协议栈如何进行优化。接着我们将按照 OSI七层网络模型，自上而下依次讨论HTTP协议栈、TLS/SSL协议栈以及TCP/IP协议栈。</p>
+<p>首先要明确NGINX的优化方向。优化的目标在我看来可以用三个词表示——<strong>快、多、省</strong>。</p>
+<ul>
+<li>“<strong>快</strong>”是指降低请求的时延，请求时延是用户能够感知到的最明显因素。</li>
+<li>“<strong>多</strong>”指的是 NGINX正在处理的所有TCP连接数量以及收发的总字节数，比如总吞吐量能否打满网卡。</li>
+<li>“<strong>省</strong>”指处理一个 TCP 连接时所消耗的资源要尽量的少，这样我们的并发连接才能够达到千万、亿级别。</li>
+</ul>
+<p>在做协议栈优化时，我们必须同时兼顾知识<strong>深度</strong>和<strong>广度</strong>。开发习惯从实现的角度看问题，知识面倾向深度。而运维更关注服务部署、运行，比如要了解IDC地理位置、网络规划、服务器硬件配置等情况，因此知识面是倾向广度的。NGINX运行在 Linux 或者 FreeBSD 等操作系统上，操作系统的内核协议栈和进程调度机制都会影响 NGINX 性能，所以优化内核参数时相对更需要深度。了解 NGINX 所在网络环境，针对丢包率、网卡特性、CPU特性、交换机和防火墙的规格、协议特性等要素优化 NGINX 时，相对又会偏重广度。</p>
+<h1 id="NGINX-协议栈优化方法论"><a href="#NGINX-协议栈优化方法论" class="headerlink" title="NGINX 协议栈优化方法论"></a>NGINX 协议栈优化方法论</h1><p>首先我们看下面两张图，先同步下思路。</p>
+<h2 id="NGINX架构"><a href="#NGINX架构" class="headerlink" title="NGINX架构"></a>NGINX架构</h2><p>第一张图由 NGINX 官方提供，我们从三个层面来解读它。<br><img src="/images/nginx/ppt2022/%E5%AE%98%E6%96%B9%E6%9E%B6%E6%9E%84.png" alt="官方架构"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -582,104 +689,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/" class="post-title-link" itemprop="url">公开课：探索NGINX_UNIT</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-18 08:49:53" itemprop="dateCreated datePublished" datetime="2021-05-18T08:49:53+08:00">2021-05-18</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/" itemprop="url" rel="index"><span itemprop="name">微服务</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>401</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>UNIT是NGINX于2017年推出的Web容器方案，它提供了REST JSON接口动态修改服务配置，目前为Python、Java、Ruby、Perl、NodeJS、GOLang、WebAssembly等语言提供了生产环境级别的高性能Web容器，适用于大规模分布式环境中的微服务管理。从3月11日到4月1日，我分享了关于UNIT的4次课程。</p>
-</blockquote>
-<p><img src="/images/%E5%BE%AE%E6%9C%8D%E5%8A%A1/nginx_unit/nginx-unit-1-0-architecture.png"><br>微服务架构中，由于开发语言多样化、服务实例数量多，这就需要一种统一的服务治理方法，将配置更改、服务启停、网络协议适配、日志搜集等通用功能低成本的管理起来。K8S是一种解决方案，而NGINX UNIT针对Web场景也提供了上述功能，而且由于它仅针对Web容器场景，所以性能也更高。这4次视频课程如下：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/05/18/k8s/%E5%9C%A8%E7%BA%BF%E8%AF%BE%E7%A8%8B%EF%BC%9A%E6%8E%A2%E7%B4%A2NGINX-UNIT/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -751,7 +760,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">77</span>
+          <span class="site-state-item-count">78</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -764,7 +773,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">310</span>
+        <span class="site-state-item-count">314</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -790,6 +799,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/09/05/nginx/GoAccess-%E5%AE%9E%E6%97%B6%E5%88%86%E6%9E%90Nginx%E6%97%A5%E5%BF%97%E7%9A%84%E8%BD%BB%E9%87%8F%E7%BA%A7%E5%B7%A5%E5%85%B7/" title="2024&#x2F;09&#x2F;05&#x2F;nginx&#x2F;GoAccess-实时分析Nginx日志的轻量级工具&#x2F;">GoAccess: 实时分析Nginx日志的轻量级工具</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -800,9 +812,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节级限速原理</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
         </li>
     </ul>
   </div>
@@ -838,13 +847,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">368k</span>
+    <span title="站点总字数">373k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:35</span>
+    <span title="站点阅读时长">5:39</span>
 </div>
 
         

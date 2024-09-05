@@ -5144,4 +5144,68 @@
         <tag>协议栈</tag>
       </tags>
   </entry>
+  <entry>
+    <title>GoAccess: 实时分析Nginx日志的轻量级工具</title>
+    <url>/2024/09/05/nginx/GoAccess-%E5%AE%9E%E6%97%B6%E5%88%86%E6%9E%90Nginx%E6%97%A5%E5%BF%97%E7%9A%84%E8%BD%BB%E9%87%8F%E7%BA%A7%E5%B7%A5%E5%85%B7/</url>
+    <content><![CDATA[<p>十多年前我曾使用GoAccess搭建了一个NGINX日志分析工具，它以其轻量级、低资源消耗和实时更新的特性，非常适合个人和小站点使用。最近我的服务器做了次搬家，需要重新搭建日志分析系统，于是到网上查找<a href="https://goaccess.io/">GoAccess</a>的用法时，发现官方站点的文档还是一如既往的晦涩，而其他站点介绍的用法则与我要搭建的架构不契合。所以干脆做了次总结，在这篇文章中，我将分享我如何搭建GoAccess，并使其通过Websocket协议提供实时日志分析。我的架构部署图如下所示：<br><img src="/images/nginx/goaccess%E9%83%A8%E7%BD%B2.svg" alt="GoAccess部署架构图"><br>这么部署的原因是为了经过NGINX走全站SSL加密，毕竟在NGINX统一管理SSL证书还是方便点。</p>
+<span id="more"></span>
+
+<h1 id="安装配置GoAccess"><a href="#安装配置GoAccess" class="headerlink" title="安装配置GoAccess"></a>安装配置GoAccess</h1><p>首先安装GoAccess，作为一个成熟的工具，可以直接在内置源里用yum或者apt-get安装：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">yum install goaccess -y</span><br></pre></td></tr></table></figure>
+
+<p>其次需要明确当前输出的access.log日志的格式，比如NGINX默认的格式如下：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="attribute">log_format</span>  main  <span class="string">&#x27;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#x27;</span></span><br><span class="line">                  <span class="string">&#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;</span></span><br><span class="line">                  <span class="string">&#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>基于上述日志格式，可以生成/etc/goaccess.conf配置文件：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">time-format %H:%M:%S</span><br><span class="line">date-format %d&#x2F;%b&#x2F;%Y</span><br><span class="line">log-format %h %^[%d:%t %^] &quot;%r&quot; %s %b &quot;%R&quot; &quot;%u&quot;</span><br></pre></td></tr></table></figure>
+
+<p>对日志格式中各项的替代符都是以%百分号为前缀，加上大小写敏感的字母做标识，如果你的日志格式与默认格式不同，可以参考如下含义修改：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">%</span><span class="bash">x：匹配time-format和date-format变量的日期和时间字段。当提供时间戳而不是两个独立的日期和时间变量时使用。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">t：匹配time-format变量的时间字段。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">d：匹配date-format变量的日期字段。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">v：根据规范名称设置（服务器块或虚拟主机）的服务器名称。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">e：根据HTTP认证确定请求文档的人的用户ID。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">C：服务器提供的对象的缓存状态。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">h：主机（客户端IP地址，可以是IPv4或IPv6）。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">r：客户端的请求行。这需要在请求周围使用特定的分隔符（单引号、双引号等）才能解析。否则，使用如%m、%U、%q和%H等特殊格式指示符来解析各个字段。注意：要么使用%r获取完整请求，要么使用%m、%U、%q和%H来形成你的请求，不要同时使用两者。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">m：请求方法。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">U：请求的URL路径。注意：如果查询字符串在%U中，则无需使用%q。然而，如果URL路径不包含任何查询字符串，你可以使用%q，查询字符串将被附加到请求中。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">q：查询字符串。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">H：请求协议。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">s：服务器发送回客户端的状态代码。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">b：返回给客户端的对象大小。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">R：<span class="string">&quot;Referer&quot;</span> HTTP请求头。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">u：用户代理HTTP请求头。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">K：为连接选择的TLS加密设置。（在Apache LogFormat中：%&#123;SSL_PROTOCOL&#125;x）。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">k：为连接选择的TLS加密设置。（在Apache LogFormat中：%&#123;SSL_CIPHER&#125;x）。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">M：请求资源的MIME类型。（在Apache LogFormat中：%&#123;Content-Type&#125;o）。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">D：服务请求所花费的时间，以微秒为单位。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">T：服务请求所花费的时间，以秒为单位，带有毫秒分辨率。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">L：以小数形式表示的服务请求所花费的时间，以毫秒为单位。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">n：以小数形式表示的服务请求所花费的时间，以纳秒为单位。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">^：忽略这个字段。</span></span><br><span class="line"><span class="meta">%</span><span class="bash">~：在日志字符串中向前移动，直到找到一个非空格字符（!isspace）。</span></span><br><span class="line">~h：在X-Forwarded-For（XFF）字段中的主机（客户端IP地址，可以是IPv4或IPv6）。</span><br></pre></td></tr></table></figure>
+
+<p>接着启动GoAccess进程，如下的命令行可以在SHELL中分析日志：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">goaccess -a -d -p /etc/goaccess.conf -f /usr/local/openresty/nginx/logs/access.log</span><br></pre></td></tr></table></figure>
+<p>这样你会在SHELL终端里看到如下可交互的页面：<br><img src="https://goaccess.io/images/goaccess-dashboard.png" alt="GoAccess的SHELL界面"></p>
+<h1 id="配置NGINX"><a href="#配置NGINX" class="headerlink" title="配置NGINX"></a>配置NGINX</h1><p>如果我们想在浏览器上查看实时可变的页面，则需要生成HTML页面，并提供Websocket服务：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">goaccess -a -d -p /etc/goaccess.conf -f /usr/local/openresty/nginx/logs/access.log -o /usr/local/openresty/nginx/html/goaccess_gen.html --real-time-html --daemonize --ws-url=wss://www.taohui.pub:10005</span><br></pre></td></tr></table></figure>
+<p>上面的命令行参数详细解释下：</p>
+<ul>
+<li>-p显式指定了配置文件路径。</li>
+<li>–daemonize表示以守护进程运行GoAccess。</li>
+<li>–real-time-html指定生成可以实时变化的HTML页面。</li>
+<li>-f表示进程分析的access.log则在/usr/local/openresty/nginx/logs/路径下。</li>
+<li>-o指定了生成的HTML页面路径。</li>
+</ul>
+<p>如果对外提供Web服务还需要我们在NGINX上配置一个静态资源服务，映射生成的HTML页面，比如在nginx.conf中新增如下配置：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">    <span class="attribute">server_name</span>  www.taohui.pub;</span><br><span class="line">    <span class="attribute">location</span> = /goaccess_gen.html &#123;</span><br><span class="line">            <span class="attribute">root</span> html;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意上面我们启动GoAccess时会在7890端口上开启WebSocket服务：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> netstat -anp | grep 7890</span></span><br><span class="line">tcp        0      0 0.0.0.0:7890            0.0.0.0:*               LISTEN      24766/goaccess</span><br></pre></td></tr></table></figure>
+<p>这样在你不刷新页面时，GoAccess进程可以通过WebSocket协议给页面推送变化的监控数据。所以我们还要在NGINX上开启一个Websocket代理。这么做的原因是为了信息安全，毕竟全站加密才能防止第三方攻击者嗅探。为了防止端口冲突，所以在上面的命令行参数 <strong>–ws-url=wss://<a href="http://www.taohui.pub:10005/">www.taohui.pub:10005</a></strong>要求HTML页面中使用10005端口建立基于SSL的Websocket连接，因此我们的nginx.conf中要加个WS代理：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">  <span class="attribute">server_name</span>  www.taohui.pub;</span><br><span class="line">  <span class="attribute">listen</span> <span class="number">10005</span> ssl;</span><br><span class="line">  <span class="attribute">location</span> / &#123;</span><br><span class="line">    <span class="attribute">if</span> ($http_upgrade != <span class="string">&quot;websocket&quot;</span>) &#123;</span><br><span class="line">      <span class="attribute">return</span> <span class="number">404</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="attribute">proxy_redirect</span> <span class="literal">off</span>;</span><br><span class="line">    <span class="attribute">proxy_pass</span> http://127.0.0.1:7890;</span><br><span class="line">    <span class="attribute">proxy_http_version</span> <span class="number">1</span>.<span class="number">1</span>;</span><br><span class="line">    <span class="attribute">proxy_set_header</span> Upgrade $http_upgrade;</span><br><span class="line">    <span class="attribute">proxy_set_header</span> Connection <span class="string">&quot;upgrade&quot;</span>;</span><br><span class="line">    <span class="attribute">proxy_set_header</span> Host $host;</span><br><span class="line">    <span class="attribute">proxy_set_header</span> X-Real-IP $remote_addr;</span><br><span class="line">    <span class="attribute">proxy_set_header</span> X-Forwarded-For $proxy_add_x_forwarded_for;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="attribute">ssl_certificate</span> /etc/letsencrypt/fullchain.pem; <span class="comment"># managed by Certbot</span></span><br><span class="line">  <span class="attribute">ssl_certificate_key</span> /etc/letsencrypt/privkey.pem; <span class="comment"># managed by Certbot</span></span><br><span class="line">  <span class="attribute">include</span> /etc/letsencrypt/options-ssl-nginx.conf; <span class="comment"># managed by Certbot</span></span><br><span class="line">  <span class="attribute">ssl_dhparam</span> /etc/letsencrypt/ssl-dhparams.pem; <span class="comment"># managed by Certbot</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在我们已经可以访问 <a href="http://yourdomain/goaccess_gen.html">http://yourdomain/goaccess_gen.html</a> 看到实时变化的监控数据了，页面大致如下图所示：<br><img src="https://goaccess.io/images/goaccess-bright.png" alt="GoAccess的SHELL界面"><br>你可以改变它的显示风格。</p>
+<h1 id="增加用户名密码认证"><a href="#增加用户名密码认证" class="headerlink" title="增加用户名密码认证"></a>增加用户名密码认证</h1><p>目前这个页面任何人都能访问，肯定存在隐私泄露，可以通过NGINX的auth_basic指令加一个简单的用户名、密码认证。<br>首先安装htpasswd工具：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">yum install httpd-tools</span><br></pre></td></tr></table></figure>
+
+<p>接着生成密钥文件：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">htpasswd -cb /etc/.htpasswd yourname yourpassword</span><br></pre></td></tr></table></figure>
+
+<p>然后在/goaccess_gen.html页面下加入auth_basic模块认证：</p>
+<figure class="highlight nginx"><table><tr><td class="code"><pre><span class="line"><span class="attribute">location</span> = /goaccess_gen.html &#123;</span><br><span class="line">    <span class="attribute">auth_basic</span> <span class="string">&quot;User&quot;</span>;</span><br><span class="line">    <span class="attribute">auth_basic_user_file</span> /etc/.htpasswd;</span><br><span class="line">    <span class="attribute">root</span> html;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样再访问页面时，就必须先输入正确的用户名和密码。虽然HTTP Authentication标准走的是明文，但HTTPS流量已经做过加密了，所以还是安全的。</p>
+<h1 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h1><p>本文介绍了如何搭建GoAccess–一款为NGINX、Apache等Web服务设计的单机日志分析工具，它不仅部署简便、性能卓越，而且资源消耗极低。本文探讨了如何通过SSL实现全站加密，确保数据传输的安全性，并通过WebSocket协议推送实时变化的监控数据，此外还增加了HTTP authenticate认证，为数据访问提供了额外的安全层。GoAccess的图形化界面不仅美观，而且直观易用，值得每位需要高效日志分析解决方案的用户尝试和使用。</p>
+]]></content>
+      <categories>
+        <category>nginx</category>
+      </categories>
+      <tags>
+        <tag>websocket</tag>
+        <tag>NGINX</tag>
+        <tag>access.log</tag>
+        <tag>实时分析</tag>
+        <tag>goaccess</tag>
+        <tag>ssl</tag>
+      </tags>
+  </entry>
 </search>
