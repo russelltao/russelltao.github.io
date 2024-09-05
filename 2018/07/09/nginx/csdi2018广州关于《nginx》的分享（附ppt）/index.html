@@ -20,24 +20,24 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="应百林哲笑含的邀请，于2018.6.9号至7.1号前往广州白云国际会议中心参加《CSDI Summit 中国软件研发管理行业技术峰会》。会上认识了很多互联网一线老师是最大的收获：  本次我分享的主题是《兼顾灵活与性能的nginx》：">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CSDI2018广州关于《Nginx》的分享（附文字速录与PPT）">
-<meta property="og:url" content="https://www.taohui.tech/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="应百林哲笑含的邀请，于2018.6.9号至7.1号前往广州白云国际会议中心参加《CSDI Summit 中国软件研发管理行业技术峰会》。会上认识了很多互联网一线老师是最大的收获：  本次我分享的主题是《兼顾灵活与性能的nginx》：">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/unnamed-file-7.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/1-%E6%BC%94%E8%AE%B2%E7%85%A7-2.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/CSDI%E8%AF%81%E4%B9%A6-2.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/nginx%E8%BF%9B%E7%A8%8B%E6%9E%B6%E6%9E%84-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/nginx%E5%8A%A8%E6%80%81%E6%A8%A1%E5%9D%97-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/nginx%E4%BC%98%E9%9B%85%E7%9A%84%E6%94%B9%E9%85%8D%E7%BD%AE-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/nginx%E5%A4%84%E7%90%86http%E8%AF%B7%E6%B1%82%E7%9A%84%E6%B5%81%E7%A8%8B-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/07/openresty%E6%8C%87%E4%BB%A4%E9%98%B6%E6%AE%B5-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/unnamed-file-7.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/1-%E6%BC%94%E8%AE%B2%E7%85%A7-2.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/CSDI%E8%AF%81%E4%B9%A6-2.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/nginx%E8%BF%9B%E7%A8%8B%E6%9E%B6%E6%9E%84-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/nginx%E5%8A%A8%E6%80%81%E6%A8%A1%E5%9D%97-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/nginx%E4%BC%98%E9%9B%85%E7%9A%84%E6%94%B9%E9%85%8D%E7%BD%AE-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/nginx%E5%A4%84%E7%90%86http%E8%AF%B7%E6%B1%82%E7%9A%84%E6%B5%81%E7%A8%8B-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/07/openresty%E6%8C%87%E4%BB%A4%E9%98%B6%E6%AE%B5-1.png">
 <meta property="article:published_time" content="2018-07-09T01:48:26.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.848Z">
 <meta property="article:author" content="陶辉">
@@ -46,9 +46,9 @@
 <meta property="article:tag" content="性能">
 <meta property="article:tag" content="模块化">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/2018/07/unnamed-file-7.jpg">
+<meta name="twitter:image" content="https://www.taohui.pub/2018/07/unnamed-file-7.jpg">
 
-<link rel="canonical" href="https://www.taohui.tech/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/">
+<link rel="canonical" href="https://www.taohui.pub/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/">
 
 
 <script id="page-configurations">
@@ -211,7 +211,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -249,7 +249,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
@@ -257,7 +257,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
                 </span>
             </span>
 
@@ -344,7 +344,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/" title="CSDI2018广州关于《Nginx》的分享（附文字速录与PPT）">https://www.taohui.tech/2018/07/09/nginx/csdi2018广州关于《nginx》的分享（附ppt）/</a>
+    <a href="https://www.taohui.pub/2018/07/09/nginx/csdi2018%E5%B9%BF%E5%B7%9E%E5%85%B3%E4%BA%8E%E3%80%8Anginx%E3%80%8B%E7%9A%84%E5%88%86%E4%BA%AB%EF%BC%88%E9%99%84ppt%EF%BC%89/" title="CSDI2018广州关于《Nginx》的分享（附文字速录与PPT）">https://www.taohui.pub/2018/07/09/nginx/csdi2018广州关于《nginx》的分享（附ppt）/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -452,7 +452,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -491,6 +491,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -501,9 +504,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -539,13 +539,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

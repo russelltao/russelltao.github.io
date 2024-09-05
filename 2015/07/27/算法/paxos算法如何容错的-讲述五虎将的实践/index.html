@@ -20,25 +20,25 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="（本文包括章节：1、由来，2、算法简单回顾，3、演习道具，4、演习，5、算法提出者Leslie的八卦。hoho）  由来刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者">
 <meta property="og:type" content="article">
 <meta property="og:title" content="paxos算法如何容错的--讲述五虎将的实践">
-<meta property="og:url" content="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="（本文包括章节：1、由来，2、算法简单回顾，3、演习道具，4、演习，5、算法提出者Leslie的八卦。hoho）  由来刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg">
 <meta property="article:published_time" content="2015-07-27T08:34:10.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.893Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="paxos">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg">
+<meta name="twitter:image" content="https://www.taohui.pub/2018/05/7590e07b2ae0df4112f71cb1ddf76472-1.jpg">
 
-<link rel="canonical" href="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+<link rel="canonical" href="https://www.taohui.pub/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">
 
 
 <script id="page-configurations">
@@ -201,7 +201,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -269,7 +269,7 @@
 
       
         <p>（本文包括章节：1、由来，2、<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/datastructure" title="算法与数据结构知识库">算法</a>简单回顾，3、演习道具，4、演习，5、算法提出者Leslie的八卦。hoho） </p>
-<h1 id="由来"><a href="#由来" class="headerlink" title="由来"></a>由来</h1><p>刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者使用了paxos算法，也不会出现冲突的政令不一情况。paxos算法理论以及刘备是怎么被孔明忽悠的部分，同学们可以参考上篇<a target="_blank" rel="noopener" href="https://www.taohui.pub/paxos%e5%88%86%e5%b8%83%e5%bc%8f%e4%b8%80%e8%87%b4%e6%80%a7%e7%ae%97%e6%b3%95-%e8%ae%b2%e8%bf%b0%e8%af%b8%e8%91%9b%e4%ba%ae%e7%9a%84%e5%8f%8d%e7%a9%bf%e8%b6%8a/">《paxos分布式一致性算法–讲述诸葛亮的反穿越》</a> </p>
+<h1 id="由来"><a href="#由来" class="headerlink" title="由来"></a>由来</h1><p>刘备接受了诸葛亮的提议，决定将paxos算法的思想应用到蜀帝国的决策机制上。然而，玄德生性谨慎，决定先行试点，实践下可行性。孔明提议，由蜀国五大肌肉男：关羽、张飞、赵云、马超、黄忠，做为决策者，而廖化、周仓、魏延分别无序的提出关于同一件事的水火不容的三个提案，孔明坚信：即使脑残者使用了paxos算法，也不会出现冲突的政令不一情况。paxos算法理论以及刘备是怎么被孔明忽悠的部分，同学们可以参考上篇<a href="https://www.taohui.pub/paxos%e5%88%86%e5%b8%83%e5%bc%8f%e4%b8%80%e8%87%b4%e6%80%a7%e7%ae%97%e6%b3%95-%e8%ae%b2%e8%bf%b0%e8%af%b8%e8%91%9b%e4%ba%ae%e7%9a%84%e5%8f%8d%e7%a9%bf%e8%b6%8a/">《paxos分布式一致性算法–讲述诸葛亮的反穿越》</a> </p>
 <span id="more"></span>
 <p>闲话少叙，书接上文。 </p>
 <h1 id="提案"><a href="#提案" class="headerlink" title="提案"></a>提案</h1><p>为了少打点字，刘备与诸葛亮俩玻璃不再以对话形式出现了。他们设置了五个官署（五虎将办公地，相当于Server），三个提案点（周仓等三人，发起提案时的办公地。相当于Client），当然都不在一起，信使们从提案点到官署传递信息的话，正常情况下需要半个小时，也就是30分钟。这次演习，哥俩不关注学习情况，所以paxos第三段就不在演习内容里了。诸葛亮为廖化、周他、魏延对于事件e准备了三个自相矛盾的提案，我们分别用p1、p2和p3代替吧。</p>
@@ -323,10 +323,10 @@
   <div class="popular-posts-header">相关文章</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="\2018\06\03\算法\解读raft一致性共识算法\" rel="bookmark">分布式环境Raft一致性共识算法解读</a></div>
+      <div class="popular-posts-title"><a href="\2015\03\27\算法\paxos分布式一致性算法-讲述诸葛亮的反穿越\" rel="bookmark">paxos分布式一致性算法--讲述诸葛亮的反穿越</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="\2015\03\27\算法\paxos分布式一致性算法-讲述诸葛亮的反穿越\" rel="bookmark">paxos分布式一致性算法--讲述诸葛亮的反穿越</a></div>
+      <div class="popular-posts-title"><a href="\2018\06\03\算法\解读raft一致性共识算法\" rel="bookmark">分布式环境Raft一致性共识算法解读</a></div>
     </li>
   </ul>
 
@@ -339,7 +339,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="paxos算法如何容错的--讲述五虎将的实践">https://www.taohui.tech/2015/07/27/算法/paxos算法如何容错的-讲述五虎将的实践/</a>
+    <a href="https://www.taohui.pub/2015/07/27/%E7%AE%97%E6%B3%95/paxos%E7%AE%97%E6%B3%95%E5%A6%82%E4%BD%95%E5%AE%B9%E9%94%99%E7%9A%84-%E8%AE%B2%E8%BF%B0%E4%BA%94%E8%99%8E%E5%B0%86%E7%9A%84%E5%AE%9E%E8%B7%B5/" title="paxos算法如何容错的--讲述五虎将的实践">https://www.taohui.pub/2015/07/27/算法/paxos算法如何容错的-讲述五虎将的实践/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -445,7 +445,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -484,6 +484,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -494,9 +497,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -532,13 +532,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

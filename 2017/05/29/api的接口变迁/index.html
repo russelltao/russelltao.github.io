@@ -20,13 +20,13 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="最近前端团队越发觉得目前API接口有些不好用，所以我也借此重新理一下我们的API接口。 API没有什么完美的设计理念和原则，只有最适合当下的设计。这个最适合包括：当前使用的技术架构、团队规模、团队成员技术特点、开发时间、人力成本、未来业务与技术的预期等。我先来回顾下我们产品的API变迁过程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="API的接口变迁">
-<meta property="og:url" content="https://www.taohui.tech/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="最近前端团队越发觉得目前API接口有些不好用，所以我也借此重新理一下我们的API接口。 API没有什么完美的设计理念和原则，只有最适合当下的设计。这个最适合包括：当前使用的技术架构、团队规模、团队成员技术特点、开发时间、人力成本、未来业务与技术的预期等。我先来回顾下我们产品的API变迁过程。">
 <meta property="og:locale" content="zh_CN">
@@ -39,7 +39,7 @@
 <meta property="article:tag" content="websocket">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://www.taohui.tech/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/">
+<link rel="canonical" href="https://www.taohui.pub/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/">
 
 
 <script id="page-configurations">
@@ -202,7 +202,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -283,7 +283,7 @@
 <p>产品开发的差不多了，姗姗来迟的测试登场，于是权限问题冒出来了。之前，后端系统梳理过API权限的设计。由于我们的系统是平台，对接的是企业以及并不隶属于企业的工人，角色较多，且多企业实际上在协同服务于一个工程，最复杂的是角色间的关系是由实时变动的合同决定。所以API的权限会很复杂，例如：某请求可以被甲企业中的A角色调用，但不能被甲企业中的B角色调用，还不能被协同合作的乙企业中的A角色调用，但可以被乙企业中的C角色调用，且A角色中有M、N两个人，其调用完全相同参数的请求返回内容并不相同。这个现象的产生，是因为我们有多种合同，至少三种合同共同作用于一个工程时，就会产生多种角色下不同用户的权限变化多端。后端用了一种很巧妙的方式，把这种复杂以可读性还不错的配置文件实现，于是，测试提出的权限问题后端可以分分钟实现，但前端就苦逼了！就像上文我说的，有些页面前端发现需要调很多接口时，会要求后端增加返回字段；有些页面则调用了很多接口。而现在，原本体验很好的页面，因为后端在API上增加了权限限制，就会出现有些角色、用户在该页面上，部分接口调用开始权限不足，页面因为接口错误而出现各种问题！且随着测试的深入，权限控制越来越细，于是系统体验进一步变差，测试开始提更多的BUG砸向开发，前端越发对API不满。。。</p>
 <p>那么，清楚了整个流程后，我们才可以梳理出脉络。之前留了些什么坑呢？有几个与实时合同关联密切的DB表，这几张表引出的相应API存在考虑产品设计不够的问题。即，不同的角色，会有场景要求对同一张表里的不同列有查询需求，而之前的API因为与DB表一一对应（抽象表时不考虑角色权限问题，因此忽略了列），且就像前文中所说API在增加字段时完全由前端人员驱动而整体考虑不足。所以，系统解决方案应为，对当前的这几个存在问题的API按照角色权限的调用，进一步归类，归类后按照类别增加关联DB表中某些列字段的返回。这个方案的修改成本最小，且DB表的抽象本来也隐含有一些权限控制，只是相对产品交互就要差一些，所以仍然可以保持API在未来不会有大的变迁。</p>
 <p>再回过头来看看API的变迁，其实把一个产品从小开始往大了养，每个阶段的侧重点都应该是完全不同的。创业团队一定要勇于试错，在试错中磨合，提升团队和个人的战斗力。就像人月神话中所说，大公司的人海战术是无法跨跃试错阶段的，这也是创业公司的机会所在。而且，技术是服务于业务的，技术人员从这个角度出发，去看待项目管理，去看待产品发展，个人会有非常大的成长。所以从招聘角度，大公司从一开始就伴随公司成长的那批人，才是创业公司最需要的，他们清楚不同阶段应该采用什么策略。反之平台光环下后期加入的未经历过初始阶段的人才，一旦失去了大平台就容易无所适从，因为大平台的玩法只适合大平台，这限制了个人的成长。</p>
-<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#x68;&#x72;&#64;&#x7a;&#108;&#100;&#x64;&#97;&#116;&#x61;&#46;&#x63;&#110;">&#x68;&#x72;&#64;&#x7a;&#108;&#100;&#x64;&#97;&#116;&#x61;&#46;&#x63;&#110;</a>。</p>
+<p>我们公司是一家致力于改变中国建筑业的互联网公司，正在快速发展中，因为后发优势使用了诸多成熟的新技术，如docker微服务、大前端、h5 webapp、websocket协议、持续集成、一键部署、基于python的快速开发后台、人脸识别、室内外LBS服务、自动化测试、NOSQL分布式数据库、即将开展的数据挖掘，欢迎有志于创业的技术人加入我们！联系邮箱：<a href="mailto:&#x68;&#114;&#x40;&#x7a;&#x6c;&#100;&#100;&#x61;&#x74;&#x61;&#46;&#x63;&#x6e;">&#x68;&#114;&#x40;&#x7a;&#x6c;&#100;&#100;&#x61;&#x74;&#x61;&#46;&#x63;&#x6e;</a>。</p>
 
     </div>
 
@@ -310,7 +310,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/" title="API的接口变迁">https://www.taohui.tech/2017/05/29/api的接口变迁/</a>
+    <a href="https://www.taohui.pub/2017/05/29/api%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%8F%98%E8%BF%81/" title="API的接口变迁">https://www.taohui.pub/2017/05/29/api的接口变迁/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -418,7 +418,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -457,6 +457,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -467,9 +470,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -505,13 +505,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

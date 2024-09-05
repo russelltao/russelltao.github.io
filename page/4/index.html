@@ -20,19 +20,19 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta property="og:type" content="website">
 <meta property="og:title" content="个人笔记">
-<meta property="og:url" content="https://www.taohui.tech/page/4/index.html">
+<meta property="og:url" content="https://www.taohui.pub/page/4/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="陶辉,网络协议,Nginx,深入理解,极客时间,抓包,性能,分布式,Linux,TCP,HTTP,高并发">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://www.taohui.tech/page/4/">
+<link rel="canonical" href="https://www.taohui.pub/page/4/">
 
 
 <script id="page-configurations">
@@ -194,7 +194,107 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/22/k8s/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" class="post-title-link" itemprop="url">从通用规则中学习Nginx模块的定制指令</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-23 15:14:21" itemprop="dateCreated datePublished" datetime="2020-12-23T15:14:21+08:00">2020-12-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="https://www.taohui.pub/2020/12/22/%e5%a6%82%e4%bd%95configure%e5%ae%9a%e5%88%b6%e5%87%ba%e5%b1%9e%e4%ba%8e%e4%bd%a0%e7%9a%84nginx%ef%bc%9f/">上一篇文章</a>中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。</p>
+<p>每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，那么掌握了它，就能快速读懂生产环境复杂的nginx.conf文件。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/22/k8s/%E5%8D%81%E5%88%86%E9%92%9F%E6%90%AD%E5%BB%BA%E5%A5%BDk8s%E9%9B%86%E7%BE%A4/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -293,7 +393,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -332,11 +432,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
                 </span>
             </span>
 
@@ -365,7 +465,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>上一篇<a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/17/10%e5%88%86%e9%92%9f%e5%bf%ab%e9%80%9f%e8%ae%a4%e8%af%86nginx/">文章</a>中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。 </p>
+          <p>上一篇<a href="https://www.taohui.pub/2020/12/17/10%e5%88%86%e9%92%9f%e5%bf%ab%e9%80%9f%e8%ae%a4%e8%af%86nginx/">文章</a>中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。 </p>
 <p>当你用yum或者apt-get命令安装、启动Nginx后，通过nginx -t命令你会发现，nginx.conf配置文件可能在/etc/目录中。而运行基于源码安装的Nginx时，nginx.conf文件又可能位于/usr/local/nginx/conf/目录，运行OpenResty时， nginx.conf又被放在了/usr/local/openresty/nginx/conf/目录。<strong>这些奇怪的现象都源于编译Nginx前，configure脚本设置的–prefix或者–conf-path选项</strong>。 </p>
           <!--noindex-->
             <div class="post-button">
@@ -393,7 +493,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/17/nginx/10%E5%88%86%E9%92%9F%E5%BF%AB%E9%80%9F%E8%AE%A4%E8%AF%86nginx/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -495,7 +595,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -534,7 +634,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
@@ -542,7 +642,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
                 </span>
             </span>
 
@@ -575,104 +675,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/12/14/nginx/%E9%83%BD%E6%98%AF%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88nginx%E7%9A%84%E6%80%A7%E8%83%BD%E8%BF%9C%E9%AB%98%E4%BA%8Eredis%EF%BC%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/taohui_avatar.JPG">
-      <meta itemprop="name" content="陶辉">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/" class="post-title-link" itemprop="url">在这里，NGINX 创始人 Igor Sysoev 将亲述 NGINX 的诞生史</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-04-30 08:42:13" itemprop="dateCreated datePublished" datetime="2020-04-30T08:42:13+08:00">2020-04-30</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-06-22 11:17:59" itemprop="dateModified" datetime="2022-06-22T11:17:59+08:00">2022-06-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>2020 年 5 月 20 日，一场 NGINX 在国内的盛会、一个所有 NGINX 用户 &amp; 爱好者朝圣的最佳场所，F5 线上技术峰会 - NGINX 专场将以线上直播的形式面向所有开发者召开。届时各位 NGINX 开发者心目中的偶像 NGINX 创始人 Igor Sysoev 以及国内 NGINX 技术专家陶辉老师将空降大会现场，从 NGXIN 创始人的成长经历出发，帮助每一位开发者来重新理解 NGINX 的前世今生。  </p>
-</blockquote>
-<p>如果想让产品在支持高并发请求的同时保持高效的服务，NGINX 可能是最好的选择。这并非一句玩笑话，而是经过全球技术人多年来技术实践后所得出的结论。NGINX 就像一个万能药，在任何存在性能需求的场合都能找到它的身影，它可以在百万并发链接中实现高吞吐量的 Web 服务。然而即便是这样，NGINX 却至今缺少一个能够将所有 NGINX 用户聚集起来的官方场所，这对于像这样一个如此受欢迎的开源产品来说是很不常见的，而这也是此次大会之下的重头戏之一。扫描下图二维码或点击阅读原文链接即可免费报名！</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/04/30/nginx/%E5%9C%A8%E8%BF%99%E9%87%8C%EF%BC%8Cnginx-%E5%88%9B%E5%A7%8B%E4%BA%BA-igor-sysoev-%E5%B0%86%E4%BA%B2%E8%BF%B0-nginx-%E7%9A%84%E8%AF%9E%E7%94%9F%E5%8F%B2/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -763,7 +765,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -802,6 +804,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -812,9 +817,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -850,13 +852,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

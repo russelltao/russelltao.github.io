@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
+  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文首发于《中国金融电脑》第421期，今日头条地址链接。 随着信息技术的飞速发展，企业对于网络的依赖程度日益加深。传统的负载均衡技术曾经是企业数据中心的“守护神”，如今却在应对现代应用的快速交付、成本效益和自动化运维方面面临前所未有的挑战。分布式负载均衡技术可为企业网络带来革命性的改变。本文将深入分析从技术层面实现分布式负载均衡的关键要素，从弹性地址、“N+1”高可用系统到数据面与管理面的通信，介">
+<meta property="og:type" content="article">
+<meta property="og:title" content="构建弹性网络之分布式负载均衡技术（二）：技术与实现">
+<meta property="og:url" content="https://www.taohui.pub/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="本文首发于《中国金融电脑》第421期，今日头条地址链接。 随着信息技术的飞速发展，企业对于网络的依赖程度日益加深。传统的负载均衡技术曾经是企业数据中心的“守护神”，如今却在应对现代应用的快速交付、成本效益和自动化运维方面面临前所未有的挑战。分布式负载均衡技术可为企业网络带来革命性的改变。本文将深入分析从技术层面实现分布式负载均衡的关键要素，从弹性地址、“N+1”高可用系统到数据面与管理面的通信，介">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/传统负载均衡设备双机主从架构.png">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡架构.png">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/传统负载均衡集群规模上限带来的负载分层现象.png">
+<meta property="article:published_time" content="2024-08-01T06:47:43.000Z">
+<meta property="article:modified_time" content="2024-09-05T05:53:15.310Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="负载均衡">
+<meta property="article:tag" content="OSI">
+<meta property="article:tag" content="分布式负载">
+<meta property="article:tag" content="DevOps">
+<meta property="article:tag" content="可观测性">
+<meta property="article:tag" content="弹性">
+<meta property="article:tag" content="TCO">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.pub/images/负载均衡/传统负载均衡设备双机主从架构.png">
+
+<link rel="canonical" href="https://www.taohui.pub/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>构建弹性网络之分布式负载均衡技术（二）：技术与实现 | 个人笔记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          构建弹性网络之分布式负载均衡技术（二）：技术与实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-08-01 14:47:43" itemprop="dateCreated datePublished" datetime="2024-08-01T14:47:43+08:00">2024-08-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-09-05 13:53:15" itemprop="dateModified" datetime="2024-09-05T13:53:15+08:00">2024-09-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AE%BE%E5%A4%87%E5%8F%8C%E6%9C%BA%E4%B8%BB%E4%BB%8E%E6%9E%B6%E6%9E%84.png" itemprop="contentUrl">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%9E%B6%E6%9E%84.png" itemprop="contentUrl">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E9%9B%86%E7%BE%A4%E8%A7%84%E6%A8%A1%E4%B8%8A%E9%99%90%E5%B8%A6%E6%9D%A5%E7%9A%84%E8%B4%9F%E8%BD%BD%E5%88%86%E5%B1%82%E7%8E%B0%E8%B1%A1.png" itemprop="contentUrl">
+        </div>
+        <p>本文首发于《中国金融电脑》第421期，今日头条<a target="_blank" rel="noopener" href="https://www.toutiao.com/article/7410992908502827532/?app=news_article&timestamp=1725509891&use_new_style=1&req_id=2024090512181010B5EE9493AEB4704350&group_id=7410992908502827532&wxshare_count=1&tt_from=weixin&utm_source=weixin&utm_medium=toutiao_android&utm_campaign=client_share&share_token=291ca5eb-cb57-4b16-8ab2-f78a1a03d44c&source=m_redirect&wid=1725515434781">地址链接</a>。</p>
+<p>随着信息技术的飞速发展，企业对于网络的依赖程度日益加深。传统的负载均衡技术曾经是企业数据中心的“守护神”，如今却在应对现代应用的快速交付、成本效益和自动化运维方面面临前所未有的挑战。分布式负载均衡技术可为企业网络带来革命性的改变。本文将深入分析从技术层面实现分布式负载均衡的关键要素，从弹性地址、“N+1”高可用系统到数据面与管理面的通信，介绍分布式负载均衡技术如何克服传统负载均衡技术的局限性，以确保网络的高性能和高可用性。</p>
+<span id="more"></span>
+<h1 id="一、二层广播域弹性地址的实现"><a href="#一、二层广播域弹性地址的实现" class="headerlink" title="一、二层广播域弹性地址的实现"></a>一、二层广播域弹性地址的实现</h1><p>传统负载均衡设备诞生于一个对资源成本敏感度较低、对稳定性有一定要求，但尚未普遍面临大规模并发和动态扩展需求的时代。所以，传统负载均衡设备采用双机主从架构的设计思路，仅提供基本的故障转移能力，控制面与数据面没有分离，设备也不会从组织管理层面开放给各个业务团队。传统负载均衡设备通常基于图1所示的架构实现。</p>
+<h2 id="1-传统负载均衡架构的主要技术细节"><a href="#1-传统负载均衡架构的主要技术细节" class="headerlink" title="1.传统负载均衡架构的主要技术细节"></a>1.传统负载均衡架构的主要技术细节</h2><p>一是两台主机通过独立的心跳线互联，基于类似虚拟路由冗余协议（Virtual Router Redundancy Protocol,VRRP）监控状态、选举主从节点。<br>二是两台设备必须在一个广播域内，由选出的主设备广播免费ARP（Gratuitous ARP,GARP）消息，从设备则不回应ARP或者ICMP查询，这种实现方案依赖于交换机维护的虚拟IP（Virtual IP,VIP）与MAC地址的映射表。<br><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AE%BE%E5%A4%87%E5%8F%8C%E6%9C%BA%E4%B8%BB%E4%BB%8E%E6%9E%B6%E6%9E%84.png" alt="传统负载均衡设备双机主从架构"></p>
+<h2 id="2-传统双机主从架构存在的问题"><a href="#2-传统双机主从架构存在的问题" class="headerlink" title="2.传统双机主从架构存在的问题"></a>2.传统双机主从架构存在的问题</h2><ul>
+<li><p>（1）资源利用率低<br>VIP在局域网内只能对应主设备，从设备对VIP而言处于完全闲置状态，所以资源利用率较低。</p>
+</li>
+<li><p>（2）基础容量上限低<br>一旦虚拟服务消耗的带宽、并发连接数等超过主设备上限，必须要通过升级硬件或者迁移设备才能解决问题。</p>
+</li>
+<li><p>（3）七层负载均衡功能需要分离<br>虽然传统负载均衡设备支持完备的OSI七层协议，然而，正则表达式匹配、ASCII码压缩等行为都很消耗CPU资源，因此，运维人员在双机CPU核心数极为有限的情况下，只能将消耗CPU的七层API网关从负载均衡设备集群上移除，将网络结构从一层分离为两层（如下图所示），从而提升了运维复杂度，增加了请求时延。<br><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E9%9B%86%E7%BE%A4%E8%A7%84%E6%A8%A1%E4%B8%8A%E9%99%90%E5%B8%A6%E6%9D%A5%E7%9A%84%E8%B4%9F%E8%BD%BD%E5%88%86%E5%B1%82%E7%8E%B0%E8%B1%A1.png" alt="传统负载均衡集群规模上限带来的负载分层现象"></p>
+</li>
+<li><p>（4）容错能力有限<br>如果两台负载均衡设备因为某种原因停止通信，就可能发生所谓的“脑裂”（Split-brain）现象。在这种情况下，每台设备都认为自己是主设备，并且独立地处理请求，导致数据不一致。当双机集群最终恢复通信时，由于在脑裂期间两台设备可能已经独立地进行了状态更新或数据写入，这种数据不一致的问题无法通过自动化方案来解决，需要人工干预进行数据的同步和一致性校验，以确保系统的完整性和可靠性。这与当下的自动化运维DevOps方案格格不入。</p>
+</li>
+<li><p>（5）网络部署结构限制性大<br>如果两台负载均衡设备分属不同的广播域，就无法构成高可用集群。</p>
+</li>
+</ul>
+<h2 id="3-一主多辅架构的实现技术"><a href="#3-一主多辅架构的实现技术" class="headerlink" title="3.一主多辅架构的实现技术"></a>3.一主多辅架构的实现技术</h2><p>早期网络规模有限时，网络缺乏弹性对其并没有太大影响，但在当下网络规模庞大的情况下，缺乏弹性会极大影响资源与运维效率。双机主从架构存在的上述问题，其根源在于VIP实现的技术局限性，阻碍了服务的弹性扩展和高可用性的最大化。为突破这些限制，分布式负载均衡系统分离了控制面与数据面，使其各自实现了“多活”VIP技术。<br>数据面分别在OSI七层协议模型的第二层（数据链路层）和第三层（网络层）实现了“多活”VIP地址。为方便区分控制面与数据面，后续涉及分布式负载均衡架构时，其数据面的设备将称为“转发引擎”，管理面的设备称为“管理节点”。分布式负载均衡架构如下图所示。<br><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%9E%B6%E6%9E%84.png" alt="分布式负载均衡架构"></p>
+<p>在二层广播域内，分布式负载均衡架构采用了“一主多辅”架构，在处理以下场景时，该架构能够充分利用多设备的处理能力优化资源分配，即入流量小而出流量大的业务、消耗大量CPU资源的业务（如SSL卸载、实时数据压缩等），以及并发连接数超出单个转发引擎内存的限制时。一主多辅架构的实现技术如下：<br>一是主引擎通过向局域网内的交换机广播GARP报文，声明自己是VIP的拥有者，这样所有流向该VIP的流量都会被交换机定向到主转发引擎。<br>二是主引擎依据TCP/IP五元组（源IP、源端口、目的IP、目的端口和协议类型）对流量执行哈希运算，以确保来自同一客户端的连接能够被均匀且持续地分配到自身及辅转发引擎上。<br>需要强调的是，一旦连接建立，辅转发引擎的响应流量无需再经过主引擎返回，减少了网络延迟和主转发引擎的处理负担，提高了整体的响应速度和系统吞吐量。这种设计特别适合出流量大、大量消耗CPU和磁盘等资源、对响应时间敏感的静态资源服务，可有效缓解主从架构下的性能瓶颈问题，提升系统的扩展性和可用性。<br>一主多辅架构在容灾、故障恢复的平滑度上也优于主从架构。以一主三辅架构为例，此时四台转发引擎共同服务于一个VIP，当一台转发引擎发生故障时，其对整体服务的影响被限定在25%左右，即使主转发引擎发生故障，上述结论仍然成立。由于每台辅转发引擎都独立维护着连接状态表，系统可以从集群空闲转发引擎中选出新的主转发引擎，其可以通过整合连接状态表无缝接管服务，确保除了原主转发引擎处理的那部分流量受到影响外，其余流量可以被继续处理。相比主从模式中主设备故障即导致服务完全中断的情况，一主多辅架构有效缩短了故障带来的服务中断时间，缩小了服务中断范围，提升了用户体验和业务连续性。</p>
+<h1 id="二、三层网络层弹性地址的实现"><a href="#二、三层网络层弹性地址的实现" class="headerlink" title="二、三层网络层弹性地址的实现"></a>二、三层网络层弹性地址的实现</h1><p>一主多辅架构只能提升二层广播域内的性能和容灾能力，当面对更大规模的集群部署或复杂的网络架构时，仅仅局限于二层的技术无法满足业务的弹性需求，此时可以通过等价路由（Equal-Cost Multi-Path,ECMP）技术在三层网络层实现“多活”VIP。ECMP技术不仅可扩展集群的地理覆盖范围，还突破了单一广播域的容量天花板，在真正意义上实现了大规模分布式系统的无边界扩展。</p>
+<h2 id="1-ECMP技术的应用"><a href="#1-ECMP技术的应用" class="headerlink" title="1.ECMP技术的应用"></a>1.ECMP技术的应用</h2><p>ECMP的工作原理是基于路由协议（如BGP、OSPF）在多台设备之间分配等价的多条路径。当多条路径成本相同时，网络设备（如路由器或三层交换机）会利用ECMP算法自动将流入的流量按照预设规则均匀地分发到这些路径上。这样一来，每条路径上的转发引擎都可以作为主转发引擎同时处理流入的流量，并消除了单点故障和容量上限的限制。<br>图3中三层VIP是怎么实现的呢？每台转发引擎都会配置相同的VIP地址，并通过路由协议宣告此地址可达，路由器会根据ECMP算法，将去往这个VIP的流量均衡地分发到转发引擎上。在实际的应用中， ECMP算法通常由基于TCP/IP五元组的哈希算法实现，这样的设计具有以下四方面的显著优势。</p>
+<ul>
+<li>一是会话保持。基于TCP/IP五元组的哈希算法能够确保属于同一会话的数据包始终被同一路径处理，这对于维持TCP连接的连贯性和避免乱序至关重要。</li>
+<li>二是负载均衡。通过将TCP/IP五元组映射到不同的路径，运用哈希算法能够较为均匀地分散流量，实现有效的负载均衡，避免某条路径过载。</li>
+<li>三是扩展性与灵活性。随着网络规模的增长，只需增加新的路径并确保其成本等价，即可无缝扩展网络处理能力，无需调整现有网络配置。</li>
+<li>四是故障恢复。当某条路径失效时，原本通过该路径的数据包会根据哈希规则被重新分配到其他有效路径上，从而快速实现故障绕行和网络恢复。<br>相对于一主多辅方案，ECMP方案允许每台设备独立处理流量，无需通过单一主设备中转，减少了网络延迟，提升了数据处理效率。由于ECMP技术无法应用在广播域内，所以需要将二层广播域的一主多辅架构与三层网络层的ECMP技术相结合，才能为弹性VIP地址的实现提供完整的技术支撑，在不同的网络层次上实现负载均衡和故障转移。<h2 id="2-扩容和迁移策略"><a href="#2-扩容和迁移策略" class="headerlink" title="2.扩容和迁移策略"></a>2.扩容和迁移策略</h2>当VIP地址足够灵活后，就可以通过扩容、缩容、迁移实现虚拟服务的弹性。例如，当监控系统检测到某个转发引擎的CPU使用率在最近15分钟内持续超过85%，则表明该转发引擎可能需要更强的处理能力来应对当前的负载，这时系统管理员或自动化工具可以采取扩容或迁移两种策略来提升处理能力。<br>扩容策略是指在现有的转发引擎上纵向增加计算资源（如修改虚拟机的配置），或者横向添加新的转发引擎实例来分担负载，其中新实例既可以是所属转发引擎集群中的空闲实例，也可以直接对接IaaS层的OpenStack、Kubernetes Master以分配新的转发引擎实例。迁移策略则是指将转发引擎上的虚拟服务动态灰度地迁移到其他转发引擎上。<br>选择扩容还是迁移策略，要看这台转发引擎上有没有消耗CPU资源的“大户”。为此，需要监控转发引擎上每个虚拟服务的资源消耗指标，如每秒处理报文数（Packets Per Second,PPS）。如果有1个虚拟服务的PPS占比超过70%，表明迁移很难解决问题，需要为该虚拟服务扩容才可以更有效地分配资源。反之，意味着多个虚拟服务共同导致了CPU的高负载，这时迁移策略就显得更为合适。通过将其中一个虚拟服务迁移到其他空闲的转发引擎上，可以减轻当前转发引擎的负担，优化资源分配。如果虚拟服务在多个转发引擎上的CPU使用率都相对较低，则可能意味着当前的资源配置超出了需求。在这种情况下，可以采取缩容措施，自动减少转发引擎的实例数量，从而节省资源、降低成本。弹性虚拟服务的扩容、迁移策略如下图所示。<br><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%BC%B9%E6%80%A7%E8%99%9A%E6%8B%9F%E6%9C%8D%E5%8A%A1%E7%9A%84%E6%89%A9%E5%AE%B9%E3%80%81%E8%BF%81%E7%A7%BB%E7%AD%96%E7%95%A5%E7%A4%BA%E6%84%8F.png" alt="弹性虚拟服务的扩容、迁移策略示意"></li>
+</ul>
+<h1 id="三、高可用管理面的实现"><a href="#三、高可用管理面的实现" class="headerlink" title="三、高可用管理面的实现"></a>三、高可用管理面的实现</h1><p>当转发引擎宕机后，需要将其上的虚拟服务迁移到另一台正常运行的转发引擎，为了确保服务的连续性和一致性，需要满足以下两个前提条件。<br>首先，数据面必须保持无状态，这意味着每个转发引擎在处理数据包时，不应该依赖于任何持久化的状态信息。转发引擎应该专注于数据的快速转发，独立地处理流量，不需要访问存储在其他引擎上的状态信息。这样不仅可以提高转发效率，也简化了故障恢复过程，即使某个转发引擎发生故障，其他引擎也能够无缝地接管服务。<br>其次，管理面必须具备高可用性。这意味着管理组件需要能够容忍故障，并且能够在发生故障时快速恢复。由于传统负载均衡设备的双机集群无法解决脑裂问题，一台设备宕机后集群的写入能力是无法保障的。为了解决这一问题，需要使用“N+1”高可用模型，保持至少1个冗余节点，在1个管理节点宕机时，管理面仍然能够保持服务可读可写。因此，至少要具备3个管理节点，才能在集群分成两个独立组时，通过少数服从多数的投票策略，使集群仍然可以正常提供服务。<br>分布式系统的CAP理论（如图5所示）指出，系统在任何时刻只能同时满足一致性（Consistency）、可用性（Availability）和分区容错性（Partition Tolerance）中的两个性能。这意味着需要存储数据的管理集群只能优先选择分区容错性和数据强一致性，而要牺牲部分可用性。<br><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E5%AF%B9%E4%B8%80%E8%87%B4%E6%80%A7%E3%80%81%E5%8F%AF%E7%94%A8%E6%80%A7%E3%80%81%E5%88%86%E5%8C%BA%E5%AE%B9%E9%94%99%E6%80%A7%E7%9A%84%E6%9D%83%E8%A1%A1.png" alt="分布式系统对一致性、可用性、分区容错性的权衡"></p>
+<p>分布式负载管理面的核心功能是协调和控制，而不是处理高流量的业务数据，因此可以降低其对性能的要求。管理面主要是通过API与外部系统或转发引擎进行通信，这些操作对实时性的要求较低。<br>对于需要高度一致性的决策过程，可以采用Paxos之类的共识算法。这些算法通过两个阶段的提交机制来确保数据的持久化和一致性。在第一阶段，提案（数据变更）被提出并由集群中的大多数成员进行投票；在第二阶段，如果提案获得多数票，就会被提交并应用到所有成员的状态中。这样的机制确保了部分节点宕机时整个系统仍然能够就数据变更达成一致，从而实现系统的高可靠性。此外，Raft协议改进了Paxos算法，通过设计简单、直观的Leader选举、线性一致的日志复制机制，降低了数据变更时的冲突概率，在确保数据强一致性的同时提升了系统性能，是管理面的首选算法之一。</p>
+<h1 id="四、管理面与数据面的通信"><a href="#四、管理面与数据面的通信" class="headerlink" title="四、管理面与数据面的通信"></a>四、管理面与数据面的通信</h1><p>要实现管理面与数据面之间的通信，必须解决以下四个问题。</p>
+<ol>
+<li>   高并发通信需求<br>由于数据面的集群规模可能非常庞大，管理节点需要与转发引擎集群维持并发连接，同时，七层负载的功能还需要快速迭代，所以采用灵活的协程机制可以确保通信的高效和稳定。</li>
+<li>   复杂网络结构下的通信安全<br>由于集中式的管理面需要跨越IDC、云与所有转发引擎通信，所以除网络环境的安全之外，管理面与数据面通信必须充分考虑安全认证、加密传输等因素，以保障数据传输的安全性和可靠性。</li>
+<li>   多租户管理<br>分布式负载均衡系统同时服务于众多业务团队，这就要求系统能够通过多租户机制来隔离不同团队的管理上下文。因此，分布式负载均衡设备上配置的所有元素都需要添加租户标签，以租户为粒度管理虚拟服务及其他配置元素。<br>在数据面上，租户既可以通过独立部署各自的转发引擎集群实现服务隔离，也可以选择共享转发引擎资源，以提高资源利用率和降低成本，这适合规模较小或成本敏感型的应用，可在保障一定隔离性的同时优化资源分配和效率。<br>由于分布式负载系统涉及OSI七层协议中从物理层到应用层的网络资源，因此还必须通过定义具有不同权限的角色来控制租户内部以及跨租户的资源访问。</li>
+<li>   遥测（Telemetry）数据上报<br>为了有效管理和分析大规模数据面集群产生的遥测数据，数据上报策略应明确将数据划分为以下三类。<br>一是实时上报数据。这类数据具备转发引擎的健康状态变化等关键指标，它们对于即时监控系统状态至关重要，需要实时或近实时地上报，以便快速响应可能发生的任何问题。<br>二是周期上报数据。这类数据包括CPU负载、内存使用率、网络流量等定期收集的性能指标数据，通常按照一定的时间间隔上报，用于长期的性能监控和趋势分析。<br>三是事件触发上报数据。这类数据的上报是由特定事件触发的，例如管理员对某个虚拟服务执行抓包操作，或者API调用请求拉取用户访问日志以分析故障原因。事件触发的数据上报通常按需进行，与特定的用户行为或系统事件相关。<br>通过这种分类方法，可以确保监控系统既能够快速响应紧急情况，又能够有效地进行长期性能分析，同时还能够灵活地处理由特定事件触发的数据收集需求。<br>另外，由于一台虚拟服务由多台转发引擎共同处理流量，因此需对这些遥测数据进行标签化以及结构化分层，以便进行横跨复杂网络的故障分析，这对于维护大规模分布式系统的稳定性和性能至关重要。<br>综上所述，管理面与数据面之间的通信需要进行系统化的全面设计，综合考虑并发处理能力、网络安全、多租户支持以及跨网络服务的监控需求，以确保整个集群的高效、安全和稳定运行。</li>
+</ol>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文首先从OSI模型的数据链路层和网络层，通过”一主多辅”和ECMP技术实现了弹性虚拟服务，有效支持了大规模网络的并发处理和动态扩展。为了减少容灾场景的影响范围，介绍了传输层的会话连接表，提升了故障恢复的效率。对于七层负载在应用层的CPU消耗问题，介绍了自动缩扩容与迁移技术，以应对业务需求的波动，避免了四、七层负载集群的分层。<br>在数据面外，文章还讨论了通过共识算法实现高可用的管理面集群，以及数据面如何与管理面通讯，才能保障不同租户产生的大量遥测数据，能够在不影响业务的情况下，为监控、分析和管理大规模分布式系统提供高效、安全、稳定的支持。<br>本文为分布式负载均衡技术系列的第二篇，下一篇将通过具体的案例进一步分析这些技术在实际应用中的表现和效果。通过这一系列的深入剖析，我们期望读者能够获得必要的知识，以评估和实施分布式负载均衡解决方案，从而提升自身网络的弹性和响应能力，满足不断变化的业务需求。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2024\07\18\分布式负载均衡\构建弹性网络之分布式负载均衡技术-一-：特点与功能\" rel="bookmark">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2021\02\08\nginx\深入剖析Nginx负载均衡算法\" rel="bookmark">深入剖析Nginx负载均衡算法</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.pub/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="构建弹性网络之分布式负载均衡技术（二）：技术与实现">https://www.taohui.pub/2024/08/01/分布式负载均衡/构建弹性网络之分布式负载均衡技术（二）：技术与实现/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/" rel="tag"># 负载均衡</a>
+              <a href="/tags/OSI/" rel="tag"># OSI</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD/" rel="tag"># 分布式负载</a>
+              <a href="/tags/DevOps/" rel="tag"># DevOps</a>
+              <a href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag"># 可观测性</a>
+              <a href="/tags/%E5%BC%B9%E6%80%A7/" rel="tag"># 弹性</a>
+              <a href="/tags/TCO/" rel="tag"># TCO</a>
+          </div>
+
+        
+  <div class="post-widgets">
+    <div class="wp_rating">
+      <div id="wpac-rating"></div>
+    </div>
+  </div>
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" rel="prev" title="构建弹性网络之分布式负载均衡技术(一)：特点与功能">
+      <i class="fa fa-chevron-left"></i> 构建弹性网络之分布式负载均衡技术(一)：特点与功能
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%BA%8C%E5%B1%82%E5%B9%BF%E6%92%AD%E5%9F%9F%E5%BC%B9%E6%80%A7%E5%9C%B0%E5%9D%80%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.</span> <span class="nav-text">一、二层广播域弹性地址的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%9E%B6%E6%9E%84%E7%9A%84%E4%B8%BB%E8%A6%81%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82"><span class="nav-number">1.1.</span> <span class="nav-text">1.传统负载均衡架构的主要技术细节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BC%A0%E7%BB%9F%E5%8F%8C%E6%9C%BA%E4%B8%BB%E4%BB%8E%E6%9E%B6%E6%9E%84%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">2.传统双机主从架构存在的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E4%B8%80%E4%B8%BB%E5%A4%9A%E8%BE%85%E6%9E%B6%E6%9E%84%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%8A%80%E6%9C%AF"><span class="nav-number">1.3.</span> <span class="nav-text">3.一主多辅架构的实现技术</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E4%B8%89%E5%B1%82%E7%BD%91%E7%BB%9C%E5%B1%82%E5%BC%B9%E6%80%A7%E5%9C%B0%E5%9D%80%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">二、三层网络层弹性地址的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-ECMP%E6%8A%80%E6%9C%AF%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">1.ECMP技术的应用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%89%A9%E5%AE%B9%E5%92%8C%E8%BF%81%E7%A7%BB%E7%AD%96%E7%95%A5"><span class="nav-number">2.2.</span> <span class="nav-text">2.扩容和迁移策略</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%AE%A1%E7%90%86%E9%9D%A2%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">三、高可用管理面的实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%AE%A1%E7%90%86%E9%9D%A2%E4%B8%8E%E6%95%B0%E6%8D%AE%E9%9D%A2%E7%9A%84%E9%80%9A%E4%BF%A1"><span class="nav-number">4.</span> <span class="nav-text">四、管理面与数据面的通信</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">77</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">310</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/06/11/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E8%BF%9E%E6%8E%A5%E6%8C%91%E6%88%98%EF%BC%9Awrk%E7%9A%84%E9%AB%98%E5%B9%B6%E5%8F%91%E6%B5%8B%E8%AF%95%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" title="2024&#x2F;06&#x2F;11&#x2F;网络协议&#x2F;百万并发连接挑战：wrk的高并发测试深度解析&#x2F;">百万并发连接挑战：wrk的高并发测试深度解析</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/09/13/nginx/Nginx%E9%99%90%E9%80%9F%E6%8A%80%E6%9C%AF%E8%A7%A3%E6%9E%90%EF%BC%9A%E4%BB%8E%E5%AD%97%E8%8A%82%E5%88%B0%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B2%BE%E7%A1%AE%E6%8E%A7%E5%88%B6/" title="2023&#x2F;09&#x2F;13&#x2F;nginx&#x2F;Nginx限速技术解析：从字节到请求的精确控制&#x2F;">Nginx的字节级限速原理</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">368k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:35</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="//fastly.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-ribbon.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+  <script>
+  if (CONFIG.page.isPost) {
+    wpac_init = window.wpac_init || [];
+    wpac_init.push({
+      widget: 'Rating',
+      id    : 29124,
+      el    : 'wpac-rating',
+      color : 'fc6423'
+    });
+    (function() {
+      if ('WIDGETPACK_LOADED' in window) return;
+      WIDGETPACK_LOADED = true;
+      var mc = document.createElement('script');
+      mc.type = 'text/javascript';
+      mc.async = true;
+      mc.src = '//embed.widgetpack.com/widget.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(mc, s.nextSibling);
+    })();
+  }
+  </script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

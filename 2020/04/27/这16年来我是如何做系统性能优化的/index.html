@@ -20,19 +20,19 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="2019年下半年，极客时间总编辑郭蕾从北京飞来杭州，问我有什么特别想分享给大家的技术。我回顾了下自己这16年来的工作经历，发现无论在华为、腾讯、思科、阿里，我都在与海量数据打交道，这个过程中对性能优化有许多思考，但一直没有系统的写下来。于是我就跟郭蕾说，那就针对分布式系统，讲讲我心中的性能优化方法论吧。这就是《系统性能调优必知必会》这门课的诞生过程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="这16年来我是如何做系统性能优化的">
-<meta property="og:url" content="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="2019年下半年，极客时间总编辑郭蕾从北京飞来杭州，问我有什么特别想分享给大家的技术。我回顾了下自己这16年来的工作经历，发现无论在华为、腾讯、思科、阿里，我都在与海量数据打交道，这个过程中对性能优化有许多思考，但一直没有系统的写下来。于是我就跟郭蕾说，那就针对分布式系统，讲讲我心中的性能优化方法论吧。这就是《系统性能调优必知必会》这门课的诞生过程。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/2020/04/%E6%B5%B7%E6%8A%A5.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2020/04/%E8%84%91%E5%9B%BE.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2020/04/%E7%9B%AE%E5%BD%95.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2020/04/%E6%B5%B7%E6%8A%A5.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2020/04/%E8%84%91%E5%9B%BE.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2020/04/%E7%9B%AE%E5%BD%95.jpg">
 <meta property="article:published_time" content="2020-04-27T10:47:58.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.914Z">
 <meta property="article:author" content="陶辉">
@@ -52,9 +52,9 @@
 <meta property="article:tag" content="时间复杂度">
 <meta property="article:tag" content="算法复杂度">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/2020/04/%E6%B5%B7%E6%8A%A5.jpg">
+<meta name="twitter:image" content="https://www.taohui.pub/2020/04/%E6%B5%B7%E6%8A%A5.jpg">
 
-<link rel="canonical" href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
+<link rel="canonical" href="https://www.taohui.pub/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
 
 
 <script id="page-configurations">
@@ -217,7 +217,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -255,10 +255,6 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
                 </span>
                   ，
@@ -268,6 +264,10 @@
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/%E6%8A%80%E6%9C%AF%E4%BA%BA%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">技术人生</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
@@ -308,7 +308,7 @@
 <li>  再比如，你在面试互联网大厂时，面试官总会问许多超出工作范围的性能问题，为什么会这样呢？当然你可以感慨甚至抱怨，这不就是“面试造火箭，入职拧螺丝”嘛？但从面试官的角度来看，你会发现<strong>性能就是最好的面试题，它从算法到架构，既考察了候选人的潜力，也能考察工程能力。</strong>如果候选人具备系统的性能优化方法论，那么无论在架构设计还是应用模块开发上，他的代码可扩展性都会更好，消耗的计算力、带宽和磁盘等 IT 资源也更少，也自然更容易被面试官青睐。</li>
 </ul>
 <p>因此，不论是为了满足业务发展的需求，还是在面试、晋升场景中有更好的表现，如果你希望成为高薪高效的 10X 程序员，那么，系统地学习性能优化就是一门必修课。我先把课程海报分享在这，再跟你说说这门课解决的具体问题。</p>
-<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e6%b5%b7%e6%8a%a5/"><img src="/2020/04/%E6%B5%B7%E6%8A%A5.jpg"></a></p>
+<p><a href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e6%b5%b7%e6%8a%a5/"><img src="/2020/04/%E6%B5%B7%E6%8A%A5.jpg"></a></p>
 <p>那么，系统性能优化该怎么学呢？</p>
 <p>当然是看需求。当下的后端几乎都是<strong>分布式系统</strong>，那么对应的，我们面对的课题也就是<strong>如何全面提升复杂集群的性能</strong>。但当你想要学习分布式系统优化的时候，你却会发现，能找到的资料实在是太少了。</p>
 <p>如果你在 Google 上搜索如何优化分布式系统的性能，大概只能找到孤零零的几篇文章，相关的多数书籍也都在讨论容错、事务、流控等概念的实现，却很少有文章介绍如何优化整个分布式系统的性能。</p>
@@ -318,7 +318,7 @@
 <p>工作数年，我始终与性能相伴，目前致力于 Linux 下高性能服务器的开发，以及分布式环境下海量数据存储的设计与开发。</p>
 <h1 id="我是如何讲解性能优化的"><a href="#我是如何讲解性能优化的" class="headerlink" title="我是如何讲解性能优化的"></a>我是如何讲解性能优化的</h1><p>如果你需要从架构层面优化整个系统，那么这门课可以拓展你的知识面，告诉你如何优化架构才能让整体服务获得最大性能；如果你刚开始接触性能优化，这门课可以给你打牢基础，告诉你影响性能的底层因素，在实践中优化你的程序，看到立竿见影的效果。</p>
 <p>我先给你总结了一份<strong>「系统性能优化核心知识图谱」</strong>：</p>
-<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e8%84%91%e5%9b%be/"><img src="/2020/04/%E8%84%91%E5%9B%BE.jpg"></a></p>
+<p><a href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e8%84%91%e5%9b%be/"><img src="/2020/04/%E8%84%91%E5%9B%BE.jpg"></a></p>
 <p>你会发现，整个脑图我是从 4 个方面来梳理的，这其实就是我们在提升一个新系统的性能时，可以入手的 4 个层次。</p>
 <ol>
 <li> 首先，你可以从提升单机进程的性能入手，包括高效地使用主机的 CPU、内存、磁盘等硬件，通过并发编程提升吞吐量，根据业务特性选择合适的算法。</li>
@@ -326,7 +326,7 @@
 <li> 再次，要对业务消息采用更高效的编码方式，这既包括协议头、包体的优化，也包括 TLS 安全层的性能提升。具体优化时，既要深入静态编码，也要从动态的增量编码上优化。同时，调整消息的交互方式也能提升性能。</li>
 <li> 最后，我们再从集群整体上进行架构层面的优化。基于 ACP、AKF、NWR 等分布式理论，我们的优化方向仍然是降低时延和提升吞吐量，但实现方式则要运用分而治之的思想，调度集群中的所有结节协作配合，完成性能优化目标。</li>
 </ol>
-<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e7%9b%ae%e5%bd%95/"><img src="/2020/04/%E7%9B%AE%E5%BD%95.jpg"></a></p>
+<p><a href="http://www.taohui.pub/2020/04/27/%e8%bf%9916%e5%b9%b4%e6%9d%a5%e6%88%91%e6%98%af%e5%a6%82%e4%bd%95%e5%81%9a%e7%b3%bb%e7%bb%9f%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e7%9a%84/%e7%9b%ae%e5%bd%95/"><img src="/2020/04/%E7%9B%AE%E5%BD%95.jpg"></a></p>
 
     </div>
 
@@ -343,7 +343,7 @@
       <div class="popular-posts-title"><a href="\2023\09\13\nginx\Nginx限速技术解析：从字节到请求的精确控制\" rel="bookmark">Nginx的字节级限速原理</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="\2023\01\30\nginx\NGINX网络协议栈优化\" rel="bookmark">NGINX网络协议栈优化</a></div>
+      <div class="popular-posts-title"><a href="\2018\07\09\nginx\csdi2018广州关于《nginx》的分享（附ppt）\" rel="bookmark">CSDI2018广州关于《Nginx》的分享（附文字速录与PPT）</a></div>
     </li>
   </ul>
 
@@ -356,7 +356,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/" title="这16年来我是如何做系统性能优化的">https://www.taohui.tech/2020/04/27/这16年来我是如何做系统性能优化的/</a>
+    <a href="https://www.taohui.pub/2020/04/27/%E8%BF%9916%E5%B9%B4%E6%9D%A5%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E7%B3%BB%E7%BB%9F%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84/" title="这16年来我是如何做系统性能优化的">https://www.taohui.pub/2020/04/27/这16年来我是如何做系统性能优化的/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -476,7 +476,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -515,6 +515,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -525,9 +528,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -563,13 +563,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

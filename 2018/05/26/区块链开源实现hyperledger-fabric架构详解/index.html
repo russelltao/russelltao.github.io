@@ -20,42 +20,42 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="hyperledger fabric是区块链中联盟链的优秀实现，主要代码由IBM、Intel、各大银行等贡献，目前v1.1版的kafka共识方式可达到1000&#x2F;s次的吞吐量。本文中我们依次讨论：区块链的共通特性、fabric核心概念、fabric的交易执行流程。本文来源于笔者欲对公司部分业务上链而进行培训的PPT，故图多文字少，不要怕太长。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="区块链开源实现hyperledger fabric架构详解">
-<meta property="og:url" content="https://www.taohui.tech/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="hyperledger fabric是区块链中联盟链的优秀实现，主要代码由IBM、Intel、各大银行等贡献，目前v1.1版的kafka共识方式可达到1000&#x2F;s次的吞吐量。本文中我们依次讨论：区块链的共通特性、fabric核心概念、fabric的交易执行流程。本文来源于笔者欲对公司部分业务上链而进行培训的PPT，故图多文字少，不要怕太长。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/unnamed-file-3.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/unnamed-file-4.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric-levelDB%E7%8A%B6%E6%80%81%E6%95%B0%E6%8D%AE%E5%BA%93-2.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/unnamed-file-1-4.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/unnamed-file-1-2.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/PKI%E8%AF%81%E4%B9%A6%E7%A4%BA%E6%84%8F-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/PKI%E6%95%B0%E5%AD%97%E8%AF%81%E4%B9%A6-2.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric-levelDB%E7%8A%B6%E6%80%81%E6%95%B0%E6%8D%AE%E5%BA%93-2.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/unnamed-file-1-4.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/unnamed-file-1-2.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/PKI%E8%AF%81%E4%B9%A6%E7%A4%BA%E6%84%8F-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/PKI%E6%95%B0%E5%AD%97%E8%AF%81%E4%B9%A6-2.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/PKI%E5%85%AC%E7%A7%81%E9%92%A5-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/unnamed-file-2-2.jpg">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/PKI%E8%AF%81%E4%B9%A6%E4%BF%A1%E4%BB%BB%E9%93%BE-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/unnamed-file-2-2.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/PKI%E8%AF%81%E4%B9%A6%E4%BF%A1%E4%BB%BB%E9%93%BE-1.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/fabric%E5%88%86%E5%B1%82%E8%A7%86%E8%A7%92-1.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/fabric%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B-2.jpg">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B-2.jpg">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/MSP%E4%B8%8E%E7%BB%84%E7%BB%87%E9%97%B4%E5%85%B3%E7%B3%BB-1.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/MSP%E6%9C%AC%E5%9C%B0%E4%B8%8Echannel-3.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/MSP-levels-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/MSP-structure-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/MSP-structure-1.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/fabric-blockchain-network-2.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/fabric-peer%E4%B8%8Echannel-3.png">
 <meta property="og:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/fabric-peer%E4%B8%8E%E4%B8%8D%E5%90%8C%E7%BB%84%E7%BB%87-3.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric-peer%E4%B8%8E%E8%BA%AB%E4%BB%BD-2.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/Illustration-of-one-possible-transaction-flow-2.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric%E8%AF%B7%E6%B1%82%E8%BF%9E%E6%8E%A5%E5%9B%BE-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric%E5%85%B1%E8%AF%86%E6%8F%90%E6%A1%88%E9%98%B6%E6%AE%B5-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric%E5%85%B1%E8%AF%86%E6%89%93%E5%8C%85%E9%98%B6%E6%AE%B5-1.png">
-<meta property="og:image" content="https://www.taohui.tech/2018/05/fabric%E5%85%B1%E8%AF%86%E9%AA%8C%E8%AF%81%E9%98%B6%E6%AE%B5-2.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric-peer%E4%B8%8E%E8%BA%AB%E4%BB%BD-2.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/Illustration-of-one-possible-transaction-flow-2.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric%E8%AF%B7%E6%B1%82%E8%BF%9E%E6%8E%A5%E5%9B%BE-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric%E5%85%B1%E8%AF%86%E6%8F%90%E6%A1%88%E9%98%B6%E6%AE%B5-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric%E5%85%B1%E8%AF%86%E6%89%93%E5%8C%85%E9%98%B6%E6%AE%B5-1.png">
+<meta property="og:image" content="https://www.taohui.pub/2018/05/fabric%E5%85%B1%E8%AF%86%E9%AA%8C%E8%AF%81%E9%98%B6%E6%AE%B5-2.png">
 <meta property="article:published_time" content="2018-05-26T02:05:13.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.871Z">
 <meta property="article:author" content="陶辉">
@@ -72,7 +72,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://www.taohui.pub/wp-content/uploads/2018/05/unnamed-file-3.png">
 
-<link rel="canonical" href="https://www.taohui.tech/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/">
+<link rel="canonical" href="https://www.taohui.pub/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/">
 
 
 <script id="page-configurations">
@@ -235,7 +235,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -310,7 +310,7 @@
 <li>  Install → Instantiate → invocable → Upgrade → Deinstantiate → Uninstall.</li>
 </ul>
 <p>实际上智能合约就是一段代码，fabric官方认可的是GO语言。首先我们需要把合约代码上传到区块链上，这一步的状态就叫Install。 接着，需要做初始化操作。比如，现在的数据是存放在mysql中的，那么上线时需要用Instantiate把数据迁移至链上，这也算初始化。初始化后，chaincode就进入invocable可调用状态了。 通用我们可以通过CLI命令行或者程序里用SDK调用合约（v1.1前还有RestApi调用，现已放弃）。 联盟链由于跨多家企业、多个地区甚至国家，很难使得合约保持一致的版本，因此，每个合约都有版本号。而版本升级时，就是Upgrade状态。 最后两个状态对应着合约下链。 智能合约可以在供应链等较复杂的业务场景下起到很大的作用，如下面的图5所示： <img src="/2018/05/unnamed-file-1-2.jpg"> 图5-智能合约技术的应用示意</p>
-<h2 id="1-3-数据一致性（共识算法）"><a href="#1-3-数据一致性（共识算法）" class="headerlink" title="1.3 数据一致性（共识算法）"></a>1.3 数据一致性（共识算法）</h2><p>既然区块链是一个去中心化的分布式系统，那么自然只能通过投票来决定一致性了：少数服从多数。当然，多少算多数呢？不同的共识算法下，结果并不相同。比如paxos算法（参见笔者的《<a target="_blank" rel="noopener" href="https://www.taohui.pub/paxos%e7%ae%97%e6%b3%95%e5%a6%82%e4%bd%95%e5%ae%b9%e9%94%99%e7%9a%84-%e8%ae%b2%e8%bf%b0%e4%ba%94%e8%99%8e%e5%b0%86%e7%9a%84%e5%ae%9e%e8%b7%b5/">paxos算法如何容错的–讲述五虎将的实践</a>》）就是超过一半，而PBFT则需要三分之二以上。 这里有一个拜占庭将军问题需要注意，如何理解该问题可以参见这份翻译过的<a target="_blank" rel="noopener" href="http://www.taohui.pub/wp-content/uploads/2018/05/The_Part-Time_ParliamentPaxos%E7%AE%97%E6%B3%95%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91-3.pdf">The_Part-Time_Parliament(Paxos算法中文翻译)</a>文档。简言之，就是投票的拜占庭将军（服务器）们有2种不可靠的形式。第一是迟钝（数据包延迟）、失忆（数据包丢失以及数据包重发）、失踪（服务器宕机）等不含背叛的行为，第二则是有将军是间谍（服务器被攻破）。如paxos这样的算法属于第一种，Fault-tolerance，它不能容忍服务器上有恶意代码；而如PBFT(Practical Byzantine Fault Tolerance)这样的算法是第二类，Byzantine-Fault-tolerance，它能够容忍一定数量的拜占庭将军节点存在，如PBFT、SBFT、RBFT算法等。 第二类Byzantine-Fault-tolerance共识算法虽然看上去很美，但并不成熟，特别是性能低下，比如PBFT是一个多项式复杂度的算法O(N^2)，节点过多时（大于100）性能急骤下降。第一类通常是O(N)复杂度，在某些场景下使用效果还不错，比如fabric v1.1的kafka共识机制就是这样的算法，下文我们会详述。 像比特币、以太坊等采用的共识算法又有所不同，例如比特币的POW工作量证明算法，它定义一小时内（通过调整运算难度实现，比如调整近似程度）有一个lucky node节点，该节点是通过证明自身的努力（hash值逆解）而幸运选出，选出后它就可以为这段时间的交易做决定（似乎挺像总统选举^_^）。详情参见我这篇文章：<a target="_blank" rel="noopener" href="https://www.taohui.pub/%e5%8c%ba%e5%9d%97%e9%93%be%e6%8a%80%e6%9c%af%e5%ad%a6%e4%b9%a0%e7%ac%94%e8%ae%b0/">《区块链技术学习笔记》</a></p>
+<h2 id="1-3-数据一致性（共识算法）"><a href="#1-3-数据一致性（共识算法）" class="headerlink" title="1.3 数据一致性（共识算法）"></a>1.3 数据一致性（共识算法）</h2><p>既然区块链是一个去中心化的分布式系统，那么自然只能通过投票来决定一致性了：少数服从多数。当然，多少算多数呢？不同的共识算法下，结果并不相同。比如paxos算法（参见笔者的《<a href="https://www.taohui.pub/paxos%e7%ae%97%e6%b3%95%e5%a6%82%e4%bd%95%e5%ae%b9%e9%94%99%e7%9a%84-%e8%ae%b2%e8%bf%b0%e4%ba%94%e8%99%8e%e5%b0%86%e7%9a%84%e5%ae%9e%e8%b7%b5/">paxos算法如何容错的–讲述五虎将的实践</a>》）就是超过一半，而PBFT则需要三分之二以上。 这里有一个拜占庭将军问题需要注意，如何理解该问题可以参见这份翻译过的<a href="http://www.taohui.pub/wp-content/uploads/2018/05/The_Part-Time_ParliamentPaxos%E7%AE%97%E6%B3%95%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91-3.pdf">The_Part-Time_Parliament(Paxos算法中文翻译)</a>文档。简言之，就是投票的拜占庭将军（服务器）们有2种不可靠的形式。第一是迟钝（数据包延迟）、失忆（数据包丢失以及数据包重发）、失踪（服务器宕机）等不含背叛的行为，第二则是有将军是间谍（服务器被攻破）。如paxos这样的算法属于第一种，Fault-tolerance，它不能容忍服务器上有恶意代码；而如PBFT(Practical Byzantine Fault Tolerance)这样的算法是第二类，Byzantine-Fault-tolerance，它能够容忍一定数量的拜占庭将军节点存在，如PBFT、SBFT、RBFT算法等。 第二类Byzantine-Fault-tolerance共识算法虽然看上去很美，但并不成熟，特别是性能低下，比如PBFT是一个多项式复杂度的算法O(N^2)，节点过多时（大于100）性能急骤下降。第一类通常是O(N)复杂度，在某些场景下使用效果还不错，比如fabric v1.1的kafka共识机制就是这样的算法，下文我们会详述。 像比特币、以太坊等采用的共识算法又有所不同，例如比特币的POW工作量证明算法，它定义一小时内（通过调整运算难度实现，比如调整近似程度）有一个lucky node节点，该节点是通过证明自身的努力（hash值逆解）而幸运选出，选出后它就可以为这段时间的交易做决定（似乎挺像总统选举^_^）。详情参见我这篇文章：<a href="https://www.taohui.pub/%e5%8c%ba%e5%9d%97%e9%93%be%e6%8a%80%e6%9c%af%e5%ad%a6%e4%b9%a0%e7%ac%94%e8%ae%b0/">《区块链技术学习笔记》</a></p>
 <h2 id="1-4-非对称加密"><a href="#1-4-非对称加密" class="headerlink" title="1.4 非对称加密"></a>1.4 非对称加密</h2><p>区块链通过非对称加密技术实现身份验证与数据加密。其实就是我们日常在用的SSL技术。 为了方便理解，我们需要先介绍PKI(Public Key Infrastructure)，它是一种遵循标准的利用公钥加密技术为电子商务的开展提供一套安全基础平台的技术和规范。有一个CA（Certificate Authority）权威机构负责向用户（包括服务提供者与使用者）提供数字证书，包括公钥与私钥，同时CA机构还需要提供一个CRL（Certificate Revocation List）证书吊销列表，如下面的图6所示。 <img src="/2018/05/PKI%E8%AF%81%E4%B9%A6%E7%A4%BA%E6%84%8F-1.png"> 图6-CA机构颁发数字证书以及提供CAL 这样，区块链可以通过PKI体系实现安全认证。PKI有三个关键点，我们下面详述。</p>
 <h3 id="1-4-1-数字证书-Digital-Certificate"><a href="#1-4-1-数字证书-Digital-Certificate" class="headerlink" title="1.4.1 数字证书 Digital Certificate"></a>1.4.1 数字证书 Digital Certificate</h3><p>比如Mary Morris符合X.509规范的数字证书里，其Subject属性里就含有她的信息，包括国家C=US、所属的州或者省份ST=Michigan、所在城市L=Detroit、所属单位O=Mitchesll Cars、其他信息OU=Manufacturing、公用信息CN=Mary Morris/UID=123456等，也含有其他信息，如下面的图7所示。 <img src="/2018/05/PKI%E6%95%B0%E5%AD%97%E8%AF%81%E4%B9%A6-2.png"> 图7-PKI数字证书</p>
 <h3 id="1-4-2-公钥与私钥"><a href="#1-4-2-公钥与私钥" class="headerlink" title="1.4.2 公钥与私钥"></a>1.4.2 公钥与私钥</h3><p>CA颁发了两个证书：公钥与私钥，其中，私钥仅服务提供者保存，而公钥则可被所有人（服务使用者）保存。 所谓非对称加密，就是公钥加密的消息仅私钥可以解密；同理，私钥加密的消息，仅公钥可以解密。对应于前者，可以实现客户端访问服务器时加密消息，例如访问安全级别高的页面时提交的表单信息都需要用公钥加密，确保只有服务器才能解密网络报文。对应于后者，则可实现签名功能，如下面的图8所示。 <img src="http://www.taohui.pub/wp-content/uploads/2018/05/PKI%E5%85%AC%E7%A7%81%E9%92%A5-1.png"> 图8-PKI中私钥签名后用公钥验签名 图8中Mary Morris用私钥对一段信息的内容（若内容过大则可先HASH后获得小点的字符串）加密后，生成签名附加在消息中。接收者可从CA机构获取到公钥，用公钥解密签名后，再与内容比对，以确定消息是否来自MaryMorris及内容是否被篡改。对于文件来说也是一样，小文件直接加密，大文件先生成hash再对hash加密，如下面的图9所示。   <img src="/2018/05/unnamed-file-2-2.jpg"> 图9-对文件的签名</p>
@@ -374,7 +374,7 @@
 <h3 id="3-2-1-proposal提案阶段"><a href="#3-2-1-proposal提案阶段" class="headerlink" title="3.2.1 proposal提案阶段"></a>3.2.1 proposal提案阶段</h3><p><img src="/2018/05/fabric%E5%85%B1%E8%AF%86%E6%8F%90%E6%A1%88%E9%98%B6%E6%AE%B5-1.png"> 可以看到，A1发出的&lt;T1, P&gt;，收到了&lt;T1, R1, E1&gt;和&lt;T1, R2, E2&gt;两个结果。</p>
 <h3 id="3-2-2-package打包阶段"><a href="#3-2-2-package打包阶段" class="headerlink" title="3.2.2 package打包阶段"></a>3.2.2 package打包阶段</h3><p><img src="/2018/05/fabric%E5%85%B1%E8%AF%86%E6%89%93%E5%8C%85%E9%98%B6%E6%AE%B5-1.png"> O1在一个channel上会收到许多T交易，它会将T排序，在达到block的最大大小（一般应配1M以下，否则性能下降严重，kafka擅长处理小点的消息）或者达到超时时间后，打成区块P2。</p>
 <h3 id="3-2-3-验证阶段"><a href="#3-2-3-验证阶段" class="headerlink" title="3.2.3 验证阶段"></a>3.2.3 验证阶段</h3><p><img src="/2018/05/fabric%E5%85%B1%E8%AF%86%E9%AA%8C%E8%AF%81%E9%98%B6%E6%AE%B5-2.png"> O1将含有多条交易T打成区块的B2发往各peer节点，而P1和P2将B2加入各自的L账本中。</p>
-<h1 id="4、小结"><a href="#4、小结" class="headerlink" title="4、小结"></a>4、小结</h1><p>本文偏重于概念的解释，由于篇幅所限，未涉及fabric的系统搭建（请参考笔者的这篇文章《<a target="_blank" rel="noopener" href="https://www.taohui.pub/%e5%8c%ba%e5%9d%97%e9%93%be%e5%bc%80%e6%ba%90%e5%ae%9e%e7%8e%b0fabric%e5%bf%ab%e9%80%9f%e9%83%a8%e7%bd%b2%e5%8f%8acli%e4%bd%93%e9%aa%8c/">区块链开源实现fabric快速部署及CLI体验</a>》），也未描述共识算法在异常情况下如何维持一致性，这留待下一篇文章解决。fabric的许多思想是值得我们进一步研究的，其优秀的实现可以帮助我们通过fabric获得区块链在信任创新上的思路。</p>
+<h1 id="4、小结"><a href="#4、小结" class="headerlink" title="4、小结"></a>4、小结</h1><p>本文偏重于概念的解释，由于篇幅所限，未涉及fabric的系统搭建（请参考笔者的这篇文章《<a href="https://www.taohui.pub/%e5%8c%ba%e5%9d%97%e9%93%be%e5%bc%80%e6%ba%90%e5%ae%9e%e7%8e%b0fabric%e5%bf%ab%e9%80%9f%e9%83%a8%e7%bd%b2%e5%8f%8acli%e4%bd%93%e9%aa%8c/">区块链开源实现fabric快速部署及CLI体验</a>》），也未描述共识算法在异常情况下如何维持一致性，这留待下一篇文章解决。fabric的许多思想是值得我们进一步研究的，其优秀的实现可以帮助我们通过fabric获得区块链在信任创新上的思路。</p>
 
     </div>
 
@@ -401,7 +401,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/" title="区块链开源实现hyperledger fabric架构详解">https://www.taohui.tech/2018/05/26/区块链开源实现hyperledger-fabric架构详解/</a>
+    <a href="https://www.taohui.pub/2018/05/26/%E5%8C%BA%E5%9D%97%E9%93%BE%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0hyperledger-fabric%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3/" title="区块链开源实现hyperledger fabric架构详解">https://www.taohui.pub/2018/05/26/区块链开源实现hyperledger-fabric架构详解/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -516,7 +516,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -555,6 +555,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -565,9 +568,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -603,13 +603,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

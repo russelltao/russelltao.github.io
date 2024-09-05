@@ -20,58 +20,58 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="自2017年起HTTP3协议已发布了34个Draft，推出在即，Chrome、Nginx等软件都在跟进实现最新的草案。本文将介绍HTTP3协议规范、应用场景及实现原理。 2015年HTTP2协议正式推出后，已经有接近一半的互联网站点在使用它： （图片来自https:&#x2F;&#x2F;w3techs.com&#x2F;technologies&#x2F;details&#x2F;ce-http2）HTTP2协议虽然大幅提升了HTTP&#x2F;1.1的">
 <meta property="og:type" content="article">
 <meta property="og:title" content="深入剖析HTTP3协议">
-<meta property="og:url" content="https://www.taohui.tech/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="自2017年起HTTP3协议已发布了34个Draft，推出在即，Chrome、Nginx等软件都在跟进实现最新的草案。本文将介绍HTTP3协议规范、应用场景及实现原理。 2015年HTTP2协议正式推出后，已经有接近一半的互联网站点在使用它： （图片来自https:&#x2F;&#x2F;w3techs.com&#x2F;technologies&#x2F;details&#x2F;ce-http2）HTTP2协议虽然大幅提升了HTTP&#x2F;1.1的">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http2%E7%AB%99%E7%82%B9%E4%BD%BF%E7%94%A8%E7%8E%87_20200824.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http1%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http2_connection%E7%A4%BA%E6%84%8F.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8F%91%E7%94%9F.gif">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http_123_osi_layer.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http+tls1_2%E6%8F%A1%E6%89%8B.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_frame_layer.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_long_packet_header.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_short_packet_header.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_tls_packet_header.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/quic_tls_header.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E%E7%9A%84%E8%A7%A3%E5%86%B3.gif">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http2_stream_frame_conn.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_quic_frame.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_quic_frame_format.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_quic_stream_frame.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http3_frame.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/hpack%E7%A4%BA%E6%84%8F.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/hpack%E9%9D%99%E6%80%81%E8%A1%A8.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/qpack%E9%9D%99%E6%80%81%E8%A1%A8nginx.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/quic_stream_id.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/quic_stream_type.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http2%E7%AB%99%E7%82%B9%E4%BD%BF%E7%94%A8%E7%8E%87_20200824.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http1%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http2_connection%E7%A4%BA%E6%84%8F.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8F%91%E7%94%9F.gif">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http_123_osi_layer.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http+tls1_2%E6%8F%A1%E6%89%8B.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_frame_layer.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_long_packet_header.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_short_packet_header.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_tls_packet_header.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/quic_tls_header.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E%E7%9A%84%E8%A7%A3%E5%86%B3.gif">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http2_stream_frame_conn.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_quic_frame.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_quic_frame_format.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_quic_stream_frame.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http3_frame.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/hpack%E7%A4%BA%E6%84%8F.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/hpack%E9%9D%99%E6%80%81%E8%A1%A8.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/qpack%E9%9D%99%E6%80%81%E8%A1%A8nginx.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/quic_stream_id.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/quic_stream_type.png">
 <meta property="article:published_time" content="2021-02-04T02:32:50.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.904Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="tcp">
-<meta property="article:tag" content="udp">
-<meta property="article:tag" content="OSI">
-<meta property="article:tag" content="http2">
-<meta property="article:tag" content="QUIC">
 <meta property="article:tag" content="HTTP3">
 <meta property="article:tag" content="HOL">
 <meta property="article:tag" content="队头阻塞">
 <meta property="article:tag" content="TLS">
+<meta property="article:tag" content="udp">
+<meta property="article:tag" content="http2">
+<meta property="article:tag" content="OSI">
+<meta property="article:tag" content="连接迁移">
+<meta property="article:tag" content="QUIC">
 <meta property="article:tag" content="HPACK">
 <meta property="article:tag" content="QPACK">
-<meta property="article:tag" content="连接迁移">
 <meta property="article:tag" content="静态表">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/images/http/http2%E7%AB%99%E7%82%B9%E4%BD%BF%E7%94%A8%E7%8E%87_20200824.png">
+<meta name="twitter:image" content="https://www.taohui.pub/images/http/http2%E7%AB%99%E7%82%B9%E4%BD%BF%E7%94%A8%E7%8E%87_20200824.png">
 
-<link rel="canonical" href="https://www.taohui.tech/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/">
+<link rel="canonical" href="https://www.taohui.pub/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/">
 
 
 <script id="page-configurations">
@@ -234,7 +234,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -513,7 +513,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" title="深入剖析HTTP3协议">https://www.taohui.tech/2021/02/04/网络协议/深入剖析HTTP3协议/</a>
+    <a href="https://www.taohui.pub/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/" title="深入剖析HTTP3协议">https://www.taohui.pub/2021/02/04/网络协议/深入剖析HTTP3协议/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -525,17 +525,17 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/tcp/" rel="tag"># tcp</a>
-              <a href="/tags/udp/" rel="tag"># udp</a>
-              <a href="/tags/OSI/" rel="tag"># OSI</a>
-              <a href="/tags/http2/" rel="tag"># http2</a>
-              <a href="/tags/QUIC/" rel="tag"># QUIC</a>
               <a href="/tags/HTTP3/" rel="tag"># HTTP3</a>
               <a href="/tags/HOL/" rel="tag"># HOL</a>
               <a href="/tags/%E9%98%9F%E5%A4%B4%E9%98%BB%E5%A1%9E/" rel="tag"># 队头阻塞</a>
               <a href="/tags/TLS/" rel="tag"># TLS</a>
+              <a href="/tags/udp/" rel="tag"># udp</a>
+              <a href="/tags/http2/" rel="tag"># http2</a>
+              <a href="/tags/OSI/" rel="tag"># OSI</a>
+              <a href="/tags/%E8%BF%9E%E6%8E%A5%E8%BF%81%E7%A7%BB/" rel="tag"># 连接迁移</a>
+              <a href="/tags/QUIC/" rel="tag"># QUIC</a>
               <a href="/tags/HPACK/" rel="tag"># HPACK</a>
               <a href="/tags/QPACK/" rel="tag"># QPACK</a>
-              <a href="/tags/%E8%BF%9E%E6%8E%A5%E8%BF%81%E7%A7%BB/" rel="tag"># 连接迁移</a>
               <a href="/tags/%E9%9D%99%E6%80%81%E8%A1%A8/" rel="tag"># 静态表</a>
           </div>
 
@@ -631,7 +631,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -670,6 +670,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -680,9 +683,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -718,13 +718,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

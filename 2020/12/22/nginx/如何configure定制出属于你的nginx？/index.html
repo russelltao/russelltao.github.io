@@ -20,29 +20,29 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="上一篇文章中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。  当你用yum或者apt-get命令安装、启动Nginx后，通过nginx -t命令你会发现，nginx.conf配置文件可能在&#x2F;etc&#x2F;目录中。而运行基于源码安装的Nginx时，nginx.conf文件又可能位于&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="如何configure定制出属于你的Nginx？">
-<meta property="og:url" content="https://www.taohui.tech/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="上一篇文章中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。  当你用yum或者apt-get命令安装、启动Nginx后，通过nginx -t命令你会发现，nginx.conf配置文件可能在&#x2F;etc&#x2F;目录中。而运行基于源码安装的Nginx时，nginx.conf文件又可能位于&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;conf&#x2F;">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/2020/12/Nginx%E6%A8%A1%E5%9D%97%E5%8C%96.png">
-<meta property="og:image" content="https://www.taohui.tech/2020/12/11%E4%B8%AAHTTP%E9%98%B6%E6%AE%B5%E8%A1%A8.png">
+<meta property="og:image" content="https://www.taohui.pub/2020/12/Nginx%E6%A8%A1%E5%9D%97%E5%8C%96.png">
+<meta property="og:image" content="https://www.taohui.pub/2020/12/11%E4%B8%AAHTTP%E9%98%B6%E6%AE%B5%E8%A1%A8.png">
 <meta property="article:published_time" content="2020-12-22T02:02:19.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.858Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="nginx">
 <meta property="article:tag" content="configure">
-<meta property="article:tag" content="module">
 <meta property="article:tag" content="模块化">
+<meta property="article:tag" content="module">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/2020/12/Nginx%E6%A8%A1%E5%9D%97%E5%8C%96.png">
+<meta name="twitter:image" content="https://www.taohui.pub/2020/12/Nginx%E6%A8%A1%E5%9D%97%E5%8C%96.png">
 
-<link rel="canonical" href="https://www.taohui.tech/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
+<link rel="canonical" href="https://www.taohui.pub/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
 
 
 <script id="page-configurations">
@@ -205,7 +205,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -243,11 +243,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
                 </span>
             </span>
 
@@ -276,7 +276,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>上一篇<a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/17/10%e5%88%86%e9%92%9f%e5%bf%ab%e9%80%9f%e8%ae%a4%e8%af%86nginx/">文章</a>中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。 </p>
+        <p>上一篇<a href="https://www.taohui.pub/2020/12/17/10%e5%88%86%e9%92%9f%e5%bf%ab%e9%80%9f%e8%ae%a4%e8%af%86nginx/">文章</a>中，我介绍了Nginx的特性，如何获取Nginx源代码，以及源代码中各目录的含义。本文将介绍如何定制化编译、安装、运行Nginx。 </p>
 <p>当你用yum或者apt-get命令安装、启动Nginx后，通过nginx -t命令你会发现，nginx.conf配置文件可能在/etc/目录中。而运行基于源码安装的Nginx时，nginx.conf文件又可能位于/usr/local/nginx/conf/目录，运行OpenResty时， nginx.conf又被放在了/usr/local/openresty/nginx/conf/目录。<strong>这些奇怪的现象都源于编译Nginx前，configure脚本设置的–prefix或者–conf-path选项</strong>。 </p>
 <span id="more"></span>
 <p>Nginx的所有功能都来自于官方及第三方模块，<strong>如果你不知道如何使用configure添加需要的模块，相当于放弃了Nginx诞生16年来累积出的丰富生态</strong>。而且，很多高性能特性默认是关闭的，如果你习惯于使用应用市场中编译好的二进制文件，也无法获得性能最优化的Nginx。 本文将会介绍定制Nginx过程中，configure脚本的用法。其中对于定制模块的选项，会从模块的分类讲起，带你系统的掌握如何添加Nginx模块。同时，也会介绍configure执行后生成的objs目录，以及Makefile文件的用法。这也是Nginx开源社区基础培训系列课程第一季，即6月11日晚第2次视频直播课前半部分的文字总结。  </p>
@@ -380,7 +380,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/" title="如何configure定制出属于你的Nginx？">https://www.taohui.tech/2020/12/22/nginx/如何configure定制出属于你的nginx？/</a>
+    <a href="https://www.taohui.pub/2020/12/22/nginx/%E5%A6%82%E4%BD%95configure%E5%AE%9A%E5%88%B6%E5%87%BA%E5%B1%9E%E4%BA%8E%E4%BD%A0%E7%9A%84nginx%EF%BC%9F/" title="如何configure定制出属于你的Nginx？">https://www.taohui.pub/2020/12/22/nginx/如何configure定制出属于你的nginx？/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -393,8 +393,8 @@
           <div class="post-tags">
               <a href="/tags/nginx/" rel="tag"># nginx</a>
               <a href="/tags/configure/" rel="tag"># configure</a>
-              <a href="/tags/module/" rel="tag"># module</a>
               <a href="/tags/%E6%A8%A1%E5%9D%97%E5%8C%96/" rel="tag"># 模块化</a>
+              <a href="/tags/module/" rel="tag"># module</a>
           </div>
 
         
@@ -489,7 +489,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -528,6 +528,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -538,9 +541,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -576,13 +576,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

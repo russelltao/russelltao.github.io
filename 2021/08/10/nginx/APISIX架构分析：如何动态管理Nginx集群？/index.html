@@ -20,33 +20,33 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="开源版Nginx最为人诟病的就是不具备动态配置、远程API及集群管理的能力，而APISIX作为CNCF毕业的开源七层网关，基于etcd、Lua实现了对Nginx集群的动态管理。 让Nginx具备动态、集群管理能力并不容易，因为这将面临以下问题：  微服务架构使得上游服务种类多、数量大，这导致路由规则、上游Server的变更极为频率。而Nginx的路由匹配是基于静态的Trie前缀树、哈希表、正则数组">
 <meta property="og:type" content="article">
 <meta property="og:title" content="APISIX架构分析：如何动态管理Nginx集群？">
-<meta property="og:url" content="https://www.taohui.tech/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="开源版Nginx最为人诟病的就是不具备动态配置、远程API及集群管理的能力，而APISIX作为CNCF毕业的开源七层网关，基于etcd、Lua实现了对Nginx集群的动态管理。 让Nginx具备动态、集群管理能力并不容易，因为这将面临以下问题：  微服务架构使得上游服务种类多、数量大，这导致路由规则、上游Server的变更极为频率。而Nginx的路由匹配是基于静态的Trie前缀树、哈希表、正则数组">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/images/nginx/apisix%E5%AE%98%E6%96%B9%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
-<meta property="og:image" content="https://www.taohui.tech/images/nginx/%E5%9F%BA%E4%BA%8Eetcd%E5%90%8C%E6%AD%A5nginx%E9%85%8D%E7%BD%AE.jpg">
-<meta property="og:image" content="https://www.taohui.tech/images/nginx/openresty%E9%92%A9%E5%AD%90.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/http2_stream_frame_conn.png">
-<meta property="og:image" content="https://www.taohui.tech/images/http/APISIX%E4%B8%8Eetcd%E9%80%9A%E8%BF%87HTTP1%E9%80%9A%E8%AE%AF.JPG">
-<meta property="og:image" content="https://www.taohui.tech/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png">
+<meta property="og:image" content="https://www.taohui.pub/images/nginx/apisix%E5%AE%98%E6%96%B9%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
+<meta property="og:image" content="https://www.taohui.pub/images/nginx/%E5%9F%BA%E4%BA%8Eetcd%E5%90%8C%E6%AD%A5nginx%E9%85%8D%E7%BD%AE.jpg">
+<meta property="og:image" content="https://www.taohui.pub/images/nginx/openresty%E9%92%A9%E5%AD%90.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/http2_stream_frame_conn.png">
+<meta property="og:image" content="https://www.taohui.pub/images/http/APISIX%E4%B8%8Eetcd%E9%80%9A%E8%BF%87HTTP1%E9%80%9A%E8%AE%AF.JPG">
+<meta property="og:image" content="https://www.taohui.pub/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png">
 <meta property="article:published_time" content="2021-08-10T10:30:14.000Z">
 <meta property="article:modified_time" content="2023-01-30T11:17:12.417Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="nginx">
-<meta property="article:tag" content="etcd">
 <meta property="article:tag" content="apisix">
 <meta property="article:tag" content="网关">
+<meta property="article:tag" content="etcd">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/images/nginx/apisix%E5%AE%98%E6%96%B9%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
+<meta name="twitter:image" content="https://www.taohui.pub/images/nginx/apisix%E5%AE%98%E6%96%B9%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
 
-<link rel="canonical" href="https://www.taohui.tech/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/">
+<link rel="canonical" href="https://www.taohui.pub/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/">
 
 
 <script id="page-configurations">
@@ -209,7 +209,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -323,7 +323,7 @@
 </ul>
 <h4 id="nginx-conf的生成方式"><a href="#nginx-conf的生成方式" class="headerlink" title="nginx.conf的生成方式"></a>nginx.conf的生成方式</h4><p>每个Nginx Worker进程都会在init_worker_by_lua阶段通过http_init_worker函数启动定时器：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">init_worker_by_lua_block &#123;</span><br><span class="line">    apisix.http_init_worker()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关于nginx.conf配置语法，你可以参考我的这篇文章<a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">《从通用规则中学习nginx模块的定制指令》</a>。你可能很好奇，下载APISIX源码后没有看到nginx.conf，这段配置是哪来的？</p>
+<p>关于nginx.conf配置语法，你可以参考我的这篇文章<a href="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">《从通用规则中学习nginx模块的定制指令》</a>。你可能很好奇，下载APISIX源码后没有看到nginx.conf，这段配置是哪来的？</p>
 <p><strong>这里的nginx.conf实际是由APISIX的启动命令实时生成的</strong>。当你执行make run时，它会基于Lua模板apisix/cli/ngx_tpl.lua文件生成nginx.conf。请注意，这里的模板规则是OpenResty自实现的，语法细节参见lua-resty-template。生成nginx.conf的具体代码参见apisix/cli/ops.lua文件：</p>
 <figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span> template = <span class="built_in">require</span>(<span class="string">&quot;resty.template&quot;</span>)</span><br><span class="line"><span class="keyword">local</span> ngx_tpl = <span class="built_in">require</span>(<span class="string">&quot;apisix.cli.ngx_tpl&quot;</span>)</span><br><span class="line"><span class="keyword">local</span> <span class="function"><span class="keyword">function</span> <span class="title">init</span><span class="params">(env)</span></span></span><br><span class="line">    <span class="keyword">local</span> yaml_conf, err = file.read_yaml_conf(env.apisix_home)</span><br><span class="line">    <span class="keyword">local</span> conf_render = template.compile(ngx_tpl)</span><br><span class="line">    <span class="keyword">local</span> ngxconf = conf_render(sys_conf)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">local</span> ok, err = util.write_file(env.apisix_home .. <span class="string">&quot;/conf/nginx.conf&quot;</span>,</span><br><span class="line">                                    ngxconf)</span><br></pre></td></tr></table></figure>
 <p>当然，APISIX允许用户修改nginx.conf模板中的部分数据，具体方法是模仿conf/config-default.yaml的语法修改conf/config.yaml配置。其实现原理参见read_yaml_conf函数：</p>
@@ -357,7 +357,7 @@
 <h2 id="lua-resty-etcd库的HTTP-1-1协议"><a href="#lua-resty-etcd库的HTTP-1-1协议" class="headerlink" title="lua-resty-etcd库的HTTP/1.1协议"></a>lua-resty-etcd库的HTTP/1.1协议</h2><p>sync_data函数到底是怎样获取etcd的配置变更消息的呢？先看下sync_data源码：</p>
 <figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span> etcd         = <span class="built_in">require</span>(<span class="string">&quot;resty.etcd&quot;</span>)</span><br><span class="line">etcd_cli, err = etcd.new(etcd_conf)</span><br><span class="line"></span><br><span class="line"><span class="keyword">local</span> <span class="function"><span class="keyword">function</span> <span class="title">sync_data</span><span class="params">(self)</span></span></span><br><span class="line">    <span class="keyword">local</span> dir_res, err = waitdir(<span class="built_in">self</span>.etcd_cli, <span class="built_in">self</span>.key, <span class="built_in">self</span>.prev_index + <span class="number">1</span>, <span class="built_in">self</span>.timeout)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">local</span> <span class="function"><span class="keyword">function</span> <span class="title">waitdir</span><span class="params">(etcd_cli, key, modified_index, timeout)</span></span></span><br><span class="line">    <span class="keyword">local</span> res_func, func_err, http_cli = etcd_cli:watchdir(key, opts)</span><br><span class="line">    <span class="keyword">if</span> http_cli <span class="keyword">then</span></span><br><span class="line">        <span class="keyword">local</span> res_cancel, err_cancel = etcd_cli:watchcancel(http_cli)</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
 <p>这里实际与etcd通讯的是<a target="_blank" rel="noopener" href="https://github.com/api7/lua-resty-etcd">lua-resty-etcd</a>库。它提供的watchdir函数用于接收etcd发现key目录对应value变更后发出的通知。</p>
-<p>watchcancel函数又是做什么的呢？这其实是OpenResty生态的缺憾导致的。etcd v3已经支持高效的gRPC协议（底层为HTTP2协议）。你可能听说过，HTTP2不但具备多路复用的能力，还支持服务器直接推送消息，关于HTTP2的细节可以参照我的这篇文章<a target="_blank" rel="noopener" href="https://www.taohui.pub/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/">《深入剖析HTTP3协议》</a>，从HTTP3协议对照理解HTTP2：<br><img src="/images/http/http2_stream_frame_conn.png" alt="http2的多路复用与服务器推送"></p>
+<p>watchcancel函数又是做什么的呢？这其实是OpenResty生态的缺憾导致的。etcd v3已经支持高效的gRPC协议（底层为HTTP2协议）。你可能听说过，HTTP2不但具备多路复用的能力，还支持服务器直接推送消息，关于HTTP2的细节可以参照我的这篇文章<a href="https://www.taohui.pub/2021/02/04/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90HTTP3%E5%8D%8F%E8%AE%AE/">《深入剖析HTTP3协议》</a>，从HTTP3协议对照理解HTTP2：<br><img src="/images/http/http2_stream_frame_conn.png" alt="http2的多路复用与服务器推送"></p>
 <p>然而，<strong>Lua生态目前并不支持HTTP2协议！</strong>所以lua-resty-etcd库实际是通过低效的HTTP/1.1协议与etcd通讯的，因此接收/watch通知也是通过带有超时的/v3/watch请求完成的。这个现象其实是由2个原因造成的：</p>
 <ol>
 <li>Nginx将自己定位为边缘负载均衡，因此上游必然是企业内网，时延低、带宽大，所以对上游协议不必支持HTTP2协议！</li>
@@ -392,8 +392,8 @@
 <h2 id="为什么新配置不reload就可以生效？"><a href="#为什么新配置不reload就可以生效？" class="headerlink" title="为什么新配置不reload就可以生效？"></a>为什么新配置不reload就可以生效？</h2><p>我们再来看admin请求执行完Nginx Worker进程可以立刻生效的原理。</p>
 <p>开源版Nginx的请求匹配是基于3种不同的容器进行的：</p>
 <ol>
-<li>将静态哈希表中的server_name配置与请求的Host域名匹配，详见<a target="_blank" rel="noopener" href="https://www.taohui.pub/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/">《HTTP请求是如何关联Nginx server{}块的？》</a>；</li>
-<li>其次将静态Trie前缀树中的location配置与请求的URI匹配，详见<a target="_blank" rel="noopener" href="https://www.taohui.pub/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/">《URL是如何关联Nginx location配置块的？》</a>；<br><img src="/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png"></li>
+<li>将静态哈希表中的server_name配置与请求的Host域名匹配，详见<a href="https://www.taohui.pub/2021/08/09/nginx/HTTP%E8%AF%B7%E6%B1%82%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94Nginx-server-%E5%9D%97%E7%9A%84%EF%BC%9F/">《HTTP请求是如何关联Nginx server{}块的？》</a>；</li>
+<li>其次将静态Trie前缀树中的location配置与请求的URI匹配，详见<a href="https://www.taohui.pub/2021/08/09/nginx/URL%E6%98%AF%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94location%E9%85%8D%E7%BD%AE%E5%9D%97%E7%9A%84%EF%BC%9F/">《URL是如何关联Nginx location配置块的？》</a>；<br><img src="/images/nginx/location%E5%89%8D%E7%BC%80%E6%A0%91%E7%9A%84%E5%8C%B9%E9%85%8D%E6%B5%81%E7%A8%8B2.png"></li>
 <li>在上述2个过程中，如果含有正则表达式，则基于数组顺序（在nginx.conf中出现的次序）依次匹配。</li>
 </ol>
 <p>上述过程虽然执行效率极高，却是写死在find_config阶段及Nginx HTTP框架中的，<strong>一旦变更必须在nginx -s reload后才能生效！</strong>因此，APISIX索性完全抛弃了上述流程!</p>
@@ -435,7 +435,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="APISIX架构分析：如何动态管理Nginx集群？">https://www.taohui.tech/2021/08/10/nginx/APISIX架构分析：如何动态管理Nginx集群？/</a>
+    <a href="https://www.taohui.pub/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="APISIX架构分析：如何动态管理Nginx集群？">https://www.taohui.pub/2021/08/10/nginx/APISIX架构分析：如何动态管理Nginx集群？/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -447,9 +447,9 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/nginx/" rel="tag"># nginx</a>
-              <a href="/tags/etcd/" rel="tag"># etcd</a>
               <a href="/tags/apisix/" rel="tag"># apisix</a>
               <a href="/tags/%E7%BD%91%E5%85%B3/" rel="tag"># 网关</a>
+              <a href="/tags/etcd/" rel="tag"># etcd</a>
           </div>
 
         
@@ -544,7 +544,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -583,6 +583,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -593,9 +596,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -631,13 +631,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

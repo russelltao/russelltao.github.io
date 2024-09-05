@@ -20,19 +20,19 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="本文首发于《中国金融电脑》第420期，金网在线地址链接。 引言：随着云原生、微服务的飞速发展，传统的负载均衡技术已逐渐难以满足日益复杂的业务需求。为了应对这一挑战，分布式负载均衡技术应运而生，它以其卓越的弹性、自助操作和可观测性，成为现代数据中心网络设计的核心。本系列文章旨在深入探讨分布式负载均衡系统的多维度价值，从基础概念到技术实现，再到实际应用案例的全面分析。我希望通过这一系列的深入剖析，为读">
 <meta property="og:type" content="article">
 <meta property="og:title" content="构建弹性网络之分布式负载均衡技术(一)：特点与功能">
-<meta property="og:url" content="https://www.taohui.tech/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="本文首发于《中国金融电脑》第420期，金网在线地址链接。 引言：随着云原生、微服务的飞速发展，传统的负载均衡技术已逐渐难以满足日益复杂的业务需求。为了应对这一挑战，分布式负载均衡技术应运而生，它以其卓越的弹性、自助操作和可观测性，成为现代数据中心网络设计的核心。本系列文章旨在深入探讨分布式负载均衡系统的多维度价值，从基础概念到技术实现，再到实际应用案例的全面分析。我希望通过这一系列的深入剖析，为读">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9F%BA%E4%BA%8E%E7%A7%9F%E6%88%B7%E7%9A%84%E8%B4%A6%E6%88%B7%E4%BD%93%E7%B3%BB.png">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载基于租户的账户体系.png">
 <meta property="article:published_time" content="2024-07-18T02:00:35.000Z">
-<meta property="article:modified_time" content="2024-07-18T06:26:28.607Z">
+<meta property="article:modified_time" content="2024-09-05T02:44:44.712Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="负载均衡">
 <meta property="article:tag" content="OSI">
@@ -42,9 +42,9 @@
 <meta property="article:tag" content="弹性">
 <meta property="article:tag" content="TCO">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9F%BA%E4%BA%8E%E7%A7%9F%E6%88%B7%E7%9A%84%E8%B4%A6%E6%88%B7%E4%BD%93%E7%B3%BB.png">
+<meta name="twitter:image" content="https://www.taohui.pub/images/负载均衡/分布式负载基于租户的账户体系.png">
 
-<link rel="canonical" href="https://www.taohui.tech/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/">
+<link rel="canonical" href="https://www.taohui.pub/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/">
 
 
 <script id="page-configurations">
@@ -207,7 +207,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -229,10 +229,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-07-18 10:00:35 / 修改时间：14:26:28" itemprop="dateCreated datePublished" datetime="2024-07-18T10:00:35+08:00">2024-07-18</time>
+              <time title="创建时间：2024-07-18 10:00:35" itemprop="dateCreated datePublished" datetime="2024-07-18T10:00:35+08:00">2024-07-18</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-09-05 10:44:44" itemprop="dateModified" datetime="2024-09-05T10:44:44+08:00">2024-09-05</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -268,6 +274,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9F%BA%E4%BA%8E%E7%A7%9F%E6%88%B7%E7%9A%84%E8%B4%A6%E6%88%B7%E4%BD%93%E7%B3%BB.png" itemprop="contentUrl">
+        </div>
         <p>本文首发于《中国金融电脑》第420期，金网在线<a target="_blank" rel="noopener" href="https://www.fcc.com.cn/art/kjzx/69/12390.shtml">地址链接</a>。</p>
 <h1 id="引言："><a href="#引言：" class="headerlink" title="引言："></a>引言：</h1><p>随着云原生、微服务的飞速发展，传统的负载均衡技术已逐渐难以满足日益复杂的业务需求。为了应对这一挑战，分布式负载均衡技术应运而生，它以其卓越的弹性、自助操作和可观测性，成为现代数据中心网络设计的核心。<br>本系列文章旨在深入探讨分布式负载均衡系统的多维度价值，从基础概念到技术实现，再到实际应用案例的全面分析。我希望通过这一系列的深入剖析，为读者提供一个全面的视角，理解分布式负载均衡技术如何为企业构建一个更加稳定、灵活和高效的网络环境。</p>
 <p>系列概览：</p>
@@ -311,13 +320,13 @@
   <div class="popular-posts-header">相关文章</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2024\08\01\分布式负载均衡\构建弹性网络之分布式负载均衡技术（二）：技术与实现\" rel="bookmark">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="\2021\02\08\nginx\深入剖析Nginx负载均衡算法\" rel="bookmark">深入剖析Nginx负载均衡算法</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="\2019\05\12\网络协议\如何快速掌握http协议？（思维导图）\" rel="bookmark">如何快速掌握HTTP协议？</a></div>
     </li>
   </ul>
 
@@ -330,7 +339,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="构建弹性网络之分布式负载均衡技术(一)：特点与功能">https://www.taohui.tech/2024/07/18/分布式负载均衡/构建弹性网络之分布式负载均衡技术-一-：特点与功能/</a>
+    <a href="https://www.taohui.pub/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="构建弹性网络之分布式负载均衡技术(一)：特点与功能">https://www.taohui.pub/2024/07/18/分布式负载均衡/构建弹性网络之分布式负载均衡技术-一-：特点与功能/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -364,7 +373,10 @@
     <a href="/2024/06/11/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E8%BF%9E%E6%8E%A5%E6%8C%91%E6%88%98%EF%BC%9Awrk%E7%9A%84%E9%AB%98%E5%B9%B6%E5%8F%91%E6%B5%8B%E8%AF%95%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" rel="prev" title="百万并发连接挑战：wrk的高并发测试深度解析">
       <i class="fa fa-chevron-left"></i> 百万并发连接挑战：wrk的高并发测试深度解析
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" rel="next" title="构建弹性网络之分布式负载均衡技术（二）：技术与实现">
+      构建弹性网络之分布式负载均衡技术（二）：技术与实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -439,7 +451,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -478,6 +490,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -488,9 +503,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -526,13 +538,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         

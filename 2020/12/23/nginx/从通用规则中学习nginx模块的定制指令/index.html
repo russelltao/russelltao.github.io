@@ -20,19 +20,19 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.taohui.tech","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="上一篇文章中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。 每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="从通用规则中学习Nginx模块的定制指令">
-<meta property="og:url" content="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/index.html">
+<meta property="og:url" content="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/index.html">
 <meta property="og:site_name" content="个人笔记">
 <meta property="og:description" content="上一篇文章中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。 每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.tech/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png">
-<meta property="og:image" content="https://www.taohui.tech/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
-<meta property="og:image" content="https://www.taohui.tech/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
+<meta property="og:image" content="https://www.taohui.pub/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png">
+<meta property="og:image" content="https://www.taohui.pub/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
+<meta property="og:image" content="https://www.taohui.pub/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png">
 <meta property="article:published_time" content="2020-12-23T07:14:21.000Z">
 <meta property="article:modified_time" content="2022-06-22T03:17:59.853Z">
 <meta property="article:author" content="陶辉">
@@ -41,9 +41,9 @@
 <meta property="article:tag" content="空间单位">
 <meta property="article:tag" content="配置语法">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.tech/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png">
+<meta name="twitter:image" content="https://www.taohui.pub/2020/12/nginx-vim%E8%AF%AD%E6%B3%95%E9%AB%98%E4%BA%AE.png">
 
-<link rel="canonical" href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
+<link rel="canonical" href="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
 
 
 <script id="page-configurations">
@@ -206,7 +206,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/taohui_avatar.JPG">
@@ -244,11 +244,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
+                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                  <a href="/categories/nginx/" itemprop="url" rel="index"><span itemprop="name">nginx</span></a>
                 </span>
             </span>
 
@@ -277,7 +277,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><a target="_blank" rel="noopener" href="https://www.taohui.pub/2020/12/22/%e5%a6%82%e4%bd%95configure%e5%ae%9a%e5%88%b6%e5%87%ba%e5%b1%9e%e4%ba%8e%e4%bd%a0%e7%9a%84nginx%ef%bc%9f/">上一篇文章</a>中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。</p>
+        <p><a href="https://www.taohui.pub/2020/12/22/%e5%a6%82%e4%bd%95configure%e5%ae%9a%e5%88%b6%e5%87%ba%e5%b1%9e%e4%ba%8e%e4%bd%a0%e7%9a%84nginx%ef%bc%9f/">上一篇文章</a>中，我介绍了如何定制属于你自己的Nginx，本文将介绍nginx.conf文件的配置语法、使用方式，以及如何学习新模块提供的配置指令。</p>
 <p>每个Nginx模块都可以定义自己的配置指令，所以这些指令的格式五花八门。比如content_by_lua_block后跟着的是Lua语法，limit_req_zone后则跟着以空格、等号、冒号等分隔的多个选项。这些模块有没有必然遵循的通用格式呢？如果有，那么掌握了它，就能快速读懂生产环境复杂的nginx.conf文件。</p>
 <span id="more"></span>
 <p>其次，我们又该如何学习个性化十足的模块指令呢？其实，所有Nginx模块在介绍它的配置指令时，都遵循着相同的格式：Syntax、Default、Context、Description，这能降低我们的学习门槛。如果你还不清楚这一套路，那就只能学习其他文章翻译过的二手知识，效率很低。</p>
@@ -410,7 +410,7 @@
 
 <p>因此，<strong>当URI中含有磁盘路径以外的前缀时，适合使用alias指令。反之，若完整的URI都是磁盘路径的一部分时，则不妨使用root指令</strong>。学习其他指令时，如果你不清楚它属于哪一个模块，还可以<strong>查看以字母表排序的指令索引</strong><a target="_blank" rel="noopener" href="http://nginx.org/en/docs/dirindex.html">http://nginx.org/en/docs/dirindex.html</a>页面，点击后会进入所属模块的指令介绍页面。</p>
 <p>如果是第三方模块，通常在README文件中会有相应的指令介绍。比如OpenResty模块的指令会放在GitHub项目首页的README文件中：</p>
-<p><a target="_blank" rel="noopener" href="http://www.taohui.pub/2020/12/23/%e4%bb%8e%e9%80%9a%e7%94%a8%e8%a7%84%e5%88%99%e4%b8%ad%e5%ad%a6%e4%b9%a0nginx%e6%a8%a1%e5%9d%97%e7%9a%84%e5%ae%9a%e5%88%b6%e6%8c%87%e4%bb%a4/%e7%ac%ac%e4%b8%89%e6%96%b9%e6%a8%a1%e5%9d%97%e8%af%b4%e6%98%8e%e6%96%87%e6%a1%a3/"><img src="/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"></a></p>
+<p><a href="http://www.taohui.pub/2020/12/23/%e4%bb%8e%e9%80%9a%e7%94%a8%e8%a7%84%e5%88%99%e4%b8%ad%e5%ad%a6%e4%b9%a0nginx%e6%a8%a1%e5%9d%97%e7%9a%84%e5%ae%9a%e5%88%b6%e6%8c%87%e4%bb%a4/%e7%ac%ac%e4%b8%89%e6%96%b9%e6%a8%a1%e5%9d%97%e8%af%b4%e6%98%8e%e6%96%87%e6%a1%a3/"><img src="/2020/12/%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"></a></p>
 <p>而TEngine模块的指令介绍则会放在tengine.taobao.org网站上：</p>
 <p><a href="/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"><img src="/2020/12/tengine%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.png"></a></p>
 <p>从这两张截图中可以看到，第三方模块在解释指令的用法时，同样遵循着上文介绍过的方式。</p>
@@ -449,7 +449,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://www.taohui.tech/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="从通用规则中学习Nginx模块的定制指令">https://www.taohui.tech/2020/12/23/nginx/从通用规则中学习nginx模块的定制指令/</a>
+    <a href="https://www.taohui.pub/2020/12/23/nginx/%E4%BB%8E%E9%80%9A%E7%94%A8%E8%A7%84%E5%88%99%E4%B8%AD%E5%AD%A6%E4%B9%A0nginx%E6%A8%A1%E5%9D%97%E7%9A%84%E5%AE%9A%E5%88%B6%E6%8C%87%E4%BB%A4/" title="从通用规则中学习Nginx模块的定制指令">https://www.taohui.pub/2020/12/23/nginx/从通用规则中学习nginx模块的定制指令/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
@@ -558,7 +558,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">77</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -597,6 +597,9 @@
     </div>
     <ul class="links-of-recent-posts-list">
         <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
           <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
         </li>
         <li class="links-of-recent-posts-item">
@@ -607,9 +610,6 @@
         </li>
         <li class="links-of-recent-posts-item">
           <a href="/2023/01/30/nginx/NGINX%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88%E4%BC%98%E5%8C%96/" title="2023&#x2F;01&#x2F;30&#x2F;nginx&#x2F;NGINX网络协议栈优化&#x2F;">NGINX网络协议栈优化</a>
-        </li>
-        <li class="links-of-recent-posts-item">
-          <a href="/2021/08/10/nginx/APISIX%E6%9E%B6%E6%9E%84%E5%88%86%E6%9E%90%EF%BC%9A%E5%A6%82%E4%BD%95%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86Nginx%E9%9B%86%E7%BE%A4%EF%BC%9F/" title="2021&#x2F;08&#x2F;10&#x2F;nginx&#x2F;APISIX架构分析：如何动态管理Nginx集群？&#x2F;">APISIX架构分析：如何动态管理Nginx集群？</a>
         </li>
     </ul>
   </div>
@@ -645,13 +645,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">368k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:29</span>
+    <span title="站点阅读时长">5:35</span>
 </div>
 
         
