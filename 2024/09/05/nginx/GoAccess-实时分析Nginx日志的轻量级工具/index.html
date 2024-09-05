@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://goaccess.io/images/goaccess-dashboard.png">
 <meta property="og:image" content="https://goaccess.io/images/goaccess-bright.png">
 <meta property="article:published_time" content="2024-09-05T02:21:04.000Z">
-<meta property="article:modified_time" content="2024-09-05T09:01:46.844Z">
+<meta property="article:modified_time" content="2024-09-05T12:10:16.448Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="websocket">
 <meta property="article:tag" content="NGINX">
@@ -232,7 +232,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-09-05 10:21:04 / 修改时间：17:01:46" itemprop="dateCreated datePublished" datetime="2024-09-05T10:21:04+08:00">2024-09-05</time>
+              <time title="创建时间：2024-09-05 10:21:04 / 修改时间：20:10:16" itemprop="dateCreated datePublished" datetime="2024-09-05T10:21:04+08:00">2024-09-05</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -250,7 +250,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>4.2k</span>
+              <span>4.6k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -293,7 +293,7 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">goaccess -a -d -p /etc/goaccess.conf -f /usr/local/openresty/nginx/logs/access.log</span><br></pre></td></tr></table></figure>
 <p>这样你会在SHELL终端里看到如下可交互的页面：<br><img src="https://goaccess.io/images/goaccess-dashboard.png" alt="GoAccess的SHELL界面"></p>
 <h1 id="配置NGINX"><a href="#配置NGINX" class="headerlink" title="配置NGINX"></a>配置NGINX</h1><p>如果我们想在浏览器上查看实时可变的页面，则需要生成HTML页面，并提供Websocket服务：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">goaccess -a -d -p /etc/goaccess.conf -f /usr/local/openresty/nginx/logs/access.log -o /usr/local/openresty/nginx/html/goaccess_gen.html --real-time-html --daemonize --ws-url=wss://www.taohui.pub:10005</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">goaccess -a -d -p /etc/goaccess.conf -f /usr/local/openresty/nginx/logs/access.log -o /usr/local/openresty/nginx/html/goaccess_gen.html --real-time-html --daemonize --ws-url=wss://www.taohui.pub:10005 --addr=127.0.0.1 --port=7890</span><br></pre></td></tr></table></figure>
 <p>上面的命令行参数详细解释下：</p>
 <ul>
 <li>-p显式指定了配置文件路径。</li>
@@ -301,6 +301,7 @@
 <li>–real-time-html指定生成可以实时变化的HTML页面。</li>
 <li>-f表示进程分析的access.log则在/usr/local/openresty/nginx/logs/路径下。</li>
 <li>-o指定了生成的HTML页面路径。</li>
+<li>–addr和–port指定了websocket服务开启的地址与端口。</li>
 </ul>
 <p>如果对外提供Web服务还需要我们在NGINX上配置一个静态资源服务，映射生成的HTML页面，比如在nginx.conf中新增如下配置：</p>
 <figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">    <span class="attribute">server_name</span>  www.taohui.pub;</span><br><span class="line">    <span class="attribute">location</span> = /goaccess_gen.html &#123;</span><br><span class="line">            <span class="attribute">root</span> html;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -321,6 +322,9 @@
 <figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">location</span> = /goaccess_gen.html &#123;</span><br><span class="line">    <span class="attribute">auth_basic</span> <span class="string">&quot;User&quot;</span>;</span><br><span class="line">    <span class="attribute">auth_basic_user_file</span> /etc/.htpasswd;</span><br><span class="line">    <span class="attribute">root</span> html;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>这样再访问页面时，就必须先输入正确的用户名和密码。虽然HTTP Authentication标准走的是明文，但HTTPS流量已经做过加密了，所以还是安全的。</p>
+<h1 id="扩展功能"><a href="#扩展功能" class="headerlink" title="扩展功能"></a>扩展功能</h1><p>GoAccess默认展示了15个面板，但它还支持更多的面板。比如，当你在access.log里配置$host访问域名后：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">log_format</span>  main  <span class="string">&#x27;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#x27;</span></span><br><span class="line">                  <span class="string">&#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;</span></span><br><span class="line">                  <span class="string">&#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot; $host&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>并且在goaccess.conf里添加了对应的%v后，页面上就会多出一个Virtual Hosts面板。</p>
 <h1 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h1><p>本文介绍了如何搭建GoAccess–一款为NGINX、Apache等Web服务设计的单机日志分析工具，它不仅部署简便、性能卓越，而且资源消耗极低。本文探讨了如何通过SSL实现全站加密，确保数据传输的安全性，并通过WebSocket协议推送实时变化的监控数据，此外还增加了HTTP authenticate认证，为数据访问提供了额外的安全层。GoAccess的图形化界面不仅美观，而且直观易用，值得每位需要高效日志分析解决方案的用户尝试和使用。</p>
 
     </div>
@@ -443,7 +447,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AEGoAccess"><span class="nav-number">1.</span> <span class="nav-text">安装配置GoAccess</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%85%8D%E7%BD%AENGINX"><span class="nav-number">2.</span> <span class="nav-text">配置NGINX</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E7%94%A8%E6%88%B7%E5%90%8D%E5%AF%86%E7%A0%81%E8%AE%A4%E8%AF%81"><span class="nav-number">3.</span> <span class="nav-text">增加用户名密码认证</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E6%9D%9F%E8%AF%AD"><span class="nav-number">4.</span> <span class="nav-text">结束语</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AEGoAccess"><span class="nav-number">1.</span> <span class="nav-text">安装配置GoAccess</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%85%8D%E7%BD%AENGINX"><span class="nav-number">2.</span> <span class="nav-text">配置NGINX</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E7%94%A8%E6%88%B7%E5%90%8D%E5%AF%86%E7%A0%81%E8%AE%A4%E8%AF%81"><span class="nav-number">3.</span> <span class="nav-text">增加用户名密码认证</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%A9%E5%B1%95%E5%8A%9F%E8%83%BD"><span class="nav-number">4.</span> <span class="nav-text">扩展功能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E6%9D%9F%E8%AF%AD"><span class="nav-number">5.</span> <span class="nav-text">结束语</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
