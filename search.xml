@@ -477,6 +477,18 @@
 <p>接着修改站点配置文件。注意，如果你想将静态站点一键部署到多个服务器上也是可以的，比如：</p>
 <figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">sftp</span></span><br><span class="line">  <span class="attr">host:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">user:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">pass:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">remotePath:</span> <span class="string">xxx</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">22</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repository:</span> <span class="string">git@github.com:yourgithubname/yourgithubname.github.io</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
 <p>至此，每当你修改完文章，就可以通过hexo d完成站点部署，非常方便。</p>
+<h1 id="添加评论"><a href="#添加评论" class="headerlink" title="添加评论"></a>添加评论</h1><p>Gitalk是个不错的选择，主要原因有：</p>
+<ul>
+<li>技术类博客的用户都有github账号，登录方便，同时还能排除掉非技术用户的干扰。</li>
+<li>不用自己搭建高可用的评论数据库。</li>
+<li>Next主题支持gitalk。</li>
+</ul>
+<p>搭建也很简单，</p>
+<ol>
+<li>首先建立一个github仓库，用它的issues来存储评论。</li>
+<li>其次建立一个APP，生成client secret用于访问github仓库。<br>3、初始化github仓库，由于每篇文章都需要手动添加一条issue，比较麻烦。通常会将sitemap.xml中所有URL文章找到，再利用github的token写一个简单的自动化程序来做。</li>
+</ol>
+<p>在第3步需要注意，比如博客地址为<a href="https://www.taohui.pub/abc.html%EF%BC%8C%E9%82%A3%E4%B9%88%E8%87%AA%E5%8A%A8%E5%8C%96%E7%A8%8B%E5%BA%8F%E4%B8%BA%E6%AF%8F%E7%AF%87%E5%8D%9A%E5%AE%A2%E7%94%9F%E6%88%90labels%E6%97%B6%EF%BC%8C%E9%99%A4%E4%BA%86Gitalk%E5%A4%96%EF%BC%8C%E8%A6%81%E5%AF%B9/abc.html%E8%BF%9B%E8%A1%8Cmd5%E7%94%9F%E6%88%90%E6%A0%87%E7%AD%BE%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E5%AE%8C%E6%95%B4%E7%9A%84URL%EF%BC%8C%E5%90%A6%E5%88%99gitalk%E6%98%AF%E6%89%BE%E4%B8%8D%E5%88%B0%E8%AF%84%E8%AE%BA%E7%9A%84%E3%80%82">https://www.taohui.pub/abc.html，那么自动化程序为每篇博客生成labels时，除了Gitalk外，要对/abc.html进行md5生成标签，而不是完整的URL，否则gitalk是找不到评论的。</a></p>
 <h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>静态站点不需要数据库，也不需要php、java等编程语言基于模板生成动态页面，所以其安全性非常高，部署时只需要将public文件夹拷贝到目标服务器即可。</p>
 <p>Hexo是基于Javscript+Nodejs软件生成静态站点的，它可以将Markdown等格式的文章渲染为HTML文件，还支持第三方插件，可以一键部署到远程服务器。</p>
 <p>Next主题是Hexo上的首选主题，集成了许多插件，将备案号、本地搜索、搜索引擎统计、站点地图、文章推荐、版权声明、浏览进度、文章字数统计等功能都集成了进去。而且，我们可以很方便地修改主题样式。如果你的站点没有动态内容，或者通过第三方插件可以完成相应功能，那么Hexo+Next是个很好的解决方案！</p>
