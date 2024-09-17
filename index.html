@@ -14,7 +14,7 @@
 
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
-  <link rel="stylesheet" href="//s4.zstatic.net/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
   <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
   <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
 
@@ -217,10 +217,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-09-05 10:21:04 / 修改时间：20:13:48" itemprop="dateCreated datePublished" datetime="2024-09-05T10:21:04+08:00">2024-09-05</time>
+              <time title="创建时间：2024-09-05 10:21:04" itemprop="dateCreated datePublished" datetime="2024-09-05T10:21:04+08:00">2024-09-05</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-09-17 15:13:32" itemprop="dateModified" datetime="2024-09-17T15:13:32+08:00">2024-09-17</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -279,8 +285,8 @@
       
         <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
             <img src="/images/nginx/goaccess%E9%83%A8%E7%BD%B2.svg" itemprop="contentUrl">
-            <img src="https://goaccess.io/images/goaccess-dashboard.png" itemprop="contentUrl">
-            <img src="https://goaccess.io/images/goaccess-bright.png" itemprop="contentUrl">
+            <img src="/images/nginx/goaccess-dashboard.png" itemprop="contentUrl">
+            <img src="/images/nginx/goaccess-bright.png" itemprop="contentUrl">
         </div>
           <p>十多年前我曾使用GoAccess搭建了一个NGINX日志分析工具，它以其轻量级、低资源消耗和实时更新的特性，非常适合个人和小站点使用。最近我的服务器做了次搬家，需要重新搭建日志分析系统，于是到网上查找<a target="_blank" rel="noopener" href="https://goaccess.io/">GoAccess</a>的用法时，发现官方站点的文档还是一如既往的晦涩，而其他站点介绍的用法则与我要搭建的架构不契合。所以干脆做了次总结，在这篇文章中，我将分享我如何搭建GoAccess，并使其通过Websocket协议提供实时日志分析。我的架构部署图如下所示：<br><img src="/images/nginx/goaccess%E9%83%A8%E7%BD%B2.svg" alt="GoAccess部署架构图"><br>这么部署的原因是为了经过NGINX走全站SSL加密，毕竟在NGINX统一管理SSL证书还是方便点。</p>
           <!--noindex-->
@@ -971,10 +977,10 @@
   </div>
 
   
-  <script size="300" alpha="0.6" zIndex="-1" src="//fastly.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-ribbon.min.js"></script>
+  <script size="300" alpha="0.6" zIndex="-1" src="/ajax/libs/canvas-ribbon.min.js"></script>
   <script src="/lib/anime.min.js"></script>
-  <script src="//s4.zstatic.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="//s4.zstatic.net/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+  <script src="/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
   <script src="/lib/velocity/velocity.min.js"></script>
   <script src="/lib/velocity/velocity.ui.min.js"></script>
 
@@ -1021,7 +1027,7 @@
 
 <script>
 NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1/dist/Valine.min.js', () => {
+  NexT.utils.getScript('/ajax/libs/Valine.min.js', () => {
     var GUEST = ['nick', 'mail', 'link'];
     var guest = 'nick,mail,link';
     guest = guest.split(',').filter(item => {
