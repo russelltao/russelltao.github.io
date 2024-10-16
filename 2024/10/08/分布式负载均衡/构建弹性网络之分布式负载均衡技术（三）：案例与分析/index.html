@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
+  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.taohui.pub","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"default"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"disqus":{"text":"Load Disqus","order":-1},"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":6},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文首发于公众号中国金融电脑。“构建弹性网络之分布式负载均衡技术”系列的前两篇文章探讨了分布式负载均衡技术的基本概念与功能，以及其背后的关键技术和实现方法。作为本系列的最后一篇，本文聚焦金融、教育行业以及大型企业、政府机关等多个领域的典型应用场景，通过详实的案例分析，展示分布式负载均衡技术如何在实际业务场景中提升网络的可用性、可靠性、安全性，并量化该技术带来的性能提升和成本节约情况。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="构建弹性网络之分布式负载均衡技术（三）：案例与分析">
+<meta property="og:url" content="https://www.taohui.pub/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="个人笔记">
+<meta property="og:description" content="本文首发于公众号中国金融电脑。“构建弹性网络之分布式负载均衡技术”系列的前两篇文章探讨了分布式负载均衡技术的基本概念与功能，以及其背后的关键技术和实现方法。作为本系列的最后一篇，本文聚焦金融、教育行业以及大型企业、政府机关等多个领域的典型应用场景，通过详实的案例分析，展示分布式负载均衡技术如何在实际业务场景中提升网络的可用性、可靠性、安全性，并量化该技术带来的性能提升和成本节约情况。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡统一纳管第三方传统负载均衡.png">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡设备上的业务监控.png">
+<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡与专业安全厂商的协同工作流程.png">
+<meta property="article:published_time" content="2024-10-08T02:34:47.000Z">
+<meta property="article:modified_time" content="2024-10-16T01:43:21.676Z">
+<meta property="article:author" content="陶辉">
+<meta property="article:tag" content="负载均衡">
+<meta property="article:tag" content="OSI">
+<meta property="article:tag" content="分布式负载">
+<meta property="article:tag" content="DevOps">
+<meta property="article:tag" content="可观测性">
+<meta property="article:tag" content="弹性">
+<meta property="article:tag" content="TCO">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡统一纳管第三方传统负载均衡.png">
+
+<link rel="canonical" href="https://www.taohui.pub/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>构建弹性网络之分布式负载均衡技术（三）：案例与分析 | 个人笔记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">个人笔记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-关于陶辉">
+
+    <a href="/%E5%85%B3%E4%BA%8E%E9%99%B6%E8%BE%89" rel="section"><i class="fa fa-user fa-fw"></i>关于陶辉</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.taohui.pub/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/taohui_avatar.JPG">
+      <meta itemprop="name" content="陶辉">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人笔记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          构建弹性网络之分布式负载均衡技术（三）：案例与分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-08 10:34:47" itemprop="dateCreated datePublished" datetime="2024-10-08T10:34:47+08:00">2024-10-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-16 09:43:21" itemprop="dateModified" datetime="2024-10-16T09:43:21+08:00">2024-10-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%AB%98%E5%B9%B6%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">高并发</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/" class="post-meta-item leancloud_visitors" data-flag-title="构建弹性网络之分布式负载均衡技术（三）：案例与分析" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%BB%9F%E4%B8%80%E7%BA%B3%E7%AE%A1%E7%AC%AC%E4%B8%89%E6%96%B9%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.png" itemprop="contentUrl">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AE%BE%E5%A4%87%E4%B8%8A%E7%9A%84%E4%B8%9A%E5%8A%A1%E7%9B%91%E6%8E%A7.png" itemprop="contentUrl">
+            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E4%B8%8E%E4%B8%93%E4%B8%9A%E5%AE%89%E5%85%A8%E5%8E%82%E5%95%86%E7%9A%84%E5%8D%8F%E5%90%8C%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B.png" itemprop="contentUrl">
+        </div>
+        <p>本文首发于公众号<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/sUZImXYKM30GC2ZJiJIIuA">中国金融电脑</a>。“构建弹性网络之分布式负载均衡技术”系列的前两篇文章探讨了分布式负载均衡技术的基本概念与功能，以及其背后的关键技术和实现方法。作为本系列的最后一篇，本文聚焦金融、教育行业以及大型企业、政府机关等多个领域的典型应用场景，通过详实的案例分析，展示分布式负载均衡技术如何在实际业务场景中提升网络的可用性、可靠性、安全性，并量化该技术带来的性能提升和成本节约情况。</p>
+<span id="more"></span>
+
+<h1 id="案例一：金融行业"><a href="#案例一：金融行业" class="headerlink" title="案例一：金融行业"></a>案例一：金融行业</h1><p>以一家大型金融服务控股公司为例，该公司现有网络架构依赖于传统的硬件负载均衡设备管理四层流量，这些设备由多个厂商提供，每两台设备组成一个主备高可用集群。在四层负载均衡之后，公司采用基于NGINX进行二次开发的API网关构建了更为灵活的七层负载均衡，每个业务团队根据自身需求进行定制开发，并由网络团队统一部署和维护。</p>
+<h2 id="传统负载均衡架构给公司带来的挑战"><a href="#传统负载均衡架构给公司带来的挑战" class="headerlink" title="传统负载均衡架构给公司带来的挑战"></a>传统负载均衡架构给公司带来的挑战</h2><ol>
+<li>运维人员成本高昂<br>七层负载均衡运维人员的知识面偏向于应用层协议与服务器操作，而四层负载均衡设备往往需要运维人员熟悉特定厂商的产品特性和操作方法。团队成员的技能差异使得工具难以复用，最终导致运维团队规模扩大。</li>
+<li>系统可用性降低<br>七层负载均衡实例自身不具备高可用性，它是作为四层负载均衡中的上游服务器池实现集群化部署的，因此从以下方面影响了系统SLA。</li>
+</ol>
+<ul>
+<li>一是七层负载均衡实例的横向扩展在两层负载均衡系统中变得更加困难。</li>
+<li>二是会话保持算法需要在四层和七层两种不同的负载均衡系统中保持一致。</li>
+<li>三是配置变更时必须同步修改两层负载均衡的配置，所以变更与维护时间只能定在周中工作日的凌晨，以延长配置出错的补救时间。</li>
+<li>四是七层负载均衡自身故障的发现依赖于四层负载均衡的健康检查，通常这会有5秒以上的延迟。</li>
+<li>五是由于四层主备切换会导致长连接中断，因此该体系强制七层负载均衡统一使用短连接，以此降低连接中断概率。</li>
+<li>六是报文经历网络路径的延长，用户可感知的时延有所增加。<br>上述因素共同作用，导致系统的整体可用性降低。</li>
+</ul>
+<ol start="3">
+<li>故障定位速度慢<br>传统的四层负载均衡通常不支持开发人员直接使用，导致故障处理时BUG会在开发、测试、运维团队间反复传递。<br>当传统负载均衡仅用于处理四层流量时，由于其不解析应用层协议，缺乏详细的应用层日志。包括两层负载带来的配置一致性问题，这些都延长了故障解决时间。</li>
+</ol>
+<h2 id="分布式负载均衡解决方案对网络架构的改进"><a href="#分布式负载均衡解决方案对网络架构的改进" class="headerlink" title="分布式负载均衡解决方案对网络架构的改进"></a>分布式负载均衡解决方案对网络架构的改进</h2><p>采用分布式负载均衡解决方案将在以下五个方面改进公司的网络架构。</p>
+<ol>
+<li>配置简化。该方案将四层和七层负载均衡功能进行合并，不再需要通过OA系统同步策略配置，使得业务变更速度更快，比如更改IP地址的时间从原来的几天缩短为几秒。</li>
+<li>高可用性。分布式负载均衡实例具备内建的高可用性，能够不依赖外部组件迅速检测并恢复实例故障。</li>
+<li>单一管理面。不再需要单独维护各类负载管理面，不同团队基于租户、角色在同一个平台上操作，使得开发、测试和运维团队能够根据各自角色协同工作，从而可降低学习成本、提升沟通效率，总体运营支出降低45%。</li>
+<li>DevOps自动化。分布式负载均衡基于开放API设计，简化了DevOps自动化流程，促进了持续集成和持续部署的实施，如原先物理设备的部署速度限制了多云架构的规模增长，而现在PaaS团队在三年内将IaaS节点扩大了30倍。</li>
+<li>增强可观测性。分布式负载均衡提供了更全面的可观测和监控分析能力，故障排除时间节省50%～60%。<br>分布式负载均衡方案替换传统负载均衡架构是一个较为漫长的过程，通常会按照产品线逐一替代。而在这个过程中，分布式负载均衡可以先将传统负载均衡统一纳管（如下图所示），以降低还未替换到的传统负载均衡设备的管理成本。</li>
+</ol>
+<p><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%BB%9F%E4%B8%80%E7%BA%B3%E7%AE%A1%E7%AC%AC%E4%B8%89%E6%96%B9%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.png" alt="分布式负载均衡统一纳管第三方传统负载均衡"></p>
+<h1 id="案例二：大型企业"><a href="#案例二：大型企业" class="headerlink" title="案例二：大型企业"></a>案例二：大型企业</h1><p>某家全球布局的大型企业在多个关键地区部署了数据中心，面对激烈的市场竞争和多种类的应用，该企业依赖高效的负载均衡技术快速推出新服务，确保能够迅速在全球范围内响应市场变化。</p>
+<h2 id="采用传统负载均衡技术带来的问题"><a href="#采用传统负载均衡技术带来的问题" class="headerlink" title="采用传统负载均衡技术带来的问题"></a>采用传统负载均衡技术带来的问题</h2><p>最初，该企业采用了传统负载均衡技术，这导致企业面临以下问题。</p>
+<ol>
+<li>应用上线速度慢。由于开发、测试与生产环境内的各负载均衡设备由专有的网络团队运维，因此研发团队在产品开发各阶段都要通过OA系统申请负载资源，各阶段的审核、反复测试以及资源配置的复杂性拖慢了应用上线速度。</li>
+<li>静态IT成本高昂。每套负载均衡设备都预留了业务团队预估的最大网络吞吐量，然而实际流量往往远低于预估值，加之各业务团队倾向于高估峰值流量，以及传统负载主备集群中备机的资源浪费情况，导致数据中心的负载均衡成本居高不下。</li>
+<li>无法应对突发流量。面对突发流量，企业只能通过手动升级负载硬件或迁移业务来应对，这一过程既耗时费力，也容易因为出错而导致系统故障，常常错失业务增长的良机。</li>
+</ol>
+<h2 id="分布式负载均衡解决方案带来的改善"><a href="#分布式负载均衡解决方案带来的改善" class="headerlink" title="分布式负载均衡解决方案带来的改善"></a>分布式负载均衡解决方案带来的改善</h2><p>该企业引入分布式负载均衡解决方案后，上述问题得到了显著改善。</p>
+<ol>
+<li>提升应用上线速度。分布式负载均衡提供了统一的管理平台，支持多租户和多角色的使用，使得开发、测试和运维团队能够在同一管理面上协同工作。这种协同作业机制显著缩短了应用的上线流程，将应用推出时间从原本6～12个月缩短至4周左右。</li>
+<li>降低静态IT成本。不同于传统的主备模式，分布式负载均衡采用多活VIP，并结合N+1集群架构来实现灾备，有效避免了传统负载均衡双机集群下的备机资源浪费。此外，多条业务线能够共享同一个转发引擎集群，可进一步降低企业总体拥有成本（TCO），最终负载均衡x86 CPU核心数降低了40%。</li>
+<li>自动化应对突增流量。面对业务流量的急剧增加，分布式负载均衡能够根据CPU利用率自动扩展处理能力，通过增加转发引擎、扩展VIP容量或在集群中迁移业务自动应对流量高峰。这种自动化的弹性扩展机制确保了业务的连续性。</li>
+</ol>
+<p>通过采用分布式负载均衡解决方案，该企业能够更加灵活高效地管理其全球负载均衡需求，同时提高了业务响应速度和成本效益。</p>
+<h1 id="案例三：教育行业"><a href="#案例三：教育行业" class="headerlink" title="案例三：教育行业"></a>案例三：教育行业</h1><p>某大学作为一所以跨学科综合性教育而著称的知名高校，长期处于技术创新前列。该大学IT网络团队负责为师生及用户提供关键的IT基础服务，以前瞻性思维践行“一切即服务”战略，不断追求服务的最优化。<br>该团队先前使用的传统负载均衡设备在学生入学等服务高峰流量时遇到了性能瓶颈问题。此外，每次版本升级均伴随着主备迁移带来的连接中断风险。</p>
+<p>该团队负责人认为大多数系统故障都源于资源配置变更时的人为错误，于是推动团队采用分布式负载均衡解决方案，以期与当前的DevOps体系更好地结合，实现高度自动化和优化运维流程。采用该方案后，该大学网络系统具备了以下优势。</p>
+<ul>
+<li>一是高度自动化。该方案采用API驱动的自动化配置和管理方式，大幅降低了运维人员的工作量，提高了资源配置效率。由于资源配置是结构化和模板化的，更方便业务间复用。</li>
+<li>二是灵活的扩展性。每个转发引擎实例都支持单臂或者双臂部署，而整个分布式负载均衡系统则支持云原生架构，具备弹性伸缩能力，能够根据业务需求动态调整资源，实现按需分配。</li>
+<li>三是丰富的功能。该方案支持双栈IPv6、HTTP2、QUIC等高效协议，同时，除了传统的负载均衡功能外，还支持静态资源服务，可以将原先部署在NGINX等应用服务器上的功能整合到负载均衡设备上，从而简化系统架构，提高系统性能。如图2所示，分布式负载均衡的虚拟服务上可以直接部署静态资源包，并可针对相应规则下的流量返回映射后的静态文件。</li>
+</ul>
+<p><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AE%BE%E5%A4%87%E4%B8%8A%E7%9A%84%E4%B8%9A%E5%8A%A1%E7%9B%91%E6%8E%A7.png" alt="分布式负载均衡设备上的业务监控"></p>
+<ul>
+<li>四是强大的可观测性。基于分布式系统设计的转发引擎可以与服务器协同提供全链路监控，从客户端到服务器、从应用层到数据链路层，实现对整个系统的实时监控和分析。</li>
+<li>五是智能流量调度。该方案通过灵活的分发规则与分发策略，可实现AB测试、灰度发布、温暖上线等动态流量调度。服务器池内还可以配置不同优先级和权重的二级虚拟组，协同负载均衡算法实现更精细化的流量控制。<br>通过采用分布式负载均衡解决方案，该大学成功提升了IT服务的性能和可靠性，同时降低了运维成本，提升了用户体验。</li>
+</ul>
+<h1 id="案例四：政府机关"><a href="#案例四：政府机关" class="headerlink" title="案例四：政府机关"></a>案例四：政府机关</h1><p>政府机关作为社会管理和服务的重要机构，其网络架构的安全性、稳定性和可扩展性尤为关键。而在全栈自主可控过程中，负载均衡设备的替换更是不可或缺的一环。在这一背景下，某政府机关采取了前瞻性的技术升级策略，从传统的硬件负载均衡向更为先进的分布式负载均衡迁移，以满足日益增长的网络服务需求，应对愈发严峻的网络安全挑战。</p>
+<ol>
+<li>采用传统负载均衡带来的问题<br>在当前严峻的网络安全形势下，政府机关对网络的安全性有着非常高的要求，而传统硬件负载均衡设备功能固定，难以应对快速变化的网络环境和业务需求。</li>
+<li>分布式负载均衡解决方案带来安全能力提升</li>
+</ol>
+<p>针对上述挑战，该政府机关决定引入分布式负载均衡解决方案，以提升其安全能力。</p>
+<p>该政府机关通过与专业安全厂商的紧密合作，在分布式负载均衡层面实现了对网络流量的精细化控制和管理。分布式负载均衡系统内建了多项安全功能，包括黑白名单、请求限速、并发连接限制和防盗链等，这些功能足以满足大多数常规安全场景的需求。</p>
+<p>对于安全性要求更高的特定场景，分布式负载均衡能够通过OpenAPI与专业安全解决方案无缝协作（如下图所示），这种协同工作机制允许安全产品直接在负载均衡层面区分正常用户流量和潜在的攻击流量。</p>
+<p><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E4%B8%8E%E4%B8%93%E4%B8%9A%E5%AE%89%E5%85%A8%E5%8E%82%E5%95%86%E7%9A%84%E5%8D%8F%E5%90%8C%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B.png" alt="分布式负载均衡与专业安全厂商的协同工作流程"></p>
+<p>当安全产品通过单一管理面订阅某业务的日志或者镜像流量后，转发引擎会依据规则将它们直接推送给安全系统，安全系统经过数据清洗、特征提取和行为分析后，可以通过OpenAPI向管理面下发规则，所有转发引擎会基于这些策略规则处理流量。例如，可以在上游应用服务器返回的某些HTML页面中注入JavaScript脚本，用于监测用户行为并收集信息，必要时可直接在浏览器端诱导攻击者执行特定的操作，从而使其暴露攻击意图。</p>
+<p>当安全系统明确发现攻击者后，可以将相应的源IP集合更新到分布式负载均衡，转发引擎会根据规则及时处理。例如，既可以让转发引擎直接丢弃攻击报文，也可以将攻击流量重定向到某个隔离的网络区域进行处理，还可以结合分布式负载均衡上的静态资源服务部署蜜罐系统，进一步分析攻击者的行为。</p>
+<p>由于分布式负载均衡的VIP可同时由数十个转发引擎提供服务，因此它的防DDOS攻击能力远强于传统负载均衡。通过集成化的安全策略和自动化的流量管理，该政府机关能够更有效地防御网络攻击，从而保障关键网络资源和数据的安全。</p>
+<p>此外，在软件方面，分布式负载均衡解决方案兼容多种信创体系架构，能够部署在基于x86架构的CPU（如海光）或ARM64架构的CPU（如鲲鹏）上；同时，支持在OpenEuler、统信UOS、麒麟等操作系统上运行，确保了该方案与国内技术生态的兼容性。在TLS/SSL安全协议方面，分布式负载均衡不仅支持国际标准算法，还特别增加了对SM2、SM3、SM4等国密算法的支持功能，进一步强化了信息传输的安全性。</p>
+<p>通过前瞻性的技术升级，该政府机关显著提升了网络的安全性、稳定性和可扩展性，为数字化转型提供了坚实的技术基础和安全保障。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文深入探讨了分布式负载均衡技术在多个重要领域的实际应用，凸显了其在增强系统可用性、加速新应用部署、快速定位故障、降低IT基础设施成本、有效应对流量高峰、降低运维开支、加强网络安全、支持全栈自主可控，以及提供多样化功能等方面的显著优势。这些应用案例充分证明了分布式负载均衡技术的价值和巨大潜力。</p>
+<p>本系列文章的深入分析揭示了分布式负载均衡在现代网络架构中的重要作用。未来，分布式负载均衡将为技术创新和行业应用带来更多的可能性。</p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2024\07\18\分布式负载均衡\构建弹性网络之分布式负载均衡技术-一-：特点与功能\" rel="bookmark">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2024\08\01\分布式负载均衡\构建弹性网络之分布式负载均衡技术（二）：技术与实现\" rel="bookmark">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2019\08\09\nginx\巧用-nginx-实现大规模分布式集群的高可用性\" rel="bookmark">巧用 Nginx 实现大规模分布式集群的高可用性</a></div>
+    </li>
+  </ul>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>陶辉
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://www.taohui.pub/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/" title="构建弹性网络之分布式负载均衡技术（三）：案例与分析">https://www.taohui.pub/2024/10/08/分布式负载均衡/构建弹性网络之分布式负载均衡技术（三）：案例与分析/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-ND</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/" rel="tag"># 负载均衡</a>
+              <a href="/tags/OSI/" rel="tag"># OSI</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD/" rel="tag"># 分布式负载</a>
+              <a href="/tags/DevOps/" rel="tag"># DevOps</a>
+              <a href="/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/" rel="tag"># 可观测性</a>
+              <a href="/tags/%E5%BC%B9%E6%80%A7/" rel="tag"># 弹性</a>
+              <a href="/tags/TCO/" rel="tag"># TCO</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/09/05/nginx/GoAccess-%E5%AE%9E%E6%97%B6%E5%88%86%E6%9E%90Nginx%E6%97%A5%E5%BF%97%E7%9A%84%E8%BD%BB%E9%87%8F%E7%BA%A7%E5%B7%A5%E5%85%B7/" rel="prev" title="GoAccess: 实时分析Nginx日志的轻量级工具">
+      <i class="fa fa-chevron-left"></i> GoAccess: 实时分析Nginx日志的轻量级工具
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-gitalk">gitalk</a></li>
+            <li class="tab"><a href="#comment-valine">valine</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane gitalk" id="comment-gitalk">
+              <div class="comments" id="gitalk-container"></div>
+            </div>
+            <div class="tab-pane valine" id="comment-valine">
+              <div class="comments" id="valine-comments"></div>
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E4%B8%80%EF%BC%9A%E9%87%91%E8%9E%8D%E8%A1%8C%E4%B8%9A"><span class="nav-number">1.</span> <span class="nav-text">案例一：金融行业</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%9E%B6%E6%9E%84%E7%BB%99%E5%85%AC%E5%8F%B8%E5%B8%A6%E6%9D%A5%E7%9A%84%E6%8C%91%E6%88%98"><span class="nav-number">1.1.</span> <span class="nav-text">传统负载均衡架构给公司带来的挑战</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%AF%B9%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84%E7%9A%84%E6%94%B9%E8%BF%9B"><span class="nav-number">1.2.</span> <span class="nav-text">分布式负载均衡解决方案对网络架构的改进</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E4%BA%8C%EF%BC%9A%E5%A4%A7%E5%9E%8B%E4%BC%81%E4%B8%9A"><span class="nav-number">2.</span> <span class="nav-text">案例二：大型企业</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%87%E7%94%A8%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%E5%B8%A6%E6%9D%A5%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.1.</span> <span class="nav-text">采用传统负载均衡技术带来的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%B8%A6%E6%9D%A5%E7%9A%84%E6%94%B9%E5%96%84"><span class="nav-number">2.2.</span> <span class="nav-text">分布式负载均衡解决方案带来的改善</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E4%B8%89%EF%BC%9A%E6%95%99%E8%82%B2%E8%A1%8C%E4%B8%9A"><span class="nav-number">3.</span> <span class="nav-text">案例三：教育行业</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E5%9B%9B%EF%BC%9A%E6%94%BF%E5%BA%9C%E6%9C%BA%E5%85%B3"><span class="nav-number">4.</span> <span class="nav-text">案例四：政府机关</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <a href="/关于陶辉/index.html"><img class="site-author-image" itemprop="image" alt="陶辉"
+      src="/images/taohui_avatar.JPG"></a>
+  <p class="site-author-name" itemprop="name">陶辉</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">79</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">314</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/russelltao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:russelltao@foxmail.com" title="邮件 → mailto:russelltao@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>邮件</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/russelltao" title="微博 → https:&#x2F;&#x2F;weibo.com&#x2F;russelltao" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>微博</a>
+      </span>
+  </div>
+
+
+
+  <div class="links-of-recent-posts motion-element">
+    <div class="links-of-recent-posts-title">
+      <i class="fa fa-history fa-fw"></i>
+      最近文章
+    </div>
+    <ul class="links-of-recent-posts-list">
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/" title="2024&#x2F;10&#x2F;08&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（三）：案例与分析&#x2F;">构建弹性网络之分布式负载均衡技术（三）：案例与分析</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/09/05/nginx/GoAccess-%E5%AE%9E%E6%97%B6%E5%88%86%E6%9E%90Nginx%E6%97%A5%E5%BF%97%E7%9A%84%E8%BD%BB%E9%87%8F%E7%BA%A7%E5%B7%A5%E5%85%B7/" title="2024&#x2F;09&#x2F;05&#x2F;nginx&#x2F;GoAccess-实时分析Nginx日志的轻量级工具&#x2F;">GoAccess: 实时分析Nginx日志的轻量级工具</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/" title="2024&#x2F;08&#x2F;01&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术（二）：技术与实现&#x2F;">构建弹性网络之分布式负载均衡技术（二）：技术与实现</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/07/18/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF-%E4%B8%80-%EF%BC%9A%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8A%9F%E8%83%BD/" title="2024&#x2F;07&#x2F;18&#x2F;分布式负载均衡&#x2F;构建弹性网络之分布式负载均衡技术-一-：特点与功能&#x2F;">构建弹性网络之分布式负载均衡技术(一)：特点与功能</a>
+        </li>
+        <li class="links-of-recent-posts-item">
+          <a href="/2024/06/11/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E7%99%BE%E4%B8%87%E5%B9%B6%E5%8F%91%E8%BF%9E%E6%8E%A5%E6%8C%91%E6%88%98%EF%BC%9Awrk%E7%9A%84%E9%AB%98%E5%B9%B6%E5%8F%91%E6%B5%8B%E8%AF%95%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/" title="2024&#x2F;06&#x2F;11&#x2F;网络协议&#x2F;百万并发连接挑战：wrk的高并发测试深度解析&#x2F;">百万并发连接挑战：wrk的高并发测试深度解析</a>
+        </li>
+    </ul>
+  </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">浙ICP备14005132号-1</a> </a>
+      <img src="/images/%E5%A4%87%E6%A1%88%E5%9B%BE%E6%A0%87.png" style="display: inline-block;"><a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33010802009076" rel="noopener" target="_blank">浙公网安备 33010802009076号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 2013 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">陶辉</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">378k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">5:44</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/ajax/libs/canvas-ribbon.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liqLrOhytbzoKLIE',
+      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
+      repo        : 'myblog_comments',
+      owner       : 'russelltao',
+      admin       : ['russelltao'],
+      id          : 'c154bc103b718acd2c2912ee17ef7d5f',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('/ajax/libs/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'FEvcgdNolpfBmDBG7LHVwtuI-gzGzoHsz',
+      appKey     : 'RYaf54oXtzubonJgTjmauu90',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
