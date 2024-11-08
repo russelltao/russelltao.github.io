@@ -15,8 +15,8 @@
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
   <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
-  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
-  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -25,9 +25,9 @@
 
   <meta name="description" content="diveinto_protocol深入理解网络协议">
 <meta property="og:type" content="website">
-<meta property="og:title" content="个人笔记">
+<meta property="og:title" content="陶辉笔记">
 <meta property="og:url" content="https://www.taohui.pub/diveinto_protocol/README.html">
-<meta property="og:site_name" content="个人笔记">
+<meta property="og:site_name" content="陶辉笔记">
 <meta property="og:description" content="diveinto_protocol深入理解网络协议">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-07-09T23:10:40.766Z">
@@ -49,7 +49,7 @@
   };
 </script>
 
-  <title> | 个人笔记
+  <title> | 陶辉笔记
 </title>
   
 
@@ -101,7 +101,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">个人笔记</h1>
+      <h1 class="site-title">陶辉笔记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
       <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
@@ -466,26 +466,6 @@
 
   
 
-<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
-
-<script>
-NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
-    var gitalk = new Gitalk({
-      clientID    : 'Ov23liqLrOhytbzoKLIE',
-      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
-      repo        : 'myblog_comments',
-      owner       : 'russelltao',
-      admin       : ['russelltao'],
-      id          : '4fd4fb500f92ba0b0c786e8b3f20741a',
-        language: 'zh-CN',
-      distractionFreeMode: true
-    });
-    gitalk.render('gitalk-container');
-  }, window.Gitalk);
-});
-</script>
-
 
 <script>
 NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
@@ -512,6 +492,26 @@ NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
       serverURLs : ''
     });
   }, window.Valine);
+});
+</script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liqLrOhytbzoKLIE',
+      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
+      repo        : 'myblog_comments',
+      owner       : 'russelltao',
+      admin       : ['russelltao'],
+      id          : '4fd4fb500f92ba0b0c786e8b3f20741a',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
 });
 </script>
 

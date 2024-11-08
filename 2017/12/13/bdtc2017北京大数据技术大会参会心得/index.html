@@ -15,8 +15,8 @@
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
   <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
-  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
-  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -27,7 +27,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="BDTC2017北京大数据技术大会参会心得">
 <meta property="og:url" content="https://www.taohui.pub/2017/12/13/bdtc2017%E5%8C%97%E4%BA%AC%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9A%E5%8F%82%E4%BC%9A%E5%BF%83%E5%BE%97/index.html">
-<meta property="og:site_name" content="个人笔记">
+<meta property="og:site_name" content="陶辉笔记">
 <meta property="og:description" content="12月7、8、9号三天在北京参加了BDTC大会，主题是人工智能与大数据，除了第一天的全员大会外，我参加了第二天上午的大数据云服务、下午的知识图谱、第三天的机器学习论坛。在此做一个回顾，也希望能为未参加大会的朋友们分享从我个人角度思考的心得。 禇晓文教授的《基于GPU的性能建模与分布式深度学习框架评价》是在GPU训练性能上讨论了benchmark分析方法。从CPU到GPU后，训练时间降低了一些，但能">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://www.taohui.pub/2017/12/gpu%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD%E6%98%AF%E7%93%B6%E9%A2%88-1.jpg">
@@ -55,7 +55,7 @@
   };
 </script>
 
-  <title>BDTC2017北京大数据技术大会参会心得 | 个人笔记</title>
+  <title>BDTC2017北京大数据技术大会参会心得 | 陶辉笔记</title>
   
 
 
@@ -106,7 +106,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">个人笔记</h1>
+      <h1 class="site-title">陶辉笔记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
       <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
@@ -214,7 +214,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
+      <meta itemprop="name" content="陶辉笔记">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -608,26 +608,6 @@
 
   
 
-<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
-
-<script>
-NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
-    var gitalk = new Gitalk({
-      clientID    : 'Ov23liqLrOhytbzoKLIE',
-      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
-      repo        : 'myblog_comments',
-      owner       : 'russelltao',
-      admin       : ['russelltao'],
-      id          : 'defb05620f70cde184b08cd04c424f20',
-        language: 'zh-CN',
-      distractionFreeMode: true
-    });
-    gitalk.render('gitalk-container');
-  }, window.Gitalk);
-});
-</script>
-
 
 <script>
 NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
@@ -654,6 +634,26 @@ NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
       serverURLs : ''
     });
   }, window.Valine);
+});
+</script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liqLrOhytbzoKLIE',
+      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
+      repo        : 'myblog_comments',
+      owner       : 'russelltao',
+      admin       : ['russelltao'],
+      id          : 'defb05620f70cde184b08cd04c424f20',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
 });
 </script>
 

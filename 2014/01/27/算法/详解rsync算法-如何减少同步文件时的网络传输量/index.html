@@ -15,8 +15,8 @@
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
   <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
-  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
-  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -27,7 +27,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="详解rsync算法--如何减少同步文件时的网络传输量">
 <meta property="og:url" content="https://www.taohui.pub/2014/01/27/%E7%AE%97%E6%B3%95/%E8%AF%A6%E8%A7%A3rsync%E7%AE%97%E6%B3%95-%E5%A6%82%E4%BD%95%E5%87%8F%E5%B0%91%E5%90%8C%E6%AD%A5%E6%96%87%E4%BB%B6%E6%97%B6%E7%9A%84%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E9%87%8F/index.html">
-<meta property="og:site_name" content="个人笔记">
+<meta property="og:site_name" content="陶辉笔记">
 <meta property="og:description" content="先看下图中的场景，客户端A和B，以及服务器server都保存了同一个文件，最初，A、B和server上的文件内容都是相同的（记为File.1）。某一时刻，B修改了文件内容，上传到SERVER上（记为File.2）。客户端A这时试图向服务器SERVER更新文件到最新内容，也就是File.1更新为File.2。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://www.taohui.pub/2017/01/0_1330418966gvnq-1-1.png">
@@ -59,7 +59,7 @@
   };
 </script>
 
-  <title>详解rsync算法--如何减少同步文件时的网络传输量 | 个人笔记</title>
+  <title>详解rsync算法--如何减少同步文件时的网络传输量 | 陶辉笔记</title>
   
 
 
@@ -110,7 +110,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">个人笔记</h1>
+      <h1 class="site-title">陶辉笔记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
       <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
@@ -218,7 +218,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
+      <meta itemprop="name" content="陶辉笔记">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -603,26 +603,6 @@
 
   
 
-<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
-
-<script>
-NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
-    var gitalk = new Gitalk({
-      clientID    : 'Ov23liqLrOhytbzoKLIE',
-      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
-      repo        : 'myblog_comments',
-      owner       : 'russelltao',
-      admin       : ['russelltao'],
-      id          : 'ae6dfce1e11d8f580b391de5996aecac',
-        language: 'zh-CN',
-      distractionFreeMode: true
-    });
-    gitalk.render('gitalk-container');
-  }, window.Gitalk);
-});
-</script>
-
 
 <script>
 NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
@@ -649,6 +629,26 @@ NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
       serverURLs : ''
     });
   }, window.Valine);
+});
+</script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liqLrOhytbzoKLIE',
+      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
+      repo        : 'myblog_comments',
+      owner       : 'russelltao',
+      admin       : ['russelltao'],
+      id          : 'ae6dfce1e11d8f580b391de5996aecac',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
 });
 </script>
 

@@ -15,8 +15,8 @@
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
   <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
-  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
-  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -27,7 +27,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="构建弹性网络之分布式负载均衡技术（二）：技术与实现">
 <meta property="og:url" content="https://www.taohui.pub/2024/08/01/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E6%8A%80%E6%9C%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0/index.html">
-<meta property="og:site_name" content="个人笔记">
+<meta property="og:site_name" content="陶辉笔记">
 <meta property="og:description" content="本文首发于《中国金融电脑》第421期，今日头条地址链接。 随着信息技术的飞速发展，企业对于网络的依赖程度日益加深。传统的负载均衡技术曾经是企业数据中心的“守护神”，如今却在应对现代应用的快速交付、成本效益和自动化运维方面面临前所未有的挑战。分布式负载均衡技术可为企业网络带来革命性的改变。本文将深入分析从技术层面实现分布式负载均衡的关键要素，从弹性地址、“N+1”高可用系统到数据面与管理面的通信，介">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://www.taohui.pub/images/负载均衡/传统负载均衡设备双机主从架构.png">
@@ -59,7 +59,7 @@
   };
 </script>
 
-  <title>构建弹性网络之分布式负载均衡技术（二）：技术与实现 | 个人笔记</title>
+  <title>构建弹性网络之分布式负载均衡技术（二）：技术与实现 | 陶辉笔记</title>
   
 
 
@@ -110,7 +110,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">个人笔记</h1>
+      <h1 class="site-title">陶辉笔记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
       <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
@@ -218,7 +218,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
+      <meta itemprop="name" content="陶辉笔记">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -645,26 +645,6 @@
 
   
 
-<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
-
-<script>
-NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
-    var gitalk = new Gitalk({
-      clientID    : 'Ov23liqLrOhytbzoKLIE',
-      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
-      repo        : 'myblog_comments',
-      owner       : 'russelltao',
-      admin       : ['russelltao'],
-      id          : 'efb0c785536e8e611e03b04665454595',
-        language: 'zh-CN',
-      distractionFreeMode: true
-    });
-    gitalk.render('gitalk-container');
-  }, window.Gitalk);
-});
-</script>
-
 
 <script>
 NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
@@ -691,6 +671,26 @@ NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
       serverURLs : ''
     });
   }, window.Valine);
+});
+</script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liqLrOhytbzoKLIE',
+      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
+      repo        : 'myblog_comments',
+      owner       : 'russelltao',
+      admin       : ['russelltao'],
+      id          : 'efb0c785536e8e611e03b04665454595',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
 });
 </script>
 

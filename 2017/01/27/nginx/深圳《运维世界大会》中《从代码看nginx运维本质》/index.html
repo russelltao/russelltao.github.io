@@ -15,8 +15,8 @@
 
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
   <link rel="stylesheet" href="/ajax/libs/fancybox/3.3.5/jquery.fancybox.min.css">
-  <link rel="stylesheet" href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css">
-  <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -27,7 +27,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="深圳《运维世界大会》中《从代码看Nginx运维本质》演讲PPT分享">
 <meta property="og:url" content="https://www.taohui.pub/2017/01/27/nginx/%E6%B7%B1%E5%9C%B3%E3%80%8A%E8%BF%90%E7%BB%B4%E4%B8%96%E7%95%8C%E5%A4%A7%E4%BC%9A%E3%80%8B%E4%B8%AD%E3%80%8A%E4%BB%8E%E4%BB%A3%E7%A0%81%E7%9C%8Bnginx%E8%BF%90%E7%BB%B4%E6%9C%AC%E8%B4%A8%E3%80%8B/index.html">
-<meta property="og:site_name" content="个人笔记">
+<meta property="og:site_name" content="陶辉笔记">
 <meta property="og:description" content="2016年12月3日赴深圳参加OpsWorld运维世界大会，作为嘉宾讲师向中国的一线运维研发工程师分享Nginx的使用技巧，大会由运维帮、云技术、Linux中国联合举办，三大社区汇聚了大量的技术精英和行业领袖，微信订阅号粉丝达到20多万人，技术内容覆盖整个互联网技术圈。特将PPT放在这里，希望能够帮助到大家！  从代码看Nginx运维">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://www.taohui.pub/2017/01/9ad22f2511b9e03464dee1f37861b58f_-300x225.jpg">
@@ -56,7 +56,7 @@
   };
 </script>
 
-  <title>深圳《运维世界大会》中《从代码看Nginx运维本质》演讲PPT分享 | 个人笔记</title>
+  <title>深圳《运维世界大会》中《从代码看Nginx运维本质》演讲PPT分享 | 陶辉笔记</title>
   
 
 
@@ -107,7 +107,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">个人笔记</h1>
+      <h1 class="site-title">陶辉笔记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
       <p class="site-subtitle" itemprop="description">陶辉的技术分享</p>
@@ -215,7 +215,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人笔记">
+      <meta itemprop="name" content="陶辉笔记">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -601,26 +601,6 @@
 
   
 
-<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
-
-<script>
-NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
-    var gitalk = new Gitalk({
-      clientID    : 'Ov23liqLrOhytbzoKLIE',
-      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
-      repo        : 'myblog_comments',
-      owner       : 'russelltao',
-      admin       : ['russelltao'],
-      id          : 'b9b778fa9b3494170fb2da92af70c692',
-        language: 'zh-CN',
-      distractionFreeMode: true
-    });
-    gitalk.render('gitalk-container');
-  }, window.Gitalk);
-});
-</script>
-
 
 <script>
 NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
@@ -647,6 +627,26 @@ NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
       serverURLs : ''
     });
   }, window.Valine);
+});
+</script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liqLrOhytbzoKLIE',
+      clientSecret: 'f41a4c64f001be23ee45cd15af1ba91acdfbf72f',
+      repo        : 'myblog_comments',
+      owner       : 'russelltao',
+      admin       : ['russelltao'],
+      id          : 'b9b778fa9b3494170fb2da92af70c692',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
 });
 </script>
 
