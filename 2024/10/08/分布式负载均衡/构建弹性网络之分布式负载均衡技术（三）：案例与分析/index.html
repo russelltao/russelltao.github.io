@@ -30,11 +30,11 @@
 <meta property="og:site_name" content="陶辉笔记">
 <meta property="og:description" content="本文首发于公众号中国金融电脑。“构建弹性网络之分布式负载均衡技术”系列的前两篇文章探讨了分布式负载均衡技术的基本概念与功能，以及其背后的关键技术和实现方法。作为本系列的最后一篇，本文聚焦金融、教育行业以及大型企业、政府机关等多个领域的典型应用场景，通过详实的案例分析，展示分布式负载均衡技术如何在实际业务场景中提升网络的可用性、可靠性、安全性，并量化该技术带来的性能提升和成本节约情况。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡统一纳管第三方传统负载均衡.png">
-<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡设备上的业务监控.png">
-<meta property="og:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡与专业安全厂商的协同工作流程.png">
+<meta property="og:image" content="https://s2.loli.net/2024/11/10/ryJvmjbpRetBKMs.jpg">
+<meta property="og:image" content="https://s2.loli.net/2024/11/10/Rj76lOLU4vnrCkV.jpg">
+<meta property="og:image" content="https://s2.loli.net/2024/11/10/BpAHgIswSK5vGd3.jpg">
 <meta property="article:published_time" content="2024-10-08T02:34:47.000Z">
-<meta property="article:modified_time" content="2024-10-16T01:43:21.676Z">
+<meta property="article:modified_time" content="2024-11-10T08:20:08.468Z">
 <meta property="article:author" content="陶辉">
 <meta property="article:tag" content="负载均衡">
 <meta property="article:tag" content="OSI">
@@ -44,7 +44,7 @@
 <meta property="article:tag" content="弹性">
 <meta property="article:tag" content="TCO">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.taohui.pub/images/负载均衡/分布式负载均衡统一纳管第三方传统负载均衡.png">
+<meta name="twitter:image" content="https://s2.loli.net/2024/11/10/ryJvmjbpRetBKMs.jpg">
 
 <link rel="canonical" href="https://www.taohui.pub/2024/10/08/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E6%9E%84%E5%BB%BA%E5%BC%B9%E6%80%A7%E7%BD%91%E7%BB%9C%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E6%8A%80%E6%9C%AF%EF%BC%88%E4%B8%89%EF%BC%89%EF%BC%9A%E6%A1%88%E4%BE%8B%E4%B8%8E%E5%88%86%E6%9E%90/">
 
@@ -239,7 +239,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-10-16 09:43:21" itemprop="dateModified" datetime="2024-10-16T09:43:21+08:00">2024-10-16</time>
+                <time title="修改时间：2024-11-10 16:20:08" itemprop="dateModified" datetime="2024-11-10T16:20:08+08:00">2024-11-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -298,9 +298,9 @@
 
       
         <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
-            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%BB%9F%E4%B8%80%E7%BA%B3%E7%AE%A1%E7%AC%AC%E4%B8%89%E6%96%B9%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.png" itemprop="contentUrl">
-            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AE%BE%E5%A4%87%E4%B8%8A%E7%9A%84%E4%B8%9A%E5%8A%A1%E7%9B%91%E6%8E%A7.png" itemprop="contentUrl">
-            <img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E4%B8%8E%E4%B8%93%E4%B8%9A%E5%AE%89%E5%85%A8%E5%8E%82%E5%95%86%E7%9A%84%E5%8D%8F%E5%90%8C%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B.png" itemprop="contentUrl">
+            <img src="https://s2.loli.net/2024/11/10/ryJvmjbpRetBKMs.jpg" itemprop="contentUrl">
+            <img src="https://s2.loli.net/2024/11/10/Rj76lOLU4vnrCkV.jpg" itemprop="contentUrl">
+            <img src="https://s2.loli.net/2024/11/10/BpAHgIswSK5vGd3.jpg" itemprop="contentUrl">
         </div>
         <p>本文首发于公众号<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/sUZImXYKM30GC2ZJiJIIuA">中国金融电脑</a>。“构建弹性网络之分布式负载均衡技术”系列的前两篇文章探讨了分布式负载均衡技术的基本概念与功能，以及其背后的关键技术和实现方法。作为本系列的最后一篇，本文聚焦金融、教育行业以及大型企业、政府机关等多个领域的典型应用场景，通过详实的案例分析，展示分布式负载均衡技术如何在实际业务场景中提升网络的可用性、可靠性、安全性，并量化该技术带来的性能提升和成本节约情况。</p>
 <span id="more"></span>
@@ -329,7 +329,7 @@
 <li>DevOps自动化。分布式负载均衡基于开放API设计，简化了DevOps自动化流程，促进了持续集成和持续部署的实施，如原先物理设备的部署速度限制了多云架构的规模增长，而现在PaaS团队在三年内将IaaS节点扩大了30倍。</li>
 <li>增强可观测性。分布式负载均衡提供了更全面的可观测和监控分析能力，故障排除时间节省50%～60%。<br>分布式负载均衡方案替换传统负载均衡架构是一个较为漫长的过程，通常会按照产品线逐一替代。而在这个过程中，分布式负载均衡可以先将传统负载均衡统一纳管（如下图所示），以降低还未替换到的传统负载均衡设备的管理成本。</li>
 </ol>
-<p><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%BB%9F%E4%B8%80%E7%BA%B3%E7%AE%A1%E7%AC%AC%E4%B8%89%E6%96%B9%E4%BC%A0%E7%BB%9F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.png" alt="分布式负载均衡统一纳管第三方传统负载均衡"></p>
+<p><img src="https://s2.loli.net/2024/11/10/ryJvmjbpRetBKMs.jpg" alt="分布式负载均衡统一纳管第三方传统负载均衡"></p>
 <h1 id="案例二：大型企业"><a href="#案例二：大型企业" class="headerlink" title="案例二：大型企业"></a>案例二：大型企业</h1><p>某家全球布局的大型企业在多个关键地区部署了数据中心，面对激烈的市场竞争和多种类的应用，该企业依赖高效的负载均衡技术快速推出新服务，确保能够迅速在全球范围内响应市场变化。</p>
 <h2 id="采用传统负载均衡技术带来的问题"><a href="#采用传统负载均衡技术带来的问题" class="headerlink" title="采用传统负载均衡技术带来的问题"></a>采用传统负载均衡技术带来的问题</h2><p>最初，该企业采用了传统负载均衡技术，这导致企业面临以下问题。</p>
 <ol>
@@ -351,7 +351,7 @@
 <li>二是灵活的扩展性。每个转发引擎实例都支持单臂或者双臂部署，而整个分布式负载均衡系统则支持云原生架构，具备弹性伸缩能力，能够根据业务需求动态调整资源，实现按需分配。</li>
 <li>三是丰富的功能。该方案支持双栈IPv6、HTTP2、QUIC等高效协议，同时，除了传统的负载均衡功能外，还支持静态资源服务，可以将原先部署在NGINX等应用服务器上的功能整合到负载均衡设备上，从而简化系统架构，提高系统性能。如图2所示，分布式负载均衡的虚拟服务上可以直接部署静态资源包，并可针对相应规则下的流量返回映射后的静态文件。</li>
 </ul>
-<p><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%AE%BE%E5%A4%87%E4%B8%8A%E7%9A%84%E4%B8%9A%E5%8A%A1%E7%9B%91%E6%8E%A7.png" alt="分布式负载均衡设备上的业务监控"></p>
+<p><img src="https://s2.loli.net/2024/11/10/Rj76lOLU4vnrCkV.jpg" alt="分布式负载均衡设备上的业务监控"></p>
 <ul>
 <li>四是强大的可观测性。基于分布式系统设计的转发引擎可以与服务器协同提供全链路监控，从客户端到服务器、从应用层到数据链路层，实现对整个系统的实时监控和分析。</li>
 <li>五是智能流量调度。该方案通过灵活的分发规则与分发策略，可实现AB测试、灰度发布、温暖上线等动态流量调度。服务器池内还可以配置不同优先级和权重的二级虚拟组，协同负载均衡算法实现更精细化的流量控制。<br>通过采用分布式负载均衡解决方案，该大学成功提升了IT服务的性能和可靠性，同时降低了运维成本，提升了用户体验。</li>
@@ -364,7 +364,7 @@
 <p>针对上述挑战，该政府机关决定引入分布式负载均衡解决方案，以提升其安全能力。</p>
 <p>该政府机关通过与专业安全厂商的紧密合作，在分布式负载均衡层面实现了对网络流量的精细化控制和管理。分布式负载均衡系统内建了多项安全功能，包括黑白名单、请求限速、并发连接限制和防盗链等，这些功能足以满足大多数常规安全场景的需求。</p>
 <p>对于安全性要求更高的特定场景，分布式负载均衡能够通过OpenAPI与专业安全解决方案无缝协作（如下图所示），这种协同工作机制允许安全产品直接在负载均衡层面区分正常用户流量和潜在的攻击流量。</p>
-<p><img src="/images/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E4%B8%8E%E4%B8%93%E4%B8%9A%E5%AE%89%E5%85%A8%E5%8E%82%E5%95%86%E7%9A%84%E5%8D%8F%E5%90%8C%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B.png" alt="分布式负载均衡与专业安全厂商的协同工作流程"></p>
+<p><img src="https://s2.loli.net/2024/11/10/BpAHgIswSK5vGd3.jpg" alt="分布式负载均衡与专业安全厂商的协同工作流程"></p>
 <p>当安全产品通过单一管理面订阅某业务的日志或者镜像流量后，转发引擎会依据规则将它们直接推送给安全系统，安全系统经过数据清洗、特征提取和行为分析后，可以通过OpenAPI向管理面下发规则，所有转发引擎会基于这些策略规则处理流量。例如，可以在上游应用服务器返回的某些HTML页面中注入JavaScript脚本，用于监测用户行为并收集信息，必要时可直接在浏览器端诱导攻击者执行特定的操作，从而使其暴露攻击意图。</p>
 <p>当安全系统明确发现攻击者后，可以将相应的源IP集合更新到分布式负载均衡，转发引擎会根据规则及时处理。例如，既可以让转发引擎直接丢弃攻击报文，也可以将攻击流量重定向到某个隔离的网络区域进行处理，还可以结合分布式负载均衡上的静态资源服务部署蜜罐系统，进一步分析攻击者的行为。</p>
 <p>由于分布式负载均衡的VIP可同时由数十个转发引擎提供服务，因此它的防DDOS攻击能力远强于传统负载均衡。通过集成化的安全策略和自动化的流量管理，该政府机关能够更有效地防御网络攻击，从而保障关键网络资源和数据的安全。</p>
